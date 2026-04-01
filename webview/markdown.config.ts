@@ -14,7 +14,7 @@ export const MARKDOWN_CONFIG = {
 
   // Emphasis
   emphasis: "_" as const,        // italics with _underscores_ not *stars*
-  strong: "**" as const,         // bold with **double stars**
+  strong: "*" as const,           // bold character (doubled by remark-stringify)
 
   // Code
   fence: "`" as const,           // fence character (repeated 3x by remark-stringify)
@@ -45,10 +45,56 @@ export function normalizeMarkdown(md: string): string {
   md = renumberOrderedLists(md);
   // 6. Fix table headers (BlockNote flattens <thead> into regular rows)
   md = fixTableHeaders(md);
-  // 7. Remove duplicate image captions (BlockNote outputs caption as both
+  // 7. Fix double tildes: remark-gfm escapes single ~ to ~~ to avoid strikethrough
+  //    Revert ~~ back to ~ when there's no matching closing ~~
+  md = fixDoubleTildes(md);
+  // 8. Remove duplicate image captions (BlockNote outputs caption as both
   //    alt text and as a separate line after the image)
   md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
   return md;
+}
+
+/**
+ * Fix remark-gfm doubling single ~ to ~~.
+ * Only revert when ~~ doesn't have a matching closing ~~ (i.e., not actual strikethrough).
+ */
+function fixDoubleTildes(md: string): string {
+  // Process line by line, skip code blocks
+  const lines = md.split("\n");
+  let inCodeBlock = false;
+  const result: string[] = [];
+
+  for (const line of lines) {
+    if (/^```/.test(line)) {
+      inCodeBlock = !inCodeBlock;
+      result.push(line);
+      continue;
+    }
+    if (inCodeBlock) {
+      result.push(line);
+      continue;
+    }
+
+    // Count ~~ occurrences. If odd number, the last one is an escaped single ~
+    // More robust: replace ~~ that isn't part of a ~~...~~ pair
+    // A real strikethrough has ~~text~~ (opening and closing).
+    // An escaped tilde is ~~ followed by text with no closing ~~.
+    let fixed = line;
+    // Match ~~ that are NOT part of strikethrough pairs
+    // Strategy: find all ~~ positions, pair them up, unpaired ones become ~
+    const parts: string[] = fixed.split("~~");
+    if (parts.length > 1) {
+      // If odd number of ~~ markers (even number of parts), they pair up = strikethrough
+      // If even number of ~~ markers (odd number of parts), last one is unpaired
+      if (parts.length % 2 === 0) {
+        // Odd number of ~~: last is unpaired, rejoin all but last with ~~, last with ~
+        fixed = parts.slice(0, -1).join("~~") + "~" + parts[parts.length - 1];
+      }
+      // else: even number of ~~ markers = all paired = real strikethrough, keep as-is
+    }
+    result.push(fixed);
+  }
+  return result.join("\n");
 }
 
 /**
