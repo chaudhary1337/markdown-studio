@@ -28,27 +28,20 @@ html, body, #root {
   border-bottom: 1px solid #775500;
 }
 
-/* Toolbar */
-.editor-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  padding: 4px 12px;
-  background: var(--vscode-editor-background, #1e1e1e);
-}
-
+/* Toggle source link */
 .toggle-source {
+  display: block;
   font-size: 11px;
   color: var(--vscode-descriptionForeground, #888);
   cursor: pointer;
   user-select: none;
-  padding: 2px 6px;
-  border-radius: 3px;
-  transition: color 0.15s, background 0.15s;
+  padding: 4px 0;
+  margin: 0 2rem;
+  transition: color 0.15s;
 }
 
 .toggle-source:hover {
   color: var(--vscode-textLink-foreground, #3794ff);
-  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
 }
 
 /* Editor container */
@@ -75,7 +68,6 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  opacity: 0.95;
 }
 
 .sticky-heading {

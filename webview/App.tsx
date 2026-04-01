@@ -60,17 +60,15 @@ export function App() {
 
   return (
     <div className="editor-container">
-      <div className="editor-toolbar">
-        <span
-          className="toggle-source"
-          onClick={switchToSource}
-          role="button"
-          tabIndex={0}
-        >
-          Switch to Source
-        </span>
-      </div>
       <StickyHeadings editor={editor} />
+      <span
+        className="toggle-source"
+        onClick={switchToSource}
+        role="button"
+        tabIndex={0}
+      >
+        Open in Default View
+      </span>
       <BlockNoteView editor={editor} onChange={handleChange} theme="dark" />
     </div>
   );

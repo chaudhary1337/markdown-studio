@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { BlockNoteEditor, Block } from "@blocknote/core";
+import { BlockNoteEditor } from "@blocknote/core";
 
 interface StickyHeading {
   id: string;
@@ -7,40 +7,47 @@ interface StickyHeading {
   level: number;
 }
 
+function getHeadingLevel(el: Element): number {
+  const inner = el.querySelector("h1, h2, h3, h4, h5, h6");
+  if (inner) {
+    return parseInt(inner.tagName[1], 10);
+  }
+  return 1;
+}
+
 export function StickyHeadings({ editor }: { editor: BlockNoteEditor }) {
   const [stickyStack, setStickyStack] = useState<StickyHeading[]>([]);
 
   const updateStickyHeadings = useCallback(() => {
-    const editorElement = document.querySelector(".bn-editor");
-    if (!editorElement) return;
+    const container = document.querySelector(".editor-container");
+    if (!container) return;
 
-    // Find all heading DOM elements that are above the viewport
-    const headingEls = editorElement.querySelectorAll(
+    const headingEls = container.querySelectorAll(
       '[data-content-type="heading"]'
     );
-    const containerRect = editorElement.getBoundingClientRect();
-    const scrollTop = editorElement.scrollTop;
+    const containerRect = container.getBoundingClientRect();
+
+    const stickyEl = container.querySelector(".sticky-headings");
+    const stickyHeight = stickyEl ? stickyEl.getBoundingClientRect().height : 0;
+    const threshold = containerRect.top + stickyHeight + 4;
 
     const aboveViewport: StickyHeading[] = [];
 
-    headingEls.forEach((el) => {
+    headingEls.forEach((el, index) => {
       const rect = el.getBoundingClientRect();
-      // Heading is above or at the top of the visible area
-      if (rect.top < containerRect.top + 4) {
-        const level = parseInt(el.getAttribute("data-level") || "1", 10);
+      if (rect.top < threshold) {
+        const level = getHeadingLevel(el);
         const text = el.textContent || "";
-        const id = el.getAttribute("data-id") || "";
+        const blockWrapper = el.closest("[data-id]");
+        const id = blockWrapper?.getAttribute("data-id") || `heading-${index}`;
         if (text.trim()) {
           aboveViewport.push({ id, text: text.trim(), level });
         }
       }
     });
 
-    // Build hierarchy stack: keep only the most recent heading at each level
-    // and remove any lower-level headings that come before a higher-level one
     const stack: StickyHeading[] = [];
     for (const h of aboveViewport) {
-      // Remove headings of same or lower priority (higher or equal level number)
       while (stack.length > 0 && stack[stack.length - 1].level >= h.level) {
         stack.pop();
       }
@@ -48,21 +55,19 @@ export function StickyHeadings({ editor }: { editor: BlockNoteEditor }) {
     }
 
     setStickyStack(stack);
-  }, [editor]);
+  }, []);
 
   useEffect(() => {
-    const editorElement = document.querySelector(".bn-editor");
-    if (!editorElement) return;
+    const container = document.querySelector(".editor-container");
+    if (!container) return;
 
-    // Update on scroll
-    editorElement.addEventListener("scroll", updateStickyHeadings, {
+    container.addEventListener("scroll", updateStickyHeadings, {
       passive: true,
     });
-    // Also update periodically to catch content changes
     const interval = setInterval(updateStickyHeadings, 1000);
 
     return () => {
-      editorElement.removeEventListener("scroll", updateStickyHeadings);
+      container.removeEventListener("scroll", updateStickyHeadings);
       clearInterval(interval);
     };
   }, [updateStickyHeadings]);
@@ -88,7 +93,14 @@ export function StickyHeadings({ editor }: { editor: BlockNoteEditor }) {
 
 function scrollToHeading(id: string) {
   const el = document.querySelector(`[data-id="${id}"]`);
-  if (el) {
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+  const container = document.querySelector(".editor-container");
+  const stickyEl = document.querySelector(".sticky-headings");
+  if (!el || !container) return;
+
+  const stickyHeight = stickyEl ? stickyEl.getBoundingClientRect().height : 0;
+  const elTop = el.getBoundingClientRect().top;
+  const containerTop = container.getBoundingClientRect().top;
+  const offset = elTop - containerTop + container.scrollTop - stickyHeight;
+
+  container.scrollTo({ top: offset, behavior: "smooth" });
 }
