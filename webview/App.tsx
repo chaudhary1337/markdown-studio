@@ -141,7 +141,9 @@ export function App() {
         </span>
         <BlockNoteView editor={editor} onChange={handleChange} theme="dark" />
       </div>
-      <TableOfContents editor={editor} />
+      <div className="toc-wrapper">
+        <TableOfContents editor={editor} />
+      </div>
     </div>
   );
 }

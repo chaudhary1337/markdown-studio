@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { BlockNoteEditor } from "@blocknote/core";
+import { GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface TocEntry {
   id: string;
@@ -15,6 +16,7 @@ function getHeadingLevel(el: Element): number {
   return 1;
 }
 
+const COLLAPSE_THRESHOLD = 80;
 const MIN_WIDTH = 120;
 const MAX_WIDTH = 400;
 const DEFAULT_WIDTH = 200;
@@ -24,9 +26,11 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const lastOpenWidth = useRef(DEFAULT_WIDTH);
   const dragging = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
+  const wasCollapsed = useRef(false);
 
   const updateToc = useCallback(() => {
     const container = document.querySelector(".editor-container");
@@ -82,31 +86,67 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!dragging.current) return;
-      // Dragging left edge: moving left = wider, moving right = narrower
       const delta = startX.current - e.clientX;
-      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + delta));
-      setWidth(newWidth);
+      const raw = startWidth.current + delta;
+
+      if (wasCollapsed.current) {
+        // Dragging from collapsed: always show, width follows cursor
+        const w = Math.min(MAX_WIDTH, Math.max(0, raw));
+        if (w >= COLLAPSE_THRESHOLD) {
+          setCollapsed(false);
+          const clamped = Math.max(MIN_WIDTH, w);
+          setWidth(clamped);
+          lastOpenWidth.current = clamped;
+        }
+      } else {
+        // Dragging from expanded: allow collapsing
+        if (raw < COLLAPSE_THRESHOLD) {
+          setCollapsed(true);
+        } else {
+          setCollapsed(false);
+          const w = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, raw));
+          setWidth(w);
+          lastOpenWidth.current = w;
+        }
+      }
     };
-    const onMouseUp = () => {
+    const stopDrag = () => {
       if (dragging.current) {
         dragging.current = false;
+        wasCollapsed.current = false;
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
       }
     };
+    const onMouseUp = stopDrag;
+    // If cursor leaves the viewport, treat as drop
+    const onMouseLeave = (e: MouseEvent) => {
+      if (!dragging.current) return;
+      if (
+        e.clientX <= 0 ||
+        e.clientY <= 0 ||
+        e.clientX >= window.innerWidth ||
+        e.clientY >= window.innerHeight
+      ) {
+        stopDrag();
+      }
+    };
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("mouseleave", onMouseLeave);
     return () => {
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("mouseleave", onMouseLeave);
     };
   }, []);
 
   const onHandleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     dragging.current = true;
+    wasCollapsed.current = collapsed;
     startX.current = e.clientX;
-    startWidth.current = width;
+    startWidth.current = collapsed ? 0 : width;
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
   };
@@ -116,21 +156,33 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
   return (
     <>
       <div
-        className="toc-handle"
-        onMouseDown={collapsed ? undefined : onHandleMouseDown}
-        onClick={collapsed ? () => setCollapsed(false) : undefined}
-        title={collapsed ? "Show table of contents" : "Drag to resize"}
+        className={`toc-handle ${collapsed ? "toc-handle-collapsed" : ""}`}
+        onMouseDown={onHandleMouseDown}
+        title={collapsed ? "Drag or click to show contents" : "Drag to resize"}
       >
-        <span
-          className="toc-collapse-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            setCollapsed(!collapsed);
-          }}
-          title={collapsed ? "Show contents" : "Hide contents"}
-        >
-          {collapsed ? "\u25C0" : "\u25B6"}
-        </span>
+        {collapsed ? (
+          <ChevronLeft
+            size={14}
+            className="toc-expand-icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCollapsed(false);
+              setWidth(Math.max(lastOpenWidth.current, DEFAULT_WIDTH));
+            }}
+          />
+        ) : (
+          <>
+            <ChevronRight
+              size={12}
+              className="toc-collapse-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setCollapsed(true);
+              }}
+            />
+            <GripVertical size={12} className="toc-grip" />
+          </>
+        )}
       </div>
       {!collapsed && (
         <div className="toc-sidebar" style={{ width }}>

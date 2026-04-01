@@ -11,7 +11,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": ["onLanguage:markdown"],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "customEditors": [
@@ -60,18 +62,19 @@
     "vscode:prepublish": "node esbuild.js --production"
   },
   "devDependencies": {
-    "@types/vscode": "^1.80.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@types/vscode": "^1.80.0",
     "@vscode/vsce": "^3.0.0",
     "esbuild": "^0.20.0",
     "typescript": "^5.4.0"
   },
   "dependencies": {
     "@blocknote/core": "^0.22.0",
-    "@blocknote/react": "^0.22.0",
     "@blocknote/mantine": "^0.22.0",
+    "@blocknote/react": "^0.22.0",
     "@mantine/core": "^7.0.0",
+    "lucide-react": "^1.7.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }

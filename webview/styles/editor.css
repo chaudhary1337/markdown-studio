@@ -105,31 +105,67 @@ html, body, #root {
   min-width: 0;
 }
 
+/* TOC wrapper */
+.toc-wrapper {
+  display: flex;
+  height: 100vh;
+  flex-shrink: 0;
+}
+
 /* TOC drag handle */
 .toc-handle {
-  width: 6px;
+  width: 14px;
   height: 100vh;
   cursor: col-resize;
-  background: transparent;
+  background: var(--vscode-widget-border, #333);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   position: relative;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: background 0.15s, width 0.15s;
 }
 
 .toc-handle:hover {
-  background: var(--vscode-widget-border, #333);
+  background: var(--vscode-scrollbarSlider-hoverBackground, rgba(100, 100, 100, 0.7));
+}
+
+/* Collapsed handle: wider, prominent expand arrow */
+.toc-handle-collapsed {
+  width: 22px;
+  cursor: pointer;
+  background: var(--vscode-editor-background, #1e1e1e);
+  border-left: 1px solid var(--vscode-widget-border, #333);
+}
+
+.toc-handle-collapsed:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
+}
+
+.toc-expand-icon {
+  color: var(--vscode-descriptionForeground, #888);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.toc-handle-collapsed:hover .toc-expand-icon {
+  color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+.toc-grip {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--vscode-descriptionForeground, #888);
+  pointer-events: none;
 }
 
 .toc-collapse-btn {
   position: absolute;
-  top: 12px;
-  font-size: 8px;
+  top: 10px;
   color: var(--vscode-descriptionForeground, #888);
   cursor: pointer;
-  padding: 4px 2px;
+  padding: 2px;
   border-radius: 3px;
   user-select: none;
   z-index: 10;

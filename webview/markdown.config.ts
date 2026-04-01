@@ -39,12 +39,96 @@ export function normalizeMarkdown(md: string): string {
   md = replaceEmphasis(md);
   // 4. Normalize ordered lists: "1.  " to "1. " (single space)
   md = md.replace(/^(\s*\d+\.)\s{2,}/gm, "$1 ");
-  // 4. Fix table headers (BlockNote flattens <thead> into regular rows)
+  // 5. Fix task list checkboxes (escaped brackets and formatting)
+  md = fixTaskLists(md);
+  // 6. Renumber ordered lists (BlockNote restarts each item at 1)
+  md = renumberOrderedLists(md);
+  // 6. Fix table headers (BlockNote flattens <thead> into regular rows)
   md = fixTableHeaders(md);
-  // 5. Remove duplicate image captions (BlockNote outputs caption as both
+  // 7. Remove duplicate image captions (BlockNote outputs caption as both
   //    alt text and as a separate line after the image)
   md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
   return md;
+}
+
+/**
+ * Fix task list formatting:
+ * - Unescape brackets: \[ ] → [ ], \[x] → [x]
+ * - Ensure proper "- [ ] " / "- [x] " format
+ * - Flatten nested task lists to flat sequential items
+ */
+function fixTaskLists(md: string): string {
+  // Fix escaped brackets in task lists
+  md = md.replace(/^(\s*-\s)\\(\[[\sx]\])(\s*)/gm, "$1$2 ");
+  md = md.replace(/^(\s*-\s)\\\[(\s)\\\]/gm, "$1[$2]");
+  md = md.replace(/^(\s*-\s)\\\[([xX])\\\]/gm, "$1[$2]");
+
+  // Flatten: if task list items are indented under a blank bullet, flatten them
+  const lines = md.split("\n");
+  const result: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Detect indented task items (e.g., "  - [ ] text") that follow a bare "- " line
+    const indentedTask = line.match(/^\s{2,}(-\s\[[\sx]\]\s.*)$/);
+    if (indentedTask && result.length > 0) {
+      const prev = result[result.length - 1];
+      // If previous line is a bare empty list item, replace it and flatten
+      if (/^-\s*$/.test(prev.trim())) {
+        result.pop();
+        result.push(indentedTask[1]);
+        continue;
+      }
+    }
+    result.push(line);
+  }
+  return result.join("\n");
+}
+
+/**
+ * Renumber consecutive ordered list items.
+ * BlockNote outputs each item as "1." — this fixes them to 1. 2. 3. etc.
+ * Handles items separated by blank lines (loose lists) as one sequence.
+ */
+function renumberOrderedLists(md: string): string {
+  const lines = md.split("\n");
+  const result: string[] = [];
+  let counter = 0;
+  let inList = false;
+  let blankLineGap = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const match = line.match(/^(\s*)(\d+)\.\s(.*)$/);
+
+    if (match) {
+      const [, indent, , content] = match;
+      // Only renumber top-level items (no indent)
+      if (indent === "") {
+        counter++;
+        inList = true;
+        blankLineGap = false;
+        result.push(`${counter}. ${content}`);
+      } else {
+        result.push(line);
+      }
+    } else if (line.trim() === "" && inList) {
+      // Blank line within a list — keep tracking
+      blankLineGap = true;
+      result.push(line);
+    } else {
+      // Non-list line after a blank gap means list ended
+      if (inList && (!blankLineGap || line.trim() === "")) {
+        // Still could be in the list
+      }
+      if (line.trim() !== "" && !line.match(/^(\s*)\d+\.\s/)) {
+        inList = false;
+        counter = 0;
+        blankLineGap = false;
+      }
+      result.push(line);
+    }
+  }
+  return result.join("\n");
 }
 
 /**

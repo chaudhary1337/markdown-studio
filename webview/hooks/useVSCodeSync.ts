@@ -32,6 +32,14 @@ export async function markdownToBlocks(
   // Downgrade h4-h6 to h3 (BlockNote only supports h1-h3)
   html = html.replace(/<(\/?)h[456](\s|>)/g, "<$1h3$2");
 
+  // Fix task list checkboxes: remove 'disabled' attr
+  html = html.replace(/<input type="checkbox" disabled>/g, '<input type="checkbox">');
+  html = html.replace(/<input type="checkbox" checked disabled>/g, '<input type="checkbox" checked>');
+
+  // Strip <p> wrappers inside <li> — loose lists (items separated by blank lines)
+  // produce <li>\n<p>text</p>\n</li> which BlockNote misinterprets as nested blocks
+  html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>\s*<\/li>/g, "<li$1>$2</li>");
+
   // Sanitize: ensure all <code> inside <pre> have a language class
   // BlockNote crashes on <pre><code> without class="language-*"
   html = html.replace(
@@ -156,3 +164,4 @@ function restoreRelativePaths(
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
