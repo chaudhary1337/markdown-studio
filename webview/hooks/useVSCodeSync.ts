@@ -150,19 +150,15 @@ export async function blocksToMarkdown(
       html = doc.body.innerHTML;
     }
 
-    console.log("[better-markdown] HTML before rehype-remark:", html.slice(0, 500));
     const result = await unified()
       .use(rehypeParse, { fragment: true })
       .use(rehypeRemark)
       .use(remarkGfm)
       .use(remarkStringify, MARKDOWN_CONFIG)
       .process(html);
-    const raw = String(result);
-    console.log("[better-markdown] Raw MD from pipeline:", JSON.stringify(raw.slice(0, 500)));
-    md = normalizeMarkdown(raw);
-    console.log("[better-markdown] After normalizeMarkdown:", JSON.stringify(md.slice(0, 500)));
+    md = normalizeMarkdown(String(result));
   } catch (err) {
-    console.error("[better-markdown] Custom pipeline FAILED, using fallback:", err);
+    console.error("[better-markdown] Custom pipeline failed, using fallback:", err);
     md = await editor.blocksToMarkdownLossy(editor.document);
     md = normalizeMarkdown(md);
   }

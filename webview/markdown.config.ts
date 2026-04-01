@@ -105,7 +105,20 @@ function fixTaskLists(md: string): string {
     result.push(line);
     i++;
   }
-  return result.join("\n");
+
+  // Remove blank lines between consecutive task list items
+  const final: string[] = [];
+  for (let k = 0; k < result.length; k++) {
+    if (
+      result[k].trim() === "" &&
+      k > 0 && /^-\s\[[\sxX]\]\s/.test(result[k - 1]) &&
+      k + 1 < result.length && /^-\s\[[\sxX]\]\s/.test(result[k + 1])
+    ) {
+      continue; // skip blank line between task items
+    }
+    final.push(result[k]);
+  }
+  return final.join("\n");
 }
 
 /**
