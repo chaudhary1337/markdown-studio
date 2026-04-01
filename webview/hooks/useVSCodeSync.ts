@@ -8,6 +8,19 @@ import remarkStringify from "remark-stringify";
 import rehypeParse from "rehype-parse";
 import rehypeRemark from "rehype-remark";
 
+// Remark-stringify options for clean, consistent markdown output
+const STRINGIFY_OPTIONS = {
+  bullet: "-" as const,
+  bulletOther: "*" as const,
+  bulletOrdered: "." as const,
+  emphasis: "*" as const,
+  strong: "**" as const,
+  fence: "```" as const,
+  fences: true,
+  listItemIndent: "one" as const,
+  rule: "---" as const,
+};
+
 /**
  * Convert markdown string to BlockNote blocks.
  * We do our own md -> HTML pipeline to avoid BlockNote's buggy
@@ -17,7 +30,6 @@ export async function markdownToBlocks(
   editor: BlockNoteEditor,
   md: string
 ): Promise<Block<any, any, any>[]> {
-  // Markdown -> HTML via remark/rehype
   const result = await unified()
     .use(remarkParse)
     .use(remarkGfm)
@@ -39,22 +51,18 @@ export async function markdownToBlocks(
 
 /**
  * Convert BlockNote blocks back to markdown.
+ * Always uses our own pipeline with controlled remark-stringify options
+ * to ensure fenced code blocks, consistent list markers, and correct indentation.
  */
 export async function blocksToMarkdown(
   editor: BlockNoteEditor
 ): Promise<string> {
-  // Try the built-in method first
-  try {
-    return await editor.blocksToMarkdownLossy(editor.document);
-  } catch {
-    // Fallback: blocks -> HTML -> markdown
-    const html = await editor.blocksToHTMLLossy(editor.document);
-    const result = await unified()
-      .use(rehypeParse)
-      .use(rehypeRemark)
-      .use(remarkGfm)
-      .use(remarkStringify)
-      .process(html);
-    return String(result);
-  }
+  const html = await editor.blocksToHTMLLossy(editor.document);
+  const result = await unified()
+    .use(rehypeParse, { fragment: true })
+    .use(rehypeRemark)
+    .use(remarkGfm)
+    .use(remarkStringify, STRINGIFY_OPTIONS)
+    .process(html);
+  return String(result);
 }

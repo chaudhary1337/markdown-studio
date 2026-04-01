@@ -54,8 +54,22 @@ export function App() {
     }, 300);
   }, [editor]);
 
+  const switchToSource = () => {
+    vscodeApi.postMessage({ type: "toggleEditor" });
+  };
+
   return (
     <div className="editor-container">
+      <div className="editor-toolbar">
+        <span
+          className="toggle-source"
+          onClick={switchToSource}
+          role="button"
+          tabIndex={0}
+        >
+          Switch to Source
+        </span>
+      </div>
       <StickyHeadings editor={editor} />
       <BlockNoteView editor={editor} onChange={handleChange} theme="dark" />
     </div>

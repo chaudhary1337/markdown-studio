@@ -29,9 +29,11 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
       ],
     };
 
-    // Track the last content we sent TO the document, so we can ignore
-    // the onDidChangeTextDocument echo from our own edits
-    let lastSentContent: string | null = null;
+    // Counter-based echo suppression: increment when we apply an edit
+    // from the webview, decrement when we see the resulting document change.
+    // Only forward document changes to the webview when counter is 0
+    // (meaning the change is truly external — git, another editor, etc.)
+    let pendingWebviewEdits = 0;
 
     // Set up message handler BEFORE setting html (so we never miss "ready")
     const msgDisposable = webview.onDidReceiveMessage(async (msg) => {
@@ -40,11 +42,16 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           type: "init",
           content: document.getText(),
         });
+      } else if (msg.type === "toggleEditor") {
+        vscode.commands.executeCommand(
+          "vscode.openWith",
+          document.uri,
+          "default"
+        );
       } else if (msg.type === "edit") {
         const newContent = msg.content as string;
-        // Skip if content hasn't actually changed
         if (newContent === document.getText()) return;
-        lastSentContent = newContent;
+        pendingWebviewEdits++;
         const edit = new vscode.WorkspaceEdit();
         edit.replace(
           document.uri,
@@ -57,24 +64,22 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
 
     webview.html = this.getHtmlForWebview(webview);
 
-    // Sync: document → webview (only for EXTERNAL changes, not our own edits)
+    // Sync: document -> webview (only for EXTERNAL changes)
     const docChangeDisposable = vscode.workspace.onDidChangeTextDocument(
       (e) => {
         if (e.document.uri.toString() !== document.uri.toString()) return;
         if (e.contentChanges.length === 0) return;
 
-        const currentText = document.getText();
-        // If this change came from us, skip it
-        if (lastSentContent !== null && currentText === lastSentContent) {
-          lastSentContent = null;
+        // If this change originated from our webview, suppress the echo
+        if (pendingWebviewEdits > 0) {
+          pendingWebviewEdits--;
           return;
         }
-        lastSentContent = null;
 
-        // External change (git checkout, another editor, etc.)
+        // Truly external change (git checkout, another editor, etc.)
         webview.postMessage({
           type: "update",
-          content: currentText,
+          content: document.getText(),
         });
       }
     );

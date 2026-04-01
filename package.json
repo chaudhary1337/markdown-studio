@@ -11,7 +11,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": ["onLanguage:markdown"],
   "main": "./dist/extension.js",
   "contributes": {
     "customEditors": [
@@ -25,7 +25,32 @@
         ],
         "priority": "default"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "betterMarkdown.toggleEditor",
+        "title": "Toggle Rich/Source Editor",
+        "category": "Better Markdown",
+        "icon": "$(notebook-render-output)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "betterMarkdown.toggleEditor",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m",
+        "when": "resourceExtname == .md"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "betterMarkdown.toggleEditor",
+          "group": "navigation",
+          "when": "resourceExtname == .md"
+        }
+      ]
+    }
   },
   "scripts": {
     "build": "node esbuild.js",
