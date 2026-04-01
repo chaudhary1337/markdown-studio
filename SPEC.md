@@ -134,21 +134,37 @@ npm run watch        # Watch mode
 - Relative image paths resolve to webview URIs for display
 - On save, webview URI prefixes are stripped to restore original relative paths
 - Handles both `vscode-webview://` and `https://file+.vscode-resource.vscode-cdn.net/` schemes
-- Image captions (alt text) are preserved via `<figure>/<figcaption>` conversion
+- Image captions (alt text) preserved: input via `<figure>/<figcaption>` conversion, output via `<figcaption>` stripping so `alt` alone produces `![caption](url)`
+- Duplicate captions stripped in post-processing (BlockNote outputs caption as both alt and figcaption)
+- Default "BlockNote image" alt text stripped on export
 
 ### Code Blocks
 - No syntax highlighting colors in code blocks (plain monospace text)
 - Inline code retains its styling
 - Shiki WASM enabled via `wasm-unsafe-eval` CSP directive
 - Code blocks without a language default to `text`
+- `shellscript` language name normalized to `bash`
 
 ### Markdown Formatting (see `webview/markdown.config.ts`)
-- Bullet points: `- ` (dash + single space), not `* ` with 3 spaces
-- Italics: `_underscores_`, not `*stars*`
+- Bullet points: `- ` (dash + single space), not `*   ` with 3 spaces
+- Ordered lists: `1. ` (single space after dot), not `1.  ` with two
+- Italics: `_underscores_`, not `*stars*` — emphasis conversion skips code blocks, inline code, and standalone `*` (math expressions like `γ * λ` preserved)
 - Bold: `**double stars**`
 - Code blocks: always fenced with triple backticks, never indented
 - Horizontal rules: `---`
 - List indent: single space after marker
+- All formatting controlled via `webview/markdown.config.ts`
+
+### Tables
+- BlockNote has no header row concept — header content appears as first data row
+- On export, empty header rows inserted by rehype-remark are detected and removed; first data row promoted to header
+- Separator row (`| --- |`) dashes match column widths from data rows
+- Existing separator rows rebuilt to match column widths
+
+### Headings
+- h1-h3 fully supported
+- h4-h6 downgraded to h3 on load (BlockNote limitation — only supports 3 levels)
+- Headings rendered with explicit bold (`font-weight: 700`) and extra top margin
 
 ### Sync
 - Counter-based echo suppression prevents sync loops (no table row duplication)
@@ -156,9 +172,18 @@ npm run watch        # Watch mode
 - Only truly external changes (git, other editors) update the webview
 - Debounced at 300ms to avoid thrashing
 
+### Markdown Parsing Pipeline
+- Input: markdown → remark/rehype → HTML → sanitize (code block language, h4-h6 downgrade, image figcaptions, relative path resolution) → `tryParseHTMLToBlocks`
+- Output: `blocksToHTMLLossy` → strip figcaptions/figure wrappers → rehype-remark with controlled stringify options → `normalizeMarkdown` post-processing → strip webview URI prefixes
+- Fallback: if custom pipeline fails, uses BlockNote's built-in `blocksToMarkdownLossy` + `normalizeMarkdown`
+
 ## Known Limitations
 
+- h4-h6 headings downgraded to h3 (BlockNote only supports heading levels 1-3)
+- Image captions shown in rich editor but can accumulate on malformed round-trips
 - Some exotic markdown (raw HTML blocks, footnotes) may not round-trip perfectly
 - YAML frontmatter needs special handling (future enhancement)
 - First load has a brief flash while BlockNote initializes
-- Webview bundle is ~3MB (production, minified) due to ProseMirror + Mantine
+- Webview bundle is ~2MB compressed due to ProseMirror + Mantine + shiki
+- No git diff integration in rich editor (use "Open in Default Editor" toggle)
+- No Ctrl+F find-in-page in rich editor yet
