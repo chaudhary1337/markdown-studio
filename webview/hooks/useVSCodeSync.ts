@@ -45,6 +45,16 @@ export async function markdownToBlocks(
     (_match, open, content, close) => open + content.replace(/\n$/, "") + close
   );
 
+  // Convert <img alt="caption"> to <figure><img><figcaption> for BlockNote
+  // Remove alt attr to prevent duplication (BlockNote stores caption separately)
+  html = html.replace(
+    /<img\s([^>]*?)alt="([^"]+)"([^>]*?)>/g,
+    (_match, before, alt, after) => {
+      // Skip if already inside a <figure>
+      return `<figure><img ${before}${after}><figcaption>${alt}</figcaption></figure>`;
+    }
+  );
+
   // Resolve relative image paths to webview URIs
   if (baseUri) {
     html = html.replace(
@@ -74,7 +84,11 @@ export async function blocksToMarkdown(
   let md: string;
 
   try {
-    const html = await editor.blocksToHTMLLossy(editor.document);
+    let html = await editor.blocksToHTMLLossy(editor.document);
+    // Strip <figure>/<figcaption> wrappers — leave bare <img alt="caption">
+    // so rehype-remark produces clean ![caption](url) without duplication
+    html = html.replace(/<figcaption>[\s\S]*?<\/figcaption>/g, "");
+    html = html.replace(/<\/?figure>/g, "");
     const result = await unified()
       .use(rehypeParse, { fragment: true })
       .use(rehypeRemark)
@@ -88,7 +102,7 @@ export async function blocksToMarkdown(
     md = normalizeMarkdown(md);
   }
 
-  // Strip "BlockNote image" default alt text
+  // Strip BlockNote's default alt text, keep real captions
   md = md.replace(/!\[BlockNote image\]/g, "![]");
 
   // Restore relative paths by stripping all webview URI prefixes

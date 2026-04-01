@@ -35,13 +35,72 @@ export function normalizeMarkdown(md: string): string {
   md = indentedToFenced(md);
   // 2. Replace "* " or "*   " list markers with "- "
   md = md.replace(/^(\s*)\*\s{1,3}/gm, "$1- ");
-  // 3. Replace *text* emphasis with _text_ (but not **bold**)
-  md = md.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "_$1_");
+  // 3. Replace *text* emphasis with _text_ (but not in code spans or **bold**)
+  md = replaceEmphasis(md);
   // 4. Normalize ordered lists: "1.  " to "1. " (single space)
   md = md.replace(/^(\s*\d+\.)\s{2,}/gm, "$1 ");
-  // 5. Fix table headers (BlockNote flattens <thead> into regular rows)
+  // 4. Fix table headers (BlockNote flattens <thead> into regular rows)
   md = fixTableHeaders(md);
+  // 5. Remove duplicate image captions (BlockNote outputs caption as both
+  //    alt text and as a separate line after the image)
+  md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
   return md;
+}
+
+/**
+ * Replace *text* with _text_ for emphasis, but skip:
+ * - code blocks (``` ... ```)
+ * - inline code (`...`)
+ * - **bold** (double asterisks)
+ * - standalone * used as multiplication or bullets
+ */
+function replaceEmphasis(md: string): string {
+  const lines = md.split("\n");
+  let inCodeBlock = false;
+  const result: string[] = [];
+
+  for (const line of lines) {
+    if (/^```/.test(line)) {
+      inCodeBlock = !inCodeBlock;
+      result.push(line);
+      continue;
+    }
+    if (inCodeBlock) {
+      result.push(line);
+      continue;
+    }
+
+    // Process line: split by inline code spans to protect them
+    let processed = "";
+    let remaining = line;
+    while (remaining.length > 0) {
+      const codeStart = remaining.indexOf("`");
+      if (codeStart === -1) {
+        // No more code spans — process the rest
+        processed += convertEmphasisInText(remaining);
+        break;
+      }
+      // Process text before the code span
+      processed += convertEmphasisInText(remaining.slice(0, codeStart));
+      // Find the closing backtick
+      const codeEnd = remaining.indexOf("`", codeStart + 1);
+      if (codeEnd === -1) {
+        // Unclosed backtick — just append the rest
+        processed += remaining.slice(codeStart);
+        break;
+      }
+      // Append code span unchanged
+      processed += remaining.slice(codeStart, codeEnd + 1);
+      remaining = remaining.slice(codeEnd + 1);
+    }
+    result.push(processed);
+  }
+  return result.join("\n");
+}
+
+function convertEmphasisInText(text: string): string {
+  // Match *text* but not **text** and not standalone *
+  return text.replace(/(?<!\*)\*(?!\*|\s)(.+?)(?<!\*|\s)\*(?!\*)/g, "_$1_");
 }
 
 /**
@@ -123,12 +182,18 @@ function fixTableHeaders(md: string): string {
         isSeparatorRow(tableLines[1])
       ) {
         // Remove empty header, make first data row the new header
-        const newHeader = tableLines[2];
-        const cols = (newHeader.match(/\|/g) || []).length - 1;
-        const separator = "|" + " --- |".repeat(Math.max(cols, 1));
-        result.push(newHeader);
+        const dataRows = tableLines.slice(2);
+        const separator = buildSeparator(dataRows);
+        result.push(dataRows[0]);
         result.push(separator);
-        result.push(...tableLines.slice(3));
+        result.push(...dataRows.slice(1));
+      } else if (isSeparatorRow(tableLines[1])) {
+        // Table already has a separator — rebuild it to match column widths
+        const dataRows = [tableLines[0], ...tableLines.slice(2)];
+        const separator = buildSeparator(dataRows);
+        result.push(tableLines[0]);
+        result.push(separator);
+        result.push(...tableLines.slice(2));
       } else {
         result.push(...tableLines);
       }
@@ -138,6 +203,24 @@ function fixTableHeaders(md: string): string {
     }
   }
   return result.join("\n");
+}
+
+/**
+ * Build a separator row (| --- | --- |) with dashes matching column widths.
+ */
+function buildSeparator(rows: string[]): string {
+  // Parse cells from each row to find max width per column
+  const colWidths: number[] = [];
+  for (const row of rows) {
+    const cells = row.split("|").slice(1, -1); // remove leading/trailing empty
+    cells.forEach((cell, idx) => {
+      const width = cell.trim().length;
+      colWidths[idx] = Math.max(colWidths[idx] || 3, width);
+    });
+  }
+  // Build separator with dashes padded to column width
+  const parts = colWidths.map((w) => " " + "-".repeat(Math.max(w, 3)) + " ");
+  return "|" + parts.join("|") + "|";
 }
 
 function isEmptyRow(line: string): boolean {
