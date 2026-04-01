@@ -17,11 +17,11 @@ export const MARKDOWN_CONFIG = {
   strong: "**" as const,         // bold with **double stars**
 
   // Code
-  fence: "```" as const,         // fenced code blocks
+  fence: "`" as const,           // fence character (repeated 3x by remark-stringify)
   fences: true,                  // always use fences, never indented code blocks
 
   // Other
-  rule: "---" as const,          // horizontal rule style
+  rule: "-" as const,             // horizontal rule character (repeated 3x)
 };
 
 /**
@@ -77,12 +77,12 @@ function fixTaskLists(md: string): string {
     const checkboxMatch = line.match(/^(\s*-\s\[[\sxX]\])\s*$/);
     if (checkboxMatch) {
       const prefix = checkboxMatch[1];
-      // Look ahead: skip blank lines, find indented content
+      // Look ahead: skip blank lines, find the next non-empty line
       let j = i + 1;
       while (j < lines.length && lines[j].trim() === "") j++;
 
-      if (j < lines.length && /^\s{2,}/.test(lines[j])) {
-        // Merge: checkbox + indented content
+      if (j < lines.length && lines[j].trim() !== "") {
+        // Merge: checkbox + next content line
         const content = lines[j].trim();
         result.push(`${prefix} ${content}`);
         i = j + 1;

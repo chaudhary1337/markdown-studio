@@ -43,7 +43,7 @@ export async function markdownToBlocks(
         /<li[^>]*>\s*(?:<p>)?\s*<input type="checkbox"([^>]*?)>\s*([\s\S]*?)\s*(?:<\/p>)?\s*<\/li>/g,
         (_m: string, attrs: string, content: string) => {
           const checked = attrs.includes("checked");
-          return `<div data-content-type="checkListItem" data-checked="${checked}"><p>${content.trim()}</p></div>`;
+          return `<div data-content-type="checkListItem" data-checked="${checked}">${content.trim()}</div>`;
         }
       );
     }
@@ -111,6 +111,46 @@ export async function blocksToMarkdown(
     html = html.replace(/<figcaption>[\s\S]*?<\/figcaption>/g, "");
     html = html.replace(/<\/?figure>/g, "");
 
+    // Convert BlockNote's checkListItem blocks to proper <ul><li> with checkbox
+    // so rehype-remark produces "- [ ] text" instead of splitting them.
+    // Use DOM parser for reliability since BlockNote nests multiple divs.
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    const checkItems = doc.querySelectorAll('[data-content-type="checkListItem"]');
+    if (checkItems.length > 0) {
+      checkItems.forEach((div) => {
+        const input = div.querySelector("input[type=checkbox]");
+        const checked = input?.hasAttribute("checked") ?? false;
+        const p = div.querySelector("p");
+        const content = p?.innerHTML?.trim() ?? div.textContent?.trim() ?? "";
+
+        const li = doc.createElement("li");
+        const checkbox = doc.createElement("input");
+        checkbox.type = "checkbox";
+        if (checked) checkbox.setAttribute("checked", "");
+        li.appendChild(checkbox);
+        li.append(" " + content);
+
+        div.replaceWith(li);
+      });
+      // Wrap consecutive <li> (that were checkListItems) in <ul>
+      const allLi = doc.body.querySelectorAll("li");
+      let currentUl: HTMLUListElement | null = null;
+      allLi.forEach((li) => {
+        if (li.querySelector("input[type=checkbox]")) {
+          if (!currentUl || li.previousElementSibling !== currentUl.lastElementChild) {
+            currentUl = doc.createElement("ul");
+            li.before(currentUl);
+          }
+          currentUl.appendChild(li);
+        } else {
+          currentUl = null;
+        }
+      });
+      html = doc.body.innerHTML;
+    }
+
+    console.log("[better-markdown] HTML before rehype-remark:", html.slice(0, 500));
     const result = await unified()
       .use(rehypeParse, { fragment: true })
       .use(rehypeRemark)
@@ -118,11 +158,11 @@ export async function blocksToMarkdown(
       .use(remarkStringify, MARKDOWN_CONFIG)
       .process(html);
     const raw = String(result);
-    console.log("RAW MD OUTPUT:", JSON.stringify(raw));
+    console.log("[better-markdown] Raw MD from pipeline:", JSON.stringify(raw.slice(0, 500)));
     md = normalizeMarkdown(raw);
-    console.log("AFTER NORMALIZE:", JSON.stringify(md));
+    console.log("[better-markdown] After normalizeMarkdown:", JSON.stringify(md.slice(0, 500)));
   } catch (err) {
-    console.error("Custom markdown pipeline failed, using fallback:", err);
+    console.error("[better-markdown] Custom pipeline FAILED, using fallback:", err);
     md = await editor.blocksToMarkdownLossy(editor.document);
     md = normalizeMarkdown(md);
   }
