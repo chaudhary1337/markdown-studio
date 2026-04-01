@@ -8,18 +8,7 @@ import remarkStringify from "remark-stringify";
 import rehypeParse from "rehype-parse";
 import rehypeRemark from "rehype-remark";
 
-// Remark-stringify options for clean, consistent markdown output
-const STRINGIFY_OPTIONS = {
-  bullet: "-" as const,
-  bulletOther: "*" as const,
-  bulletOrdered: "." as const,
-  emphasis: "*" as const,
-  strong: "**" as const,
-  fence: "```" as const,
-  fences: true,
-  listItemIndent: "one" as const,
-  rule: "---" as const,
-};
+import { MARKDOWN_CONFIG, normalizeMarkdown } from "../markdown.config";
 
 /**
  * Convert markdown string to BlockNote blocks.
@@ -28,7 +17,8 @@ const STRINGIFY_OPTIONS = {
  */
 export async function markdownToBlocks(
   editor: BlockNoteEditor,
-  md: string
+  md: string,
+  baseUri?: string
 ): Promise<Block<any, any, any>[]> {
   const result = await unified()
     .use(remarkParse)
@@ -39,6 +29,9 @@ export async function markdownToBlocks(
 
   let html = String(result);
 
+  // Downgrade h4-h6 to h3 (BlockNote only supports h1-h3)
+  html = html.replace(/<(\/?)h[456](\s|>)/g, "<$1h3$2");
+
   // Sanitize: ensure all <code> inside <pre> have a language class
   // BlockNote crashes on <pre><code> without class="language-*"
   html = html.replace(
@@ -46,23 +39,106 @@ export async function markdownToBlocks(
     '<pre><code class="language-text"'
   );
 
+  // Trim trailing newlines inside <code> blocks to prevent extra empty lines
+  html = html.replace(
+    /(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
+    (_match, open, content, close) => open + content.replace(/\n$/, "") + close
+  );
+
+  // Resolve relative image paths to webview URIs
+  if (baseUri) {
+    html = html.replace(
+      /<img\s([^>]*?)src="([^"]+)"/g,
+      (_match, before, src) => {
+        if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")) {
+          return `<img ${before}src="${src}"`;
+        }
+        const resolved = baseUri.replace(/\/$/, "") + "/" + src;
+        return `<img ${before}src="${resolved}"`;
+      }
+    );
+  }
+
   return editor.tryParseHTMLToBlocks(html);
 }
 
 /**
  * Convert BlockNote blocks back to markdown.
- * Always uses our own pipeline with controlled remark-stringify options
- * to ensure fenced code blocks, consistent list markers, and correct indentation.
+ * Strips webview URI prefixes to restore original relative image paths.
  */
 export async function blocksToMarkdown(
-  editor: BlockNoteEditor
+  editor: BlockNoteEditor,
+  baseUri?: string,
+  docFolderPath?: string
 ): Promise<string> {
-  const html = await editor.blocksToHTMLLossy(editor.document);
-  const result = await unified()
-    .use(rehypeParse, { fragment: true })
-    .use(rehypeRemark)
-    .use(remarkGfm)
-    .use(remarkStringify, STRINGIFY_OPTIONS)
-    .process(html);
-  return String(result);
+  let md: string;
+
+  try {
+    const html = await editor.blocksToHTMLLossy(editor.document);
+    const result = await unified()
+      .use(rehypeParse, { fragment: true })
+      .use(rehypeRemark)
+      .use(remarkGfm)
+      .use(remarkStringify, MARKDOWN_CONFIG)
+      .process(html);
+    md = normalizeMarkdown(String(result));
+  } catch (err) {
+    console.error("Custom markdown pipeline failed, using fallback:", err);
+    md = await editor.blocksToMarkdownLossy(editor.document);
+    md = normalizeMarkdown(md);
+  }
+
+  // Strip "BlockNote image" default alt text
+  md = md.replace(/!\[BlockNote image\]/g, "![]");
+
+  // Restore relative paths by stripping all webview URI prefixes
+  md = restoreRelativePaths(md, baseUri, docFolderPath);
+
+  return md;
+}
+
+/**
+ * Strip all webview URI prefixes to restore original relative paths.
+ */
+function restoreRelativePaths(
+  md: string,
+  baseUri?: string,
+  docFolderPath?: string
+): string {
+  if (baseUri) {
+    const prefix = baseUri.replace(/\/$/, "") + "/";
+    md = md.replace(new RegExp(escapeRegExp(prefix), "g"), "");
+  }
+
+  if (docFolderPath) {
+    const folderWithSlash = docFolderPath.replace(/\/$/, "") + "/";
+    const resourcePrefix =
+      "https://file+.vscode-resource.vscode-cdn.net" + folderWithSlash;
+    md = md.replace(new RegExp(escapeRegExp(resourcePrefix), "g"), "");
+    const encodedPrefix =
+      "https://file+.vscode-resource.vscode-cdn.net" +
+      encodeURI(folderWithSlash);
+    md = md.replace(new RegExp(escapeRegExp(encodedPrefix), "g"), "");
+  }
+
+  md = md.replace(
+    /https:\/\/file\+\.vscode-resource\.vscode-cdn\.net(\/[^\s)]+)/g,
+    (_match, absPath) => {
+      if (docFolderPath) {
+        const folderWithSlash = docFolderPath.replace(/\/$/, "") + "/";
+        const decoded = decodeURI(absPath);
+        if (decoded.startsWith(folderWithSlash)) {
+          return decoded.slice(folderWithSlash.length);
+        }
+      }
+      const parts = absPath.split("/");
+      return parts[parts.length - 1];
+    }
+  );
+
+  return md;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

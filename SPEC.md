@@ -113,6 +113,49 @@ npm run watch        # Watch mode
 ./scripts/deploy.sh --publish    # Publishes to marketplace
 ```
 
+## Requirements & Formatting Rules
+
+### Editor Behavior
+- Editor must be scrollable with styled scrollbar
+- Status bar at top shows loading/parsing state and errors
+- "Open in Default Editor" link above first content block in rich mode
+- "Open in Rich Editor" CodeLens above line 1 in source mode
+- Toggle between rich/source via Cmd+Shift+M, editor title icon, or in-editor links
+- Sticky headings: pin to top on scroll, respect hierarchy, fully opaque background
+- Clicking a sticky heading scrolls to exact heading position (offset for sticky bar height)
+- Headings in rich mode have extra top margin for breathing room
+
+### Links
+- Cmd+click / Ctrl+click / middle-click opens links
+- BlockNote's "open in new tab" toolbar button routes through extension host
+- Relative .md links open in VSCode; external URLs open in browser
+
+### Images
+- Relative image paths resolve to webview URIs for display
+- On save, webview URI prefixes are stripped to restore original relative paths
+- Handles both `vscode-webview://` and `https://file+.vscode-resource.vscode-cdn.net/` schemes
+- Image captions (alt text) are preserved via `<figure>/<figcaption>` conversion
+
+### Code Blocks
+- No syntax highlighting colors in code blocks (plain monospace text)
+- Inline code retains its styling
+- Shiki WASM enabled via `wasm-unsafe-eval` CSP directive
+- Code blocks without a language default to `text`
+
+### Markdown Formatting (see `webview/markdown.config.ts`)
+- Bullet points: `- ` (dash + single space), not `* ` with 3 spaces
+- Italics: `_underscores_`, not `*stars*`
+- Bold: `**double stars**`
+- Code blocks: always fenced with triple backticks, never indented
+- Horizontal rules: `---`
+- List indent: single space after marker
+
+### Sync
+- Counter-based echo suppression prevents sync loops (no table row duplication)
+- Edits from webview never echo back to the editor
+- Only truly external changes (git, other editors) update the webview
+- Debounced at 300ms to avoid thrashing
+
 ## Known Limitations
 
 - Some exotic markdown (raw HTML blocks, footnotes) may not round-trip perfectly

@@ -28,6 +28,14 @@ html, body, #root {
   border-bottom: 1px solid #775500;
 }
 
+/* Status bar */
+.status-bar {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground, #888);
+  padding: 4px 2rem;
+  border-bottom: 1px solid var(--vscode-widget-border, #333);
+}
+
 /* Toggle source link */
 .toggle-source {
   display: block;
@@ -42,6 +50,43 @@ html, body, #root {
 
 .toggle-source:hover {
   color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+/* Strip all shiki/prosemirror-highlight styling from code blocks */
+[data-content-type="codeBlock"] pre {
+  background: transparent !important;
+}
+
+[data-content-type="codeBlock"] span {
+  color: inherit !important;
+  background-color: transparent !important;
+  font-style: inherit !important;
+  font-weight: inherit !important;
+  text-decoration: inherit !important;
+}
+
+[data-content-type="codeBlock"] * {
+  --shiki-dark: inherit !important;
+  --shiki-light: inherit !important;
+}
+
+/* Headings: bold + breathing room */
+[data-content-type="heading"] {
+  margin-top: 1.2em;
+}
+
+[data-content-type="heading"] h1,
+[data-content-type="heading"] h2,
+[data-content-type="heading"] h3,
+[data-content-type="heading"] h4,
+[data-content-type="heading"] h5,
+[data-content-type="heading"] h6 {
+  font-weight: 700 !important;
+}
+
+/* Links: pointer cursor on hover */
+.bn-editor a {
+  cursor: pointer;
 }
 
 /* Editor container */

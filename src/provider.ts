@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as path from "path";
 
 export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   private static readonly viewType = "betterMarkdown.editor";
@@ -22,25 +23,32 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
     _token: vscode.CancellationToken
   ): Promise<void> {
     const webview = webviewPanel.webview;
+
+    // Allow loading resources from the document's folder (for images)
+    const docFolder = vscode.Uri.joinPath(document.uri, "..");
     webview.options = {
       enableScripts: true,
       localResourceRoots: [
         vscode.Uri.joinPath(this.context.extensionUri, "dist"),
+        docFolder,
+        ...(vscode.workspace.workspaceFolders?.map((f) => f.uri) || []),
       ],
     };
 
-    // Counter-based echo suppression: increment when we apply an edit
-    // from the webview, decrement when we see the resulting document change.
-    // Only forward document changes to the webview when counter is 0
-    // (meaning the change is truly external — git, another editor, etc.)
+    // Base URI for resolving relative image paths in webview
+    const baseUri = webview.asWebviewUri(docFolder).toString();
+    // Raw filesystem path of the document's folder (for restoring relative paths on save)
+    const docFolderPath = docFolder.fsPath;
+
     let pendingWebviewEdits = 0;
 
-    // Set up message handler BEFORE setting html (so we never miss "ready")
     const msgDisposable = webview.onDidReceiveMessage(async (msg) => {
       if (msg.type === "ready") {
         webview.postMessage({
           type: "init",
           content: document.getText(),
+          baseUri,
+          docFolderPath,
         });
       } else if (msg.type === "toggleEditor") {
         vscode.commands.executeCommand(
@@ -48,6 +56,21 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           document.uri,
           "default"
         );
+      } else if (msg.type === "openLink") {
+        const href = msg.href as string;
+        if (href.startsWith("http://") || href.startsWith("https://")) {
+          vscode.env.openExternal(vscode.Uri.parse(href));
+        } else {
+          // Relative link — resolve against the document's folder
+          const docDir = path.dirname(document.uri.fsPath);
+          const targetPath = path.resolve(docDir, href);
+          const targetUri = vscode.Uri.file(targetPath);
+          try {
+            await vscode.commands.executeCommand("vscode.open", targetUri);
+          } catch {
+            // If file doesn't exist, ignore
+          }
+        }
       } else if (msg.type === "edit") {
         const newContent = msg.content as string;
         if (newContent === document.getText()) return;
@@ -64,19 +87,16 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
 
     webview.html = this.getHtmlForWebview(webview);
 
-    // Sync: document -> webview (only for EXTERNAL changes)
     const docChangeDisposable = vscode.workspace.onDidChangeTextDocument(
       (e) => {
         if (e.document.uri.toString() !== document.uri.toString()) return;
         if (e.contentChanges.length === 0) return;
 
-        // If this change originated from our webview, suppress the echo
         if (pendingWebviewEdits > 0) {
           pendingWebviewEdits--;
           return;
         }
 
-        // Truly external change (git checkout, another editor, etc.)
         webview.postMessage({
           type: "update",
           content: document.getText(),
@@ -107,7 +127,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource} data:; img-src ${webview.cspSource} data: blob:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'wasm-unsafe-eval'; font-src ${webview.cspSource} data:; img-src ${webview.cspSource} data: blob: https:;">
   <link href="${webviewStyleUri}" rel="stylesheet">
   <link href="${styleUri}" rel="stylesheet">
   <title>Better Markdown</title>
