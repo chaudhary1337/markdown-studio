@@ -52,34 +52,58 @@ export function normalizeMarkdown(md: string): string {
 }
 
 /**
- * Fix task list formatting:
- * - Unescape brackets: \[ ] → [ ], \[x] → [x]
- * - Ensure proper "- [ ] " / "- [x] " format
- * - Flatten nested task lists to flat sequential items
+ * Fix task list formatting. BlockNote produces patterns like:
+ *   - \[ ]            or    - [ ]
+ *
+ *       text                    text
+ *
+ * This merges them into: - [ ] text
  */
 function fixTaskLists(md: string): string {
   // Fix escaped brackets in task lists
-  md = md.replace(/^(\s*-\s)\\(\[[\sx]\])(\s*)/gm, "$1$2 ");
   md = md.replace(/^(\s*-\s)\\\[(\s)\\\]/gm, "$1[$2]");
   md = md.replace(/^(\s*-\s)\\\[([xX])\\\]/gm, "$1[$2]");
+  md = md.replace(/^(\s*-\s)\\(\[[\sxX]\])/gm, "$1$2");
 
-  // Flatten: if task list items are indented under a blank bullet, flatten them
+  // Merge checkbox line + indented content on next line(s)
+  // Pattern: "- [ ]" or "- [x]" alone on a line, followed by blank line + indented text
   const lines = md.split("\n");
   const result: string[] = [];
-  for (let i = 0; i < lines.length; i++) {
+  let i = 0;
+
+  while (i < lines.length) {
     const line = lines[i];
-    // Detect indented task items (e.g., "  - [ ] text") that follow a bare "- " line
-    const indentedTask = line.match(/^\s{2,}(-\s\[[\sx]\]\s.*)$/);
-    if (indentedTask && result.length > 0) {
-      const prev = result[result.length - 1];
-      // If previous line is a bare empty list item, replace it and flatten
-      if (/^-\s*$/.test(prev.trim())) {
-        result.pop();
-        result.push(indentedTask[1]);
+    // Match a bare checkbox line (with no text after the checkbox)
+    const checkboxMatch = line.match(/^(\s*-\s\[[\sxX]\])\s*$/);
+    if (checkboxMatch) {
+      const prefix = checkboxMatch[1];
+      // Look ahead: skip blank lines, find indented content
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim() === "") j++;
+
+      if (j < lines.length && /^\s{2,}/.test(lines[j])) {
+        // Merge: checkbox + indented content
+        const content = lines[j].trim();
+        result.push(`${prefix} ${content}`);
+        i = j + 1;
         continue;
       }
     }
+
+    // Also handle: indented task items under an empty "- " parent
+    const indentedTask = line.match(/^\s{2,}(-\s\[[\sxX]\]\s*.*)$/);
+    if (indentedTask && result.length > 0) {
+      const prev = result[result.length - 1];
+      if (/^-\s*$/.test(prev.trim())) {
+        result.pop();
+        result.push(indentedTask[1]);
+        i++;
+        continue;
+      }
+    }
+
     result.push(line);
+    i++;
   }
   return result.join("\n");
 }

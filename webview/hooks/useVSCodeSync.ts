@@ -32,9 +32,22 @@ export async function markdownToBlocks(
   // Downgrade h4-h6 to h3 (BlockNote only supports h1-h3)
   html = html.replace(/<(\/?)h[456](\s|>)/g, "<$1h3$2");
 
-  // Fix task list checkboxes: remove 'disabled' attr
-  html = html.replace(/<input type="checkbox" disabled>/g, '<input type="checkbox">');
-  html = html.replace(/<input type="checkbox" checked disabled>/g, '<input type="checkbox" checked>');
+  // Convert task list HTML to BlockNote's native checkListItem format.
+  // BlockNote has two parseHTML rules (one for <input>, one for <li>)
+  // that both fire, creating duplicate blocks. Using native format avoids this.
+  // First convert individual items, then strip the wrapping <ul>.
+  html = html.replace(
+    /<ul[^>]*class="contains-task-list"[^>]*>([\s\S]*?)<\/ul>/g,
+    (_match, inner) => {
+      return inner.replace(
+        /<li[^>]*>\s*(?:<p>)?\s*<input type="checkbox"([^>]*?)>\s*([\s\S]*?)\s*(?:<\/p>)?\s*<\/li>/g,
+        (_m: string, attrs: string, content: string) => {
+          const checked = attrs.includes("checked");
+          return `<div data-content-type="checkListItem" data-checked="${checked}"><p>${content.trim()}</p></div>`;
+        }
+      );
+    }
+  );
 
   // Strip <p> wrappers inside <li> — loose lists (items separated by blank lines)
   // produce <li>\n<p>text</p>\n</li> which BlockNote misinterprets as nested blocks
@@ -97,13 +110,17 @@ export async function blocksToMarkdown(
     // so rehype-remark produces clean ![caption](url) without duplication
     html = html.replace(/<figcaption>[\s\S]*?<\/figcaption>/g, "");
     html = html.replace(/<\/?figure>/g, "");
+
     const result = await unified()
       .use(rehypeParse, { fragment: true })
       .use(rehypeRemark)
       .use(remarkGfm)
       .use(remarkStringify, MARKDOWN_CONFIG)
       .process(html);
-    md = normalizeMarkdown(String(result));
+    const raw = String(result);
+    console.log("RAW MD OUTPUT:", JSON.stringify(raw));
+    md = normalizeMarkdown(raw);
+    console.log("AFTER NORMALIZE:", JSON.stringify(md));
   } catch (err) {
     console.error("Custom markdown pipeline failed, using fallback:", err);
     md = await editor.blocksToMarkdownLossy(editor.document);
