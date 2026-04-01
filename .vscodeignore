@@ -1,0 +1,13 @@
+.vscode/**
+.claude/**
+src/**
+webview/**
+node_modules/**
+scripts/**
+esbuild.js
+tsconfig.json
+SPEC.md
+.gitignore
+**/*.map
+**/*.ts
+**/*.tsx

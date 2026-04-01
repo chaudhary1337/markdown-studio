@@ -1,0 +1,53 @@
+{
+  "name": "better-markdown",
+  "displayName": "Better Markdown",
+  "description": "Notion-like WYSIWYG markdown editor for VSCode",
+  "version": "0.1.0",
+  "publisher": "better-markdown",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "betterMarkdown.editor",
+        "displayName": "Better Markdown",
+        "selector": [
+          {
+            "filenamePattern": "*.md"
+          }
+        ],
+        "priority": "default"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "vsce package",
+    "deploy": "bash scripts/deploy.sh",
+    "vscode:prepublish": "node esbuild.js --production"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "@blocknote/core": "^0.22.0",
+    "@blocknote/react": "^0.22.0",
+    "@blocknote/mantine": "^0.22.0",
+    "@mantine/core": "^7.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
