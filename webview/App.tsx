@@ -4,7 +4,9 @@ import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { StickyHeadings } from "./components/StickyHeadings";
+import { TableOfContents } from "./components/TableOfContents";
 import { markdownToBlocks, blocksToMarkdown } from "./hooks/useVSCodeSync";
+import { extractMeta, buildMeta, appendMeta, restoreHeadings, type Metadata } from "./metadata";
 
 const vscodeApi = acquireVsCodeApi();
 
@@ -13,6 +15,7 @@ export function App() {
   const initialized = useRef(false);
   const baseUri = useRef("");
   const docFolderPath = useRef("");
+  const metaRef = useRef<Metadata>({ h: [] });
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [status, setStatus] = React.useState<string | null>("Loading document...");
 
@@ -24,11 +27,18 @@ export function App() {
         initialized.current = true;
         if (msg.baseUri) baseUri.current = msg.baseUri;
         if (msg.docFolderPath) docFolderPath.current = msg.docFolderPath;
-        const md = (msg.content as string) || "";
-        if (md.trim()) {
+        const rawMd = (msg.content as string) || "";
+        if (rawMd.trim()) {
           setStatus("Parsing markdown...");
           try {
-            const blocks = await markdownToBlocks(editor, md, baseUri.current);
+            // Extract existing meta block, then scan raw markdown for h4-h6
+            const { content, meta: existingMeta } = extractMeta(rawMd);
+            const scannedMeta = buildMeta(content);
+            // Merge: scanned headings take priority (they reflect current file state)
+            // Existing meta fills in anything not found in the scan
+            metaRef.current = mergeMetadata(scannedMeta, existingMeta);
+
+            const blocks = await markdownToBlocks(editor, content, baseUri.current);
             if (blocks.length > 0) {
               editor.replaceBlocks(editor.document, blocks);
             }
@@ -39,7 +49,11 @@ export function App() {
         setStatus(null);
       } else if (msg.type === "update" && initialized.current) {
         try {
-          const blocks = await markdownToBlocks(editor, msg.content, baseUri.current);
+          const { content, meta: existingMeta } = extractMeta(msg.content);
+          const scannedMeta = buildMeta(content);
+          metaRef.current = mergeMetadata(scannedMeta, existingMeta);
+
+          const blocks = await markdownToBlocks(editor, content, baseUri.current);
           editor.replaceBlocks(editor.document, blocks);
         } catch {
           // Ignore parse failures on external updates
@@ -59,26 +73,19 @@ export function App() {
       const href = anchor.getAttribute("href");
       if (!href) return;
 
-      // Always prevent default navigation in webview
       e.preventDefault();
       e.stopPropagation();
 
-      // Cmd+click, Ctrl+click, middle mouse, or any external link click
       if (e.metaKey || e.ctrlKey || e.button === 1) {
         vscodeApi.postMessage({ type: "openLink", href });
       }
     };
 
-    // Intercept BlockNote's "open in new tab" toolbar button
-    // BlockNote resolves URLs against window.location.href (vscode-webview://...),
-    // producing invalid paths. We strip the webview prefix to recover the original href.
     const originalOpen = window.open;
     window.open = (url?: string | URL, ...args: any[]) => {
       if (url) {
         let href = String(url);
-        // Strip vscode-webview://id/ prefix if present
         href = href.replace(/^vscode-webview:\/\/[^/]+\//, "");
-        // If it collapsed to just "#", ignore
         if (href && href !== "#") {
           vscodeApi.postMessage({ type: "openLink", href });
         }
@@ -101,7 +108,10 @@ export function App() {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(async () => {
       try {
-        const markdown = await blocksToMarkdown(editor, baseUri.current, docFolderPath.current);
+        let markdown = await blocksToMarkdown(editor, baseUri.current, docFolderPath.current);
+        // Restore h4-h6 from metadata, then append meta block
+        markdown = restoreHeadings(markdown, metaRef.current);
+        markdown = appendMeta(markdown, metaRef.current);
         vscodeApi.postMessage({ type: "edit", content: markdown });
         setStatus(null);
       } catch (err: any) {
@@ -117,20 +127,39 @@ export function App() {
   };
 
   return (
-    <div className="editor-container">
-      {status && <div className="status-bar">{status}</div>}
-      <StickyHeadings editor={editor} />
-      <span
-        className="toggle-source"
-        onClick={switchToSource}
-        role="button"
-        tabIndex={0}
-      >
-        Open in Default Editor
-      </span>
-      <BlockNoteView editor={editor} onChange={handleChange} theme="dark" />
+    <div className="editor-layout">
+      <div className="editor-container">
+        {status && <div className="status-bar">{status}</div>}
+        <StickyHeadings editor={editor} />
+        <span
+          className="toggle-source"
+          onClick={switchToSource}
+          role="button"
+          tabIndex={0}
+        >
+          Open in Default Editor
+        </span>
+        <BlockNoteView editor={editor} onChange={handleChange} theme="dark" />
+      </div>
+      <TableOfContents editor={editor} />
     </div>
   );
+}
+
+/**
+ * Merge scanned metadata (from current file) with existing stored metadata.
+ * Scanned takes priority; existing fills in headings not found in scan
+ * (e.g., if a heading was temporarily removed but might come back).
+ */
+function mergeMetadata(scanned: Metadata, existing: Metadata): Metadata {
+  const seen = new Set(scanned.h.map((h) => h.t));
+  const merged = [...scanned.h];
+  for (const h of existing.h) {
+    if (!seen.has(h.t)) {
+      merged.push(h);
+    }
+  }
+  return { h: merged };
 }
 
 declare function acquireVsCodeApi(): {

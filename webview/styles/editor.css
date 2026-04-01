@@ -89,12 +89,102 @@ html, body, #root {
   cursor: pointer;
 }
 
+/* Layout: editor + TOC sidebar */
+.editor-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
 /* Editor container */
 .editor-container {
+  flex: 1;
   height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
+  min-width: 0;
 }
+
+/* TOC drag handle */
+.toc-handle {
+  width: 6px;
+  height: 100vh;
+  cursor: col-resize;
+  background: transparent;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.toc-handle:hover {
+  background: var(--vscode-widget-border, #333);
+}
+
+.toc-collapse-btn {
+  position: absolute;
+  top: 12px;
+  font-size: 8px;
+  color: var(--vscode-descriptionForeground, #888);
+  cursor: pointer;
+  padding: 4px 2px;
+  border-radius: 3px;
+  user-select: none;
+  z-index: 10;
+  transition: color 0.15s, background 0.15s;
+}
+
+.toc-collapse-btn:hover {
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
+}
+
+/* Table of Contents sidebar */
+.toc-sidebar {
+  height: 100vh;
+  overflow-y: auto;
+  padding: 12px 8px;
+  border-left: 1px solid var(--vscode-widget-border, #333);
+  background: var(--vscode-editor-background, #1e1e1e);
+  flex-shrink: 0;
+}
+
+.toc-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--vscode-descriptionForeground, #888);
+  padding: 0 4px 8px;
+}
+
+.toc-entry {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground, #888);
+  padding: 2px 4px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.toc-entry:hover {
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.07));
+}
+
+.toc-active {
+  color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+.toc-entry-h1 { padding-left: 4px; font-weight: 600; }
+.toc-entry-h2 { padding-left: 14px; }
+.toc-entry-h3 { padding-left: 24px; }
 
 /* BlockNote overrides to match VSCode theme */
 .bn-editor {
