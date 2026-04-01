@@ -19,18 +19,25 @@ html, body, #root {
   font-size: 14px;
 }
 
+.debug-banner {
+  background: #553300;
+  color: #ffcc00;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: monospace;
+  border-bottom: 1px solid #775500;
+}
+
 /* Editor container */
 .editor-container {
-  display: flex;
-  flex-direction: column;
   height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* BlockNote overrides to match VSCode theme */
 .bn-editor {
-  flex: 1;
-  overflow-y: auto;
+  min-height: 100%;
   padding: 1rem 2rem;
 }
 
@@ -127,19 +134,19 @@ html, body, #root {
 }
 
 /* Scrollbar styling */
-.bn-editor::-webkit-scrollbar {
+.editor-container::-webkit-scrollbar {
   width: 10px;
 }
 
-.bn-editor::-webkit-scrollbar-track {
+.editor-container::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.bn-editor::-webkit-scrollbar-thumb {
+.editor-container::-webkit-scrollbar-thumb {
   background: var(--vscode-scrollbarSlider-background, rgba(121, 121, 121, 0.4));
   border-radius: 5px;
 }
 
-.bn-editor::-webkit-scrollbar-thumb:hover {
+.editor-container::-webkit-scrollbar-thumb:hover {
   background: var(--vscode-scrollbarSlider-hoverBackground, rgba(100, 100, 100, 0.7));
 }

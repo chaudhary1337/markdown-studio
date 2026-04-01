@@ -4,6 +4,7 @@ import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { StickyHeadings } from "./components/StickyHeadings";
+import { markdownToBlocks, blocksToMarkdown } from "./hooks/useVSCodeSync";
 
 const vscodeApi = acquireVsCodeApi();
 
@@ -18,24 +19,23 @@ export function App() {
       const msg = e.data;
       if (msg.type === "init" && !initialized.current) {
         initialized.current = true;
-        const md = msg.content as string;
+        const md = (msg.content as string) || "";
         if (md.trim()) {
           try {
-            const blocks = await editor.tryParseMarkdownToBlocks(md);
+            const blocks = await markdownToBlocks(editor, md);
             if (blocks.length > 0) {
               editor.replaceBlocks(editor.document, blocks);
             }
           } catch {
-            // If parsing fails, leave editor empty
+            // If all parsing fails, leave editor empty
           }
         }
       } else if (msg.type === "update" && initialized.current) {
-        // External change (git, another editor)
         try {
-          const blocks = await editor.tryParseMarkdownToBlocks(msg.content);
+          const blocks = await markdownToBlocks(editor, msg.content);
           editor.replaceBlocks(editor.document, blocks);
         } catch {
-          // Ignore parse failures
+          // Ignore parse failures on external updates
         }
       }
     };
@@ -44,12 +44,12 @@ export function App() {
     return () => window.removeEventListener("message", handler);
   }, [editor]);
 
-  // Sync: editor changes → extension host
+  // Sync: editor changes -> extension host
   const handleChange = useCallback(() => {
     if (!initialized.current) return;
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(async () => {
-      const markdown = await editor.blocksToMarkdownLossy(editor.document);
+      const markdown = await blocksToMarkdown(editor);
       vscodeApi.postMessage({ type: "edit", content: markdown });
     }, 300);
   }, [editor]);
