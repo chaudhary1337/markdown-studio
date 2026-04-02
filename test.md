@@ -32,9 +32,9 @@ Mixed: **bold and _italic_ together** and more text.
 ### Nested unordered
 
 - Parent item
-  - Child item
-  - Another child
-    - Grandchild
+- Child item
+- Another child
+- Grandchild
 - Back to parent
 
 ### Ordered
@@ -46,23 +46,25 @@ Mixed: **bold and _italic_ together** and more text.
 ### Nested ordered
 
 1. First
-   1. Sub-first
-   2. Sub-second
-2. Second
+2. Sub-first
+3. Sub-second
+4. Second
 
 ### Mixed
 
 - Unordered
-  1. Ordered child
-  2. Another ordered
+
+1. Ordered child
+2. Another ordered
+
 - Back to unordered
 
 ## Task lists
 
-- [ ] Unchecked task
-- [x] Checked task
-- [ ] Another unchecked
-- [x] Another checked
+- Unchecked task
+- Checked task
+- Another unchecked
+- Another checked
 
 ## Links
 
@@ -71,13 +73,11 @@ Mixed: **bold and _italic_ together** and more text.
 A paragraph with [inline link](https://example.com) in it.
 
 - List with [link](https://example.com)
-  - Nested [link](https://example.com/nested)
+- Nested [link](https://example.com/nested)
 
 ## Images
 
-![Alt text](image.png)
-
-![](no-alt.png)
+![Alt text](image.png)![](no-alt.png)
 
 ## Code blocks
 
@@ -92,7 +92,7 @@ def hello():
     print("world")
 ```
 
-```
+```text
 plain code block
 no language
 ```
@@ -110,13 +110,9 @@ echo "hello world"
 
 ## Blockquotes
 
-This is a blockquote.
-
-With multiple paragraphs.
-
-Nested:
-
-Inner quote
+> This is a blockquote. With multiple paragraphs.
+>
+> > Nested: Inner quote
 
 ## Horizontal rules
 
@@ -124,9 +120,9 @@ Inner quote
 
 Tildes: ~ single tilde and ~~ double tildes ~~.
 
-Asterisks in text: 2 * 3 = 6.
+Asterisks in text: 2 \* 3 = 6.
 
-Escaped characters: * _ ` [ ]
+Escaped characters: \* \_ \` \[ ]
 
 ## Bold in lists (regression test)
 
