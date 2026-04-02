@@ -1,18 +1,26 @@
 import React, { useEffect, useRef, useCallback } from "react";
-import { BlockNoteEditor } from "@blocknote/core";
-import { useCreateBlockNote } from "@blocknote/react";
-import { BlockNoteView } from "@blocknote/mantine";
-import "@blocknote/mantine/style.css";
+import { useEditor, EditorContent } from "@tiptap/react";
+import { StarterKit } from "@tiptap/starter-kit";
+import { Link } from "@tiptap/extension-link";
+import { Image } from "@tiptap/extension-image";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TaskList } from "@tiptap/extension-task-list";
+import { TaskItem } from "@tiptap/extension-task-item";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
 import { StickyHeadings } from "./components/StickyHeadings";
 import { TableOfContents } from "./components/TableOfContents";
 import { SearchBar } from "./components/SearchBar";
-import { markdownToBlocks, blocksToMarkdown } from "./hooks/useVSCodeSync";
+import { markdownToHtml, htmlToMarkdown } from "./hooks/useVSCodeSync";
 import { extractMeta, buildMeta, appendMeta, restoreHeadings, mergeMetadata, type Metadata } from "./metadata";
 
 const vscodeApi = acquireVsCodeApi();
+const lowlight = createLowlight(common);
 
 export function App() {
-  const editor = useCreateBlockNote();
   const initialized = useRef(false);
   const baseUri = useRef("");
   const docFolderPath = useRef("");
@@ -21,8 +29,31 @@ export function App() {
   const [status, setStatus] = React.useState<string | null>("Loading document...");
   const [searchVisible, setSearchVisible] = React.useState(false);
 
-  // On mount: request content from host, load it into editor
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        codeBlock: false, // replaced by CodeBlockLowlight
+        heading: { levels: [1, 2, 3, 4, 5, 6] },
+      }),
+      Link.configure({ openOnClick: false }),
+      Image,
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableCell,
+      TableHeader,
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      CodeBlockLowlight.configure({ lowlight }),
+    ],
+    editorProps: {
+      attributes: { class: "tiptap-editor" },
+    },
+  });
+
+  // On mount: request content from host, load into editor
   useEffect(() => {
+    if (!editor) return;
+
     const handler = async (e: MessageEvent) => {
       const msg = e.data;
       if (msg.type === "init" && !initialized.current) {
@@ -33,35 +64,28 @@ export function App() {
         if (rawMd.trim()) {
           setStatus("Parsing markdown...");
           try {
-            // Extract existing meta block, then scan raw markdown for h4-h6
             const { content, meta: existingMeta } = extractMeta(rawMd);
             const scannedMeta = buildMeta(content);
-            // Merge: scanned headings take priority (they reflect current file state)
-            // Existing meta fills in anything not found in the scan
             metaRef.current = mergeMetadata(scannedMeta, existingMeta);
-
-            const blocks = await markdownToBlocks(editor, content, baseUri.current);
-            if (blocks.length > 0) {
-              editor.replaceBlocks(editor.document, blocks);
-            }
+            const html = await markdownToHtml(content, baseUri.current);
+            editor.commands.setContent(html);
           } catch (err: any) {
             setStatus(`Parse error: ${err?.message || err}`);
           }
         }
         setStatus(null);
-      } else if (msg.type === "openSearch") {
-        setSearchVisible(true);
       } else if (msg.type === "update" && initialized.current) {
         try {
           const { content, meta: existingMeta } = extractMeta(msg.content);
           const scannedMeta = buildMeta(content);
           metaRef.current = mergeMetadata(scannedMeta, existingMeta);
-
-          const blocks = await markdownToBlocks(editor, content, baseUri.current);
-          editor.replaceBlocks(editor.document, blocks);
+          const html = await markdownToHtml(content, baseUri.current);
+          editor.commands.setContent(html);
         } catch {
           // Ignore parse failures on external updates
         }
+      } else if (msg.type === "openSearch") {
+        setSearchVisible(true);
       }
     };
     window.addEventListener("message", handler);
@@ -81,85 +105,71 @@ export function App() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // Link handling: Cmd+click, Ctrl+click, middle-click, or toolbar "open" button
+  // Link handling: Cmd+click / Ctrl+click
   useEffect(() => {
-    const clickHandler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent) => {
       const anchor = (e.target as HTMLElement).closest("a");
       if (!anchor) return;
       const href = anchor.getAttribute("href");
       if (!href) return;
-
       e.preventDefault();
       e.stopPropagation();
-
       if (e.metaKey || e.ctrlKey || e.button === 1) {
         vscodeApi.postMessage({ type: "openLink", href });
       }
     };
-
-    const originalOpen = window.open;
-    window.open = (url?: string | URL, ...args: any[]) => {
-      if (url) {
-        let href = String(url);
-        href = href.replace(/^vscode-webview:\/\/[^/]+\//, "");
-        if (href && href !== "#") {
-          vscodeApi.postMessage({ type: "openLink", href });
-        }
-      }
-      return null;
-    };
-
-    document.addEventListener("click", clickHandler, true);
-    document.addEventListener("auxclick", clickHandler, true);
+    document.addEventListener("click", handler, true);
+    document.addEventListener("auxclick", handler, true);
     return () => {
-      document.removeEventListener("click", clickHandler, true);
-      document.removeEventListener("auxclick", clickHandler, true);
-      window.open = originalOpen;
+      document.removeEventListener("click", handler, true);
+      document.removeEventListener("auxclick", handler, true);
     };
   }, []);
 
-  // Sync: editor changes -> extension host
-  const handleChange = useCallback(() => {
-    if (!initialized.current) return;
+  // Sync: editor changes → extension host
+  const handleUpdate = useCallback(() => {
+    if (!initialized.current || !editor) return;
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(async () => {
       try {
-        let markdown = await blocksToMarkdown(editor, baseUri.current, docFolderPath.current);
-        // Restore h4-h6 from metadata, then append meta block
+        const html = editor.getHTML();
+        let markdown = await htmlToMarkdown(html, baseUri.current, docFolderPath.current);
         markdown = restoreHeadings(markdown, metaRef.current);
         markdown = appendMeta(markdown, metaRef.current);
         vscodeApi.postMessage({ type: "edit", content: markdown });
         setStatus(null);
       } catch (err: any) {
-        const msg = err?.message || String(err);
-        setStatus(`Save error: ${msg}`);
-        console.error("[better-markdown] blocksToMarkdown failed:", err);
+        setStatus(`Save error: ${err?.message || String(err)}`);
+        console.error("[better-markdown] htmlToMarkdown failed:", err);
       }
     }, 300);
   }, [editor]);
 
+  useEffect(() => {
+    if (!editor) return;
+    editor.on("update", handleUpdate);
+    return () => { editor.off("update", handleUpdate); };
+  }, [editor, handleUpdate]);
+
   const switchToSource = () => {
     vscodeApi.postMessage({ type: "toggleEditor" });
   };
+
+  if (!editor) return null;
 
   return (
     <div className="editor-layout">
       <div className="editor-container">
         <SearchBar visible={searchVisible} onClose={() => setSearchVisible(false)} />
         {status && <div className="status-bar">{status}</div>}
-        <StickyHeadings editor={editor} />
-        <span
-          className="toggle-source"
-          onClick={switchToSource}
-          role="button"
-          tabIndex={0}
-        >
+        <StickyHeadings />
+        <span className="toggle-source" onClick={switchToSource} role="button" tabIndex={0}>
           Open in Default Editor
         </span>
-        <BlockNoteView editor={editor} onChange={handleChange} theme="dark" />
+        <EditorContent editor={editor} />
       </div>
       <div className="toc-wrapper">
-        <TableOfContents editor={editor} />
+        <TableOfContents />
       </div>
     </div>
   );

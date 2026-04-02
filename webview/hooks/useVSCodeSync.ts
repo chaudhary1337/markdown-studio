@@ -1,4 +1,3 @@
-import { BlockNoteEditor, Block } from "@blocknote/core";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
@@ -11,15 +10,12 @@ import rehypeRemark from "rehype-remark";
 import { MARKDOWN_CONFIG, normalizeMarkdown } from "../markdown.config";
 
 /**
- * Convert markdown string to BlockNote blocks.
- * We do our own md -> HTML pipeline to avoid BlockNote's buggy
- * internal parser (crashes on code blocks without a language).
+ * Convert markdown to HTML for Tiptap editor.
  */
-export async function markdownToBlocks(
-  editor: BlockNoteEditor,
+export async function markdownToHtml(
   md: string,
   baseUri?: string
-): Promise<Block<any, any, any>[]> {
+): Promise<string> {
   const result = await unified()
     .use(remarkParse)
     .use(remarkGfm)
@@ -29,130 +25,58 @@ export async function markdownToBlocks(
 
   let html = String(result);
 
-  // Downgrade h4-h6 to h3 (BlockNote only supports h1-h3)
-  html = html.replace(/<(\/?)h[456](\s|>)/g, "<$1h3$2");
-
-  // Convert task list HTML to BlockNote's native checkListItem format.
-  // BlockNote has two parseHTML rules (one for <input>, one for <li>)
-  // that both fire, creating duplicate blocks. Using native format avoids this.
-  // First convert individual items, then strip the wrapping <ul>.
-  html = html.replace(
-    /<ul[^>]*class="contains-task-list"[^>]*>([\s\S]*?)<\/ul>/g,
-    (_match, inner) => {
-      return inner.replace(
-        /<li[^>]*>\s*(?:<p>)?\s*<input type="checkbox"([^>]*?)>\s*([\s\S]*?)\s*(?:<\/p>)?\s*<\/li>/g,
-        (_m: string, attrs: string, content: string) => {
-          const checked = attrs.includes("checked");
-          return `<div data-content-type="checkListItem" data-checked="${checked}">${content.trim()}</div>`;
-        }
-      );
-    }
-  );
-
-  // Strip <p> wrappers inside <li> — loose lists produce <li><p>text</p></li>
-  // which BlockNote misinterprets as nested blocks. Use a targeted regex that
-  // only strips the first <p>...</p> after <li>, preserving nested <ul> elements.
-  html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
-
-  // Sanitize: ensure all <code> inside <pre> have a language class
-  // BlockNote crashes on <pre><code> without class="language-*"
+  // Ensure all <code> inside <pre> have a language class
   html = html.replace(
     /<pre><code(?![^>]*class="language-)/g,
     '<pre><code class="language-text"'
   );
 
-  // Trim trailing newlines inside <code> blocks to prevent extra empty lines
+  // Trim trailing newlines inside <code> blocks
   html = html.replace(
     /(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
-    (_match, open, content, close) => open + content.replace(/\n$/, "") + close
-  );
-
-  // Convert <img alt="caption"> to <figure><img><figcaption> for BlockNote
-  // Remove alt attr to prevent duplication (BlockNote stores caption separately)
-  html = html.replace(
-    /<img\s([^>]*?)alt="([^"]+)"([^>]*?)>/g,
-    (_match, before, alt, after) => {
-      // Skip if already inside a <figure>
-      return `<figure><img ${before}${after}><figcaption>${alt}</figcaption></figure>`;
-    }
+    (_m, open, content, close) => open + content.replace(/\n$/, "") + close
   );
 
   // Resolve relative image paths to webview URIs
   if (baseUri) {
     html = html.replace(
       /<img\s([^>]*?)src="([^"]+)"/g,
-      (_match, before, src) => {
-        if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:")) {
-          return `<img ${before}src="${src}"`;
-        }
-        const resolved = baseUri.replace(/\/$/, "") + "/" + src;
-        return `<img ${before}src="${resolved}"`;
+      (_m, before, src) => {
+        if (/^https?:\/\/|^data:/.test(src)) return `<img ${before}src="${src}"`;
+        return `<img ${before}src="${baseUri.replace(/\/$/, "")}/${src}"`;
       }
     );
   }
 
-  return editor.tryParseHTMLToBlocks(html);
+  return html;
 }
 
 /**
- * Convert BlockNote blocks back to markdown.
- * Strips webview URI prefixes to restore original relative image paths.
+ * Convert HTML from Tiptap editor back to markdown.
  */
-export async function blocksToMarkdown(
-  editor: BlockNoteEditor,
+export async function htmlToMarkdown(
+  html: string,
   baseUri?: string,
   docFolderPath?: string
 ): Promise<string> {
-  // Use BlockNote's own markdown converter as primary — it preserves list
-  // nesting from the block structure. The custom HTML pipeline (below) is
-  // kept as fallback since blocksToMarkdownLossy can fail on some content.
-  let md: string;
+  const result = await unified()
+    .use(rehypeParse, { fragment: true })
+    .use(rehypeRemark)
+    .use(remarkGfm)
+    .use(remarkStringify, MARKDOWN_CONFIG)
+    .process(html);
 
-  try {
-    // Set a language on code blocks that have none — blocksToMarkdownLossy
-    // outputs language-less code blocks as indented (4 spaces) which is
-    // ambiguous with list continuation. Setting "text" forces fenced output.
-    for (const block of iterBlocks(editor.document)) {
-      if (block.type === "codeBlock" && !block.props?.language) {
-        editor.updateBlock(block, { props: { language: "text" } } as any);
-      }
-    }
-    md = await editor.blocksToMarkdownLossy(editor.document);
-  } catch {
-    // Fallback: HTML → remark pipeline (may lose nesting but handles edge cases)
-    try {
-      let html = await editor.blocksToHTMLLossy(editor.document);
-      html = html.replace(/<figcaption>[\s\S]*?<\/figcaption>/g, "");
-      html = html.replace(/<\/?figure>/g, "");
-      html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
+  let md = normalizeMarkdown(String(result));
 
-      const result = await unified()
-        .use(rehypeParse, { fragment: true })
-        .use(rehypeRemark)
-        .use(remarkGfm)
-        .use(remarkStringify, MARKDOWN_CONFIG)
-        .process(html);
-      md = String(result);
-    } catch (err) {
-      console.error("[better-markdown] All pipelines failed:", err);
-      md = "";
-    }
-  }
-
-  md = normalizeMarkdown(md);
-
-  // Strip BlockNote's default alt text, keep real captions
+  // Strip BlockNote-style default alt text
   md = md.replace(/!\[BlockNote image\]/g, "![]");
 
-  // Restore relative paths by stripping all webview URI prefixes
+  // Restore relative paths
   md = restoreRelativePaths(md, baseUri, docFolderPath);
 
   return md;
 }
 
-/**
- * Strip all webview URI prefixes to restore original relative paths.
- */
 function restoreRelativePaths(
   md: string,
   baseUri?: string,
@@ -164,28 +88,22 @@ function restoreRelativePaths(
   }
 
   if (docFolderPath) {
-    const folderWithSlash = docFolderPath.replace(/\/$/, "") + "/";
-    const resourcePrefix =
-      "https://file+.vscode-resource.vscode-cdn.net" + folderWithSlash;
-    md = md.replace(new RegExp(escapeRegExp(resourcePrefix), "g"), "");
-    const encodedPrefix =
-      "https://file+.vscode-resource.vscode-cdn.net" +
-      encodeURI(folderWithSlash);
-    md = md.replace(new RegExp(escapeRegExp(encodedPrefix), "g"), "");
+    const folder = docFolderPath.replace(/\/$/, "") + "/";
+    const resPrefix = "https://file+.vscode-resource.vscode-cdn.net" + folder;
+    md = md.replace(new RegExp(escapeRegExp(resPrefix), "g"), "");
+    const encPrefix = "https://file+.vscode-resource.vscode-cdn.net" + encodeURI(folder);
+    md = md.replace(new RegExp(escapeRegExp(encPrefix), "g"), "");
   }
 
   md = md.replace(
     /https:\/\/file\+\.vscode-resource\.vscode-cdn\.net(\/[^\s)]+)/g,
-    (_match, absPath) => {
+    (_m, absPath) => {
       if (docFolderPath) {
-        const folderWithSlash = docFolderPath.replace(/\/$/, "") + "/";
+        const folder = docFolderPath.replace(/\/$/, "") + "/";
         const decoded = decodeURI(absPath);
-        if (decoded.startsWith(folderWithSlash)) {
-          return decoded.slice(folderWithSlash.length);
-        }
+        if (decoded.startsWith(folder)) return decoded.slice(folder.length);
       }
-      const parts = absPath.split("/");
-      return parts[parts.length - 1];
+      return absPath.split("/").pop() || absPath;
     }
   );
 
@@ -195,12 +113,3 @@ function restoreRelativePaths(
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-
-/** Recursively iterate all blocks including children. */
-function* iterBlocks(blocks: any[]): Generator<any> {
-  for (const block of blocks) {
-    yield block;
-    if (block.children?.length) yield* iterBlocks(block.children);
-  }
-}
-

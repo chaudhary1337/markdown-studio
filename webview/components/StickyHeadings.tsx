@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { BlockNoteEditor } from "@blocknote/core";
-import { getHeadingLevel, scrollToBlock } from "../utils";
+import { scrollToBlock } from "../utils";
 
 interface StickyHeading {
   id: string;
@@ -8,14 +7,25 @@ interface StickyHeading {
   level: number;
 }
 
-export function StickyHeadings({ editor }: { editor: BlockNoteEditor }) {
+function getHeadingLevel(el: Element): number {
+  // Tiptap renders headings directly as <h1>-<h6>
+  const tag = el.tagName;
+  if (/^H[1-6]$/.test(tag)) return parseInt(tag[1], 10);
+  const inner = el.querySelector("h1, h2, h3, h4, h5, h6");
+  return inner ? parseInt(inner.tagName[1], 10) : 1;
+}
+
+export function StickyHeadings() {
   const [stickyStack, setStickyStack] = useState<StickyHeading[]>([]);
 
-  const updateStickyHeadings = useCallback(() => {
+  const update = useCallback(() => {
     const container = document.querySelector(".editor-container");
     if (!container) return;
 
-    const headingEls = container.querySelectorAll('[data-content-type="heading"]');
+    // Tiptap renders headings as direct <h1>-<h6> elements inside .tiptap-editor
+    const headingEls = container.querySelectorAll(
+      ".tiptap-editor h1, .tiptap-editor h2, .tiptap-editor h3, .tiptap-editor h4, .tiptap-editor h5, .tiptap-editor h6"
+    );
     const containerRect = container.getBoundingClientRect();
     const stickyEl = container.querySelector(".sticky-headings");
     const stickyHeight = stickyEl ? stickyEl.getBoundingClientRect().height : 0;
@@ -27,8 +37,11 @@ export function StickyHeadings({ editor }: { editor: BlockNoteEditor }) {
       if (rect.top < threshold) {
         const text = el.textContent?.trim();
         if (text) {
-          const id = el.closest("[data-id]")?.getAttribute("data-id") || `heading-${index}`;
-          aboveViewport.push({ id, text, level: getHeadingLevel(el) });
+          aboveViewport.push({
+            id: el.id || `heading-${index}`,
+            text,
+            level: getHeadingLevel(el),
+          });
         }
       }
     });
@@ -44,13 +57,13 @@ export function StickyHeadings({ editor }: { editor: BlockNoteEditor }) {
   useEffect(() => {
     const container = document.querySelector(".editor-container");
     if (!container) return;
-    container.addEventListener("scroll", updateStickyHeadings, { passive: true });
-    const interval = setInterval(updateStickyHeadings, 1000);
+    container.addEventListener("scroll", update, { passive: true });
+    const interval = setInterval(update, 1000);
     return () => {
-      container.removeEventListener("scroll", updateStickyHeadings);
+      container.removeEventListener("scroll", update);
       clearInterval(interval);
     };
-  }, [updateStickyHeadings]);
+  }, [update]);
 
   if (stickyStack.length === 0) return null;
 
@@ -60,7 +73,10 @@ export function StickyHeadings({ editor }: { editor: BlockNoteEditor }) {
         <div
           key={h.id}
           className={`sticky-heading sticky-heading-h${h.level}`}
-          onClick={() => scrollToBlock(h.id)}
+          onClick={() => {
+            const el = document.getElementById(h.id) || document.querySelector(`[id="${h.id}"]`);
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
           role="button"
           tabIndex={0}
         >

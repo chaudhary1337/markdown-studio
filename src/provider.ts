@@ -118,9 +118,6 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
     const styleUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, "dist", "editor.css")
     );
-    const webviewStyleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, "dist", "webview.css")
-    );
     const nonce = getNonce();
 
     return `<!DOCTYPE html>
@@ -129,7 +126,6 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'wasm-unsafe-eval'; font-src ${webview.cspSource} data:; img-src ${webview.cspSource} data: blob: https:;">
-  <link href="${webviewStyleUri}" rel="stylesheet">
   <link href="${styleUri}" rel="stylesheet">
   <title>Better Markdown</title>
 </head>

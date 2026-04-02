@@ -60,7 +60,7 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
       return;
     }
 
-    const container = document.querySelector(".bn-editor");
+    const container = document.querySelector(".tiptap-editor");
     if (!container) return;
 
     const ranges: Range[] = [];

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { BlockNoteEditor } from "@blocknote/core";
 import { GripVertical, ChevronLeft, ChevronRight, Filter } from "lucide-react";
-import { getHeadingLevel, scrollToBlock } from "../utils";
+import { scrollToBlock } from "../utils";
 
 interface TocEntry {
   id: string;
@@ -30,13 +30,16 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
     const container = document.querySelector(".editor-container");
     if (!container) return;
 
-    const headingEls = container.querySelectorAll('[data-content-type="heading"]');
+    // Tiptap renders headings as direct <h1>-<h6> elements
+    const headingEls = container.querySelectorAll(
+      ".tiptap-editor h1, .tiptap-editor h2, .tiptap-editor h3, .tiptap-editor h4, .tiptap-editor h5, .tiptap-editor h6"
+    );
     const newEntries: TocEntry[] = [];
     headingEls.forEach((el, index) => {
       const text = el.textContent?.trim();
       if (text) {
-        const id = el.closest("[data-id]")?.getAttribute("data-id") || `toc-${index}`;
-        newEntries.push({ id, text, level: getHeadingLevel(el) });
+        const id = el.id || `toc-${index}`;
+        newEntries.push({ id, text, level: parseInt(el.tagName[1], 10) });
       }
     });
     setEntries(newEntries);
@@ -47,7 +50,7 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
     headingEls.forEach((el, index) => {
       const rect = el.getBoundingClientRect();
       const dist = Math.abs(rect.top - containerRect.top);
-      const id = el.closest("[data-id]")?.getAttribute("data-id") || `toc-${index}`;
+      const id = el.id || `toc-${index}`;
       if (rect.top <= containerRect.top + 100 && dist < closestDist) {
         closestDist = dist;
         closestId = id;

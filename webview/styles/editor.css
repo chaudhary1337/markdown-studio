@@ -34,32 +34,103 @@ html, body, #root {
   color: var(--vscode-textLink-foreground, #3794ff);
 }
 
-/* Code blocks: transparent background to match VS Code theme, use Shiki dark colors */
-[data-content-type="codeBlock"] pre {
-  background: transparent !important;
+/* Tiptap editor base */
+.tiptap-editor {
+  min-height: 100%;
+  padding: 1rem 2rem;
+  outline: none;
 }
 
-[data-content-type="codeBlock"] span[style] {
-  color: var(--shiki-dark) !important;
-}
+.tiptap-editor > *:first-child { margin-top: 0; }
 
-/* Headings: bold + breathing room */
-[data-content-type="heading"] {
+/* Headings */
+.tiptap-editor h1, .tiptap-editor h2, .tiptap-editor h3,
+.tiptap-editor h4, .tiptap-editor h5, .tiptap-editor h6 {
+  font-weight: 700;
   margin-top: 1.2em;
 }
 
-[data-content-type="heading"] h1,
-[data-content-type="heading"] h2,
-[data-content-type="heading"] h3,
-[data-content-type="heading"] h4,
-[data-content-type="heading"] h5,
-[data-content-type="heading"] h6 {
-  font-weight: 700 !important;
+/* Links */
+.tiptap-editor a {
+  cursor: pointer;
+  color: var(--vscode-textLink-foreground, #3794ff);
 }
 
-/* Links: pointer cursor on hover */
-.bn-editor a {
-  cursor: pointer;
+/* Code blocks */
+.tiptap-editor pre {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 0.75em 1em;
+  overflow-x: auto;
+  font-family: var(--vscode-editor-fontFamily, monospace);
+  font-size: 0.9em;
+}
+
+.tiptap-editor pre code { background: none; }
+
+/* Inline code */
+.tiptap-editor code {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  padding: 0.15em 0.3em;
+  font-family: var(--vscode-editor-fontFamily, monospace);
+  font-size: 0.9em;
+}
+
+/* Blockquotes */
+.tiptap-editor blockquote {
+  border-left: 3px solid var(--vscode-textLink-foreground, #3794ff);
+  margin: 0.5em 0;
+  padding: 0.25em 1em;
+  color: var(--vscode-descriptionForeground, #aaa);
+}
+
+/* Horizontal rules */
+.tiptap-editor hr {
+  border: none;
+  border-top: 1px solid var(--vscode-widget-border, #444);
+  margin: 1.5em 0;
+}
+
+/* Tables */
+.tiptap-editor table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+.tiptap-editor th, .tiptap-editor td {
+  border: 1px solid var(--vscode-widget-border, #444);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.tiptap-editor th {
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 600;
+}
+
+/* Task lists */
+.tiptap-editor ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tiptap-editor ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.tiptap-editor ul[data-type="taskList"] li > label {
+  margin-top: 3px;
+}
+
+/* Images */
+.tiptap-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
 }
 
 /* Layout: editor + TOC sidebar */
@@ -224,11 +295,6 @@ html, body, #root {
 .toc-entry-h2 { padding-left: 14px; }
 .toc-entry-h3 { padding-left: 24px; }
 
-/* BlockNote overrides to match VSCode theme */
-.bn-editor {
-  min-height: 100%;
-  padding: 1rem 2rem;
-}
 
 /* Sticky headings overlay */
 .sticky-headings {
