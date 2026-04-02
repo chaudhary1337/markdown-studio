@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { BlockNoteEditor } from "@blocknote/core";
-import { GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
+import { GripVertical, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { getHeadingLevel, scrollToBlock } from "../utils";
 
 interface TocEntry {
@@ -159,14 +159,17 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
       {!collapsed && (
         <div className="toc-sidebar" style={{ width }}>
           <div className="toc-title">Contents</div>
-          <input
-            className="toc-filter"
-            type="text"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter\u2026"
-            spellCheck={false}
-          />
+          <div className="toc-filter-wrap">
+            <Filter size={11} className="toc-filter-icon" />
+            <input
+              className="toc-filter"
+              type="text"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Filter headings"
+              spellCheck={false}
+            />
+          </div>
           {entries
             .filter((e) => !filter || e.text.toLowerCase().includes(filter.toLowerCase()))
             .map((entry) => (

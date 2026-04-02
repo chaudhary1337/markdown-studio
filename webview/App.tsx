@@ -144,8 +144,8 @@ export function App() {
 
   return (
     <div className="editor-layout">
-      <SearchBar visible={searchVisible} onClose={() => setSearchVisible(false)} />
       <div className="editor-container">
+        <SearchBar visible={searchVisible} onClose={() => setSearchVisible(false)} />
         {status && <div className="status-bar">{status}</div>}
         <StickyHeadings editor={editor} />
         <span

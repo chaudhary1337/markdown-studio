@@ -169,16 +169,29 @@ html, body, #root {
   padding: 0 4px 4px;
 }
 
+.toc-filter-wrap {
+  display: flex;
+  align-items: center;
+  margin: 0 4px 6px;
+  position: relative;
+}
+
+.toc-filter-icon {
+  position: absolute;
+  left: 5px;
+  color: var(--vscode-descriptionForeground, #888);
+  pointer-events: none;
+}
+
 .toc-filter {
-  width: calc(100% - 12px);
+  width: 100%;
   background: var(--vscode-input-background, #3c3c3c);
   color: var(--vscode-input-foreground, #ccc);
   border: 1px solid var(--vscode-input-border, #5a5a5a);
   border-radius: 2px;
-  padding: 3px 4px;
+  padding: 3px 4px 3px 20px;
   font-size: 11px;
   font-family: inherit;
-  margin: 0 4px 6px;
   outline: none;
 }
 
@@ -288,21 +301,30 @@ html, body, #root {
   background: var(--vscode-scrollbarSlider-hoverBackground, rgba(100, 100, 100, 0.7));
 }
 
-/* Search bar */
+/* Search bar — anchored to editor container top-right, not over TOC */
+.editor-container {
+  position: relative;
+}
+
 .search-bar {
-  position: fixed;
+  position: absolute;
   top: 0;
-  right: 28px;
+  right: 12px;
   z-index: 200;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   background: var(--vscode-editorWidget-background, #252526);
   border: 1px solid var(--vscode-widget-border, #454545);
   border-top: none;
   border-radius: 0 0 4px 4px;
   padding: 4px 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.search-icon {
+  color: var(--vscode-descriptionForeground, #888);
+  flex-shrink: 0;
 }
 
 .search-input {

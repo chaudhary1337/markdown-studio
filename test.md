@@ -110,17 +110,15 @@ echo "hello world"
 
 ## Blockquotes
 
-> This is a blockquote.
->
-> With multiple paragraphs.
+This is a blockquote.
 
-> Nested:
->
-> > Inner quote
+With multiple paragraphs.
+
+Nested:
+
+Inner quote
 
 ## Horizontal rules
-
----
 
 ## Special characters
 
@@ -128,7 +126,7 @@ Tildes: ~ single tilde and ~~ double tildes ~~.
 
 Asterisks in text: 2 * 3 = 6.
 
-Escaped characters: \* \_ \` \[ \]
+Escaped characters: * _ ` [ ]
 
 ## Bold in lists (regression test)
 
@@ -140,3 +138,5 @@ Escaped characters: \* \_ \` \[ \]
 ## Long heading for TOC truncation test
 
 ### This is a very long heading that should be truncated in the table of contents because it exceeds one hundred and twenty-eight characters which is the configured maximum length for display
+
+<!-- better-markdown-meta {"h":[{"t":"Heading 4","l":4},{"t":"Heading 5","l":5},{"t":"Heading 6","l":6}]} -->

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import { Search, X, ChevronUp, ChevronDown, CaseSensitive, Regex } from "lucide-react";
 
 declare class Highlight {
   constructor(...ranges: Range[]);
@@ -59,7 +60,6 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
       return;
     }
 
-    // Search editor content only
     const container = document.querySelector(".bn-editor");
     if (!container) return;
 
@@ -109,6 +109,7 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
 
   return (
     <div className="search-bar">
+      <Search size={13} className="search-icon" />
       <input
         ref={inputRef}
         className="search-input"
@@ -116,25 +117,31 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Find in document\u2026"
+        placeholder="Find in document"
         spellCheck={false}
       />
       <span className="search-count">
-        {query ? `${matchCount > 0 ? currentMatch : 0} of ${matchCount}` : ""}
+        {query ? `${matchCount > 0 ? currentMatch : 0}/${matchCount}` : ""}
       </span>
       <button
         className={`search-toggle ${caseSensitive ? "search-toggle-active" : ""}`}
         onClick={() => setCaseSensitive(!caseSensitive)}
         title="Match case"
-      >Aa</button>
+      ><CaseSensitive size={14} /></button>
       <button
         className={`search-toggle ${useRegex ? "search-toggle-active" : ""}`}
         onClick={() => setUseRegex(!useRegex)}
         title="Use regex"
-      >.*</button>
-      <button className="search-nav" onClick={() => navigateMatch(-1)} title="Previous (Shift+Enter)">&#x25B2;</button>
-      <button className="search-nav" onClick={() => navigateMatch(1)} title="Next (Enter)">&#x25BC;</button>
-      <button className="search-close" onClick={onClose} title="Close (Esc)">&#x2715;</button>
+      ><Regex size={14} /></button>
+      <button className="search-nav" onClick={() => navigateMatch(-1)} title="Previous (Shift+Enter)">
+        <ChevronUp size={14} />
+      </button>
+      <button className="search-nav" onClick={() => navigateMatch(1)} title="Next (Enter)">
+        <ChevronDown size={14} />
+      </button>
+      <button className="search-close" onClick={onClose} title="Close (Esc)">
+        <X size={14} />
+      </button>
     </div>
   );
 }
