@@ -12,6 +12,8 @@ Regular paragraph with some text.
 
 ###### Heading 6
 
+##### Apples...
+
 ## Inline formatting
 
 This has **bold text** and _italic text_ and `inline code` and ~~strikethrough~~.
@@ -32,9 +34,9 @@ Mixed: **bold and _italic_ together** and more text.
 ### Nested unordered
 
 - Parent item
-- Child item
-- Another child
-- Grandchild
+  - Child item
+  - Another child
+    - Grandchild
 - Back to parent
 
 ### Ordered
@@ -45,18 +47,14 @@ Mixed: **bold and _italic_ together** and more text.
 
 ### Nested ordered
 
-1. First
-2. Sub-first
-3. Sub-second
-4. Second
+1. First 2. Sub-first 3. Sub-second
+2. Second
 
 ### Mixed
 
 - Unordered
-
-1. Ordered child
-2. Another ordered
-
+  1. Ordered child
+  2. Another ordered
 - Back to unordered
 
 ## Task lists
@@ -126,9 +124,9 @@ echo "hello world"
 
 Tildes: ~ single tilde and ~~ double tildes ~~.
 
-Asterisks in text: 2 * 3 = 6.
+Asterisks in text: 2 \* 3 = 6.
 
-Escaped characters: * \_ \` \[ ]
+Escaped characters: \* \_ \` \[ ]
 
 ## Bold in lists (regression test)
 
@@ -141,4 +139,4 @@ Escaped characters: * \_ \` \[ ]
 
 ### This is a very long heading that should be truncated in the table of contents because it exceeds one hundred and twenty-eight characters which is the configured maximum length for display
 
-<!-- better-markdown-meta {"h":[{"t":"Heading 4","l":4},{"t":"Heading 5","l":5},{"t":"Heading 6","l":6}]} -->
+<!-- better-markdown-meta {"h":[{"t":"Heading 4","l":4},{"t":"Heading 5","l":5},{"t":"Heading 6","l":6},{"t":"Apples...","l":5}]} -->
