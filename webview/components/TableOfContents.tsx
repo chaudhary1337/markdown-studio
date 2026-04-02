@@ -30,16 +30,27 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
     const container = document.querySelector(".editor-container");
     if (!container) return;
 
-    // Tiptap renders headings as direct <h1>-<h6> elements
     const headingEls = container.querySelectorAll(
       ".tiptap-editor h1, .tiptap-editor h2, .tiptap-editor h3, .tiptap-editor h4, .tiptap-editor h5, .tiptap-editor h6"
     );
-    const newEntries: TocEntry[] = [];
+
+    // Ensure all headings have IDs (for TOC click-to-scroll)
+    const usedIds = new Set<string>();
     headingEls.forEach((el, index) => {
+      if (!el.id) {
+        const slug = (el.textContent || "").trim().toLowerCase().replace(/[^\w]+/g, "-").replace(/^-|-$/g, "");
+        let id = slug ? `h-${slug}` : `h-${index}`;
+        while (usedIds.has(id)) id += `-${index}`;
+        (el as HTMLElement).id = id;
+      }
+      usedIds.add(el.id);
+    });
+
+    const newEntries: TocEntry[] = [];
+    headingEls.forEach((el) => {
       const text = el.textContent?.trim();
       if (text) {
-        const id = el.id || `toc-${index}`;
-        newEntries.push({ id, text, level: parseInt(el.tagName[1], 10) });
+        newEntries.push({ id: el.id, text, level: parseInt(el.tagName[1], 10) });
       }
     });
     setEntries(newEntries);
@@ -47,13 +58,12 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
     const containerRect = container.getBoundingClientRect();
     let closestId: string | null = null;
     let closestDist = Infinity;
-    headingEls.forEach((el, index) => {
+    headingEls.forEach((el) => {
       const rect = el.getBoundingClientRect();
       const dist = Math.abs(rect.top - containerRect.top);
-      const id = el.id || `toc-${index}`;
       if (rect.top <= containerRect.top + 100 && dist < closestDist) {
         closestDist = dist;
-        closestId = id;
+        closestId = el.id;
       }
     });
     setActiveId(closestId);

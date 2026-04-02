@@ -73,7 +73,32 @@ html, body, #root {
   font-size: 0.9em;
 }
 
-.tiptap-editor pre code { background: none; }
+.tiptap-editor pre code { background: none; color: #d4d4d4; }
+
+/* Syntax highlighting (lowlight/highlight.js tokens) */
+.tiptap-editor .hljs-comment,
+.tiptap-editor .hljs-quote { color: #6a9955; font-style: italic; }
+.tiptap-editor .hljs-keyword,
+.tiptap-editor .hljs-selector-tag,
+.tiptap-editor .hljs-built_in { color: #569cd6; }
+.tiptap-editor .hljs-string,
+.tiptap-editor .hljs-attr { color: #ce9178; }
+.tiptap-editor .hljs-number,
+.tiptap-editor .hljs-literal { color: #b5cea8; }
+.tiptap-editor .hljs-function,
+.tiptap-editor .hljs-title { color: #dcdcaa; }
+.tiptap-editor .hljs-type,
+.tiptap-editor .hljs-class .hljs-title { color: #4ec9b0; }
+.tiptap-editor .hljs-variable,
+.tiptap-editor .hljs-params { color: #9cdcfe; }
+.tiptap-editor .hljs-regexp { color: #d16969; }
+.tiptap-editor .hljs-meta { color: #c586c0; }
+.tiptap-editor .hljs-tag { color: #569cd6; }
+.tiptap-editor .hljs-name { color: #4ec9b0; }
+.tiptap-editor .hljs-attribute { color: #9cdcfe; }
+.tiptap-editor .hljs-symbol { color: #b5cea8; }
+.tiptap-editor .hljs-deletion { color: #ce9178; }
+.tiptap-editor .hljs-addition { color: #b5cea8; }
 
 /* Inline code */
 .tiptap-editor code {
@@ -375,15 +400,14 @@ html, body, #root {
   background: var(--vscode-scrollbarSlider-hoverBackground, rgba(100, 100, 100, 0.7));
 }
 
-/* Search bar — anchored to editor container top-right, not over TOC */
-.editor-container {
-  position: relative;
-}
-
+/* Search bar — sticky at top of editor scroll area */
 .search-bar {
-  position: absolute;
+  position: sticky;
   top: 0;
-  right: 12px;
+  z-index: 201;
+  margin-left: auto;
+  width: fit-content;
+  margin-right: 12px;
   z-index: 200;
   display: flex;
   align-items: center;
