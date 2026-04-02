@@ -81,6 +81,36 @@ export async function htmlToMarkdown(
   baseUri?: string,
   docFolderPath?: string
 ): Promise<string> {
+  // Convert Tiptap task list HTML to standard GFM format for rehype-remark
+  {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    doc.querySelectorAll('li[data-type="taskItem"]').forEach((li) => {
+      const checked = li.getAttribute("data-checked") === "true";
+      const label = li.querySelector("label");
+      if (label) label.remove();
+      const div = li.querySelector("div");
+      const content = div?.innerHTML || li.innerHTML;
+      if (div) div.remove();
+      const checkbox = doc.createElement("input");
+      checkbox.type = "checkbox";
+      if (checked) checkbox.setAttribute("checked", "");
+      li.innerHTML = "";
+      li.appendChild(checkbox);
+      li.append(" ");
+      const span = doc.createElement("span");
+      span.innerHTML = content.replace(/<\/?p>/g, "");
+      while (span.firstChild) li.appendChild(span.firstChild);
+
+      li.removeAttribute("data-type");
+      li.removeAttribute("data-checked");
+    });
+    doc.querySelectorAll('ul[data-type="taskList"]').forEach((ul) => {
+      ul.classList.add("contains-task-list");
+      ul.removeAttribute("data-type");
+    });
+    html = doc.body.innerHTML;
+  }
+
   // Strip <p> from inside <li> so rehype-remark produces tight lists
   html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
 
