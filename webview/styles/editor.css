@@ -496,3 +496,51 @@ html, body, #root {
   background-color: rgba(255, 140, 0, 0.6);
   color: inherit;
 }
+
+/* Slash command menu */
+.slash-popup {
+  position: fixed;
+  z-index: 300;
+}
+
+.slash-menu {
+  background: var(--vscode-editorWidget-background, #252526);
+  border: 1px solid var(--vscode-widget-border, #454545);
+  border-radius: 6px;
+  padding: 4px;
+  min-width: 180px;
+  max-height: 300px;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.slash-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  transition: background 0.1s;
+}
+
+.slash-item:hover, .slash-item-active {
+  background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.08));
+}
+
+.slash-item-active {
+  background: var(--vscode-list-activeSelectionBackground, #094771);
+  color: var(--vscode-list-activeSelectionForeground, #fff);
+}
+
+.slash-item-icon {
+  display: flex;
+  align-items: center;
+  color: var(--vscode-descriptionForeground, #888);
+}
+
+.slash-item-active .slash-item-icon {
+  color: inherit;
+}
