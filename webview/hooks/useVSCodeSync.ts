@@ -37,25 +37,64 @@ export async function markdownToHtml(
     (_m, open, content, close) => open + content.replace(/\n$/, "") + close
   );
 
-  // Wrap bare text inside <li> with <p> tags and compact the HTML.
-  // Tiptap's ProseMirror parser needs: <li><p>text</p><ul>...</ul></li>
-  // with NO whitespace between </p> and <ul>. Newlines between tags
-  // create text nodes that break ProseMirror's content parsing.
+  // Use DOMParser to fix HTML structure for Tiptap:
+  // 1. Wrap bare text in <li> with <p> (Tiptap needs block content)
+  // 2. Convert GFM task lists to Tiptap's taskItem format
+  // 3. Ensure each <img> is in its own <p> block
   {
     const doc = new DOMParser().parseFromString(html, "text/html");
+
+    // Wrap bare <li> text in <p>
     doc.querySelectorAll("li").forEach((li) => {
       const firstChild = li.childNodes[0];
-      // If first child is a text node (bare text, no <p>), wrap it
       if (firstChild && firstChild.nodeType === Node.TEXT_NODE && firstChild.textContent?.trim()) {
         const p = doc.createElement("p");
-        // Move all inline nodes into <p> until we hit a block element
         while (li.firstChild && !(li.firstChild as Element).tagName?.match(/^(UL|OL|DIV|BLOCKQUOTE|PRE|TABLE)$/i)) {
           p.appendChild(li.firstChild);
         }
         li.insertBefore(p, li.firstChild);
       }
     });
-    // Re-serialize — innerHTML produces compact HTML without extra whitespace
+
+    // Convert GFM task list items to Tiptap taskItem format
+    doc.querySelectorAll("li").forEach((li) => {
+      const checkbox = li.querySelector("input[type=checkbox]");
+      if (!checkbox) return;
+      const checked = checkbox.hasAttribute("checked");
+      checkbox.remove();
+      // Remove leading whitespace after checkbox removal
+      if (li.firstChild?.nodeType === Node.TEXT_NODE) {
+        li.firstChild.textContent = li.firstChild.textContent?.replace(/^\s+/, "") || "";
+      }
+      li.setAttribute("data-type", "taskItem");
+      li.setAttribute("data-checked", String(checked));
+      // Ensure content is in <p>
+      if (!li.querySelector("p")) {
+        const p = doc.createElement("p");
+        while (li.firstChild) p.appendChild(li.firstChild);
+        li.appendChild(p);
+      }
+    });
+    doc.querySelectorAll("ul").forEach((ul) => {
+      if (ul.querySelector('li[data-type="taskItem"]')) {
+        ul.setAttribute("data-type", "taskList");
+      }
+    });
+
+    // Ensure each <img> is in its own <p> block (not inline with other images)
+    doc.querySelectorAll("p").forEach((p) => {
+      const imgs = p.querySelectorAll("img");
+      if (imgs.length <= 1) return;
+      const parent = p.parentNode;
+      if (!parent) return;
+      imgs.forEach((img, i) => {
+        const wrapper = doc.createElement("p");
+        wrapper.appendChild(img.cloneNode(true));
+        parent.insertBefore(wrapper, p);
+      });
+      p.remove();
+    });
+
     html = doc.body.innerHTML;
   }
 
