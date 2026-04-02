@@ -84,6 +84,19 @@ export function appendMeta(md: string, meta: Metadata): string {
  * Matches by heading text content (case-sensitive, trimmed).
  * All h3 headings that match a stored h4/h5/h6 get their level restored.
  */
+/**
+ * Merge scanned metadata (from current file) with existing stored metadata.
+ * Scanned takes priority; existing fills in headings not found in scan.
+ */
+export function mergeMetadata(scanned: Metadata, existing: Metadata): Metadata {
+  const seen = new Set(scanned.h.map((h) => h.t));
+  const merged = [...scanned.h];
+  for (const h of existing.h) {
+    if (!seen.has(h.t)) merged.push(h);
+  }
+  return { h: merged };
+}
+
 export function restoreHeadings(md: string, meta: Metadata): string {
   if (meta.h.length === 0) return md;
 

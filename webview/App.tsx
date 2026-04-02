@@ -5,8 +5,9 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { StickyHeadings } from "./components/StickyHeadings";
 import { TableOfContents } from "./components/TableOfContents";
+import { SearchBar } from "./components/SearchBar";
 import { markdownToBlocks, blocksToMarkdown } from "./hooks/useVSCodeSync";
-import { extractMeta, buildMeta, appendMeta, restoreHeadings, type Metadata } from "./metadata";
+import { extractMeta, buildMeta, appendMeta, restoreHeadings, mergeMetadata, type Metadata } from "./metadata";
 
 const vscodeApi = acquireVsCodeApi();
 
@@ -18,6 +19,7 @@ export function App() {
   const metaRef = useRef<Metadata>({ h: [] });
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [status, setStatus] = React.useState<string | null>("Loading document...");
+  const [searchVisible, setSearchVisible] = React.useState(false);
 
   // On mount: request content from host, load it into editor
   useEffect(() => {
@@ -64,6 +66,18 @@ export function App() {
     vscodeApi.postMessage({ type: "ready" });
     return () => window.removeEventListener("message", handler);
   }, [editor]);
+
+  // Ctrl+F / Cmd+F: open search bar
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        e.preventDefault();
+        setSearchVisible(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   // Link handling: Cmd+click, Ctrl+click, middle-click, or toolbar "open" button
   useEffect(() => {
@@ -117,7 +131,7 @@ export function App() {
       } catch (err: any) {
         const msg = err?.message || String(err);
         setStatus(`Save error: ${msg}`);
-        console.error("blocksToMarkdown failed:", err);
+        console.error("[better-markdown] blocksToMarkdown failed:", err);
       }
     }, 300);
   }, [editor]);
@@ -128,6 +142,7 @@ export function App() {
 
   return (
     <div className="editor-layout">
+      <SearchBar visible={searchVisible} onClose={() => setSearchVisible(false)} />
       <div className="editor-container">
         {status && <div className="status-bar">{status}</div>}
         <StickyHeadings editor={editor} />
@@ -146,22 +161,6 @@ export function App() {
       </div>
     </div>
   );
-}
-
-/**
- * Merge scanned metadata (from current file) with existing stored metadata.
- * Scanned takes priority; existing fills in headings not found in scan
- * (e.g., if a heading was temporarily removed but might come back).
- */
-function mergeMetadata(scanned: Metadata, existing: Metadata): Metadata {
-  const seen = new Set(scanned.h.map((h) => h.t));
-  const merged = [...scanned.h];
-  for (const h of existing.h) {
-    if (!seen.has(h.t)) {
-      merged.push(h);
-    }
-  }
-  return { h: merged };
 }
 
 declare function acquireVsCodeApi(): {

@@ -55,6 +55,7 @@
     }
   },
   "scripts": {
+    "test": "npx tsx scripts/test-roundtrip.ts",
     "build": "node esbuild.js",
     "watch": "node esbuild.js --watch",
     "package": "vsce package",

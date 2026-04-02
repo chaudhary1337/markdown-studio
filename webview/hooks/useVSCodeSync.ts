@@ -111,6 +111,10 @@ export async function blocksToMarkdown(
     html = html.replace(/<figcaption>[\s\S]*?<\/figcaption>/g, "");
     html = html.replace(/<\/?figure>/g, "");
 
+    // Strip <p> wrappers inside <li> to prevent remark-stringify from
+    // producing loose lists (bare marker on one line, content on next)
+    html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>\s*<\/li>/g, "<li$1>$2</li>");
+
     // Convert BlockNote's checkListItem blocks to proper <ul><li> with checkbox
     // so rehype-remark produces "- [ ] text" instead of splitting them.
     // Use DOM parser for reliability since BlockNote nests multiple divs.

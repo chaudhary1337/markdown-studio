@@ -10,24 +10,6 @@ html, body, #root {
   font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, sans-serif);
 }
 
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  opacity: 0.5;
-  font-size: 14px;
-}
-
-.debug-banner {
-  background: #553300;
-  color: #ffcc00;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-family: monospace;
-  border-bottom: 1px solid #775500;
-}
-
 /* Status bar */
 .status-bar {
   font-size: 11px;
@@ -52,22 +34,13 @@ html, body, #root {
   color: var(--vscode-textLink-foreground, #3794ff);
 }
 
-/* Strip all shiki/prosemirror-highlight styling from code blocks */
+/* Code blocks: transparent background to match VS Code theme, use Shiki dark colors */
 [data-content-type="codeBlock"] pre {
   background: transparent !important;
 }
 
-[data-content-type="codeBlock"] span {
-  color: inherit !important;
-  background-color: transparent !important;
-  font-style: inherit !important;
-  font-weight: inherit !important;
-  text-decoration: inherit !important;
-}
-
-[data-content-type="codeBlock"] * {
-  --shiki-dark: inherit !important;
-  --shiki-light: inherit !important;
+[data-content-type="codeBlock"] span[style] {
+  color: var(--shiki-dark) !important;
 }
 
 /* Headings: bold + breathing room */
@@ -202,9 +175,8 @@ html, body, #root {
   padding: 2px 4px;
   cursor: pointer;
   user-select: none;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
+  word-break: break-word;
   border-radius: 3px;
   transition: color 0.15s, background 0.15s;
 }
@@ -281,44 +253,6 @@ html, body, #root {
   padding-left: 36px;
 }
 
-/* Collapsible heading sections */
-[data-content-type="heading"] {
-  position: relative;
-}
-
-.collapse-toggle {
-  position: absolute;
-  left: -24px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
-  font-size: 12px;
-  color: var(--vscode-editor-foreground, #d4d4d4);
-  user-select: none;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 3px;
-}
-
-[data-content-type="heading"]:hover .collapse-toggle,
-.collapse-toggle:hover {
-  opacity: 1;
-}
-
-.collapse-toggle:hover {
-  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
-}
-
-/* Collapsed sections */
-.section-collapsed {
-  display: none !important;
-}
-
 /* Scrollbar styling */
 .editor-container::-webkit-scrollbar {
   width: 10px;
@@ -335,4 +269,82 @@ html, body, #root {
 
 .editor-container::-webkit-scrollbar-thumb:hover {
   background: var(--vscode-scrollbarSlider-hoverBackground, rgba(100, 100, 100, 0.7));
+}
+
+/* Search bar */
+.search-bar {
+  position: fixed;
+  top: 0;
+  right: 28px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--vscode-editorWidget-background, #252526);
+  border: 1px solid var(--vscode-widget-border, #454545);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  padding: 4px 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.search-input {
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #ccc);
+  border: 1px solid var(--vscode-input-border, #5a5a5a);
+  border-radius: 2px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  width: 180px;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+.search-count {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground, #888);
+  min-width: 50px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.search-toggle, .search-nav, .search-close {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--vscode-descriptionForeground, #888);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.search-toggle:hover, .search-nav:hover, .search-close:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
+  color: var(--vscode-editor-foreground, #d4d4d4);
+}
+
+.search-toggle-active {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #fff);
+  border-color: var(--vscode-button-background, #0e639c);
+}
+
+.search-toggle-active:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+/* CSS Custom Highlight API for search matches */
+::highlight(search-match) {
+  background-color: rgba(255, 200, 0, 0.3);
+  color: inherit;
+}
+
+::highlight(search-match-active) {
+  background-color: rgba(255, 140, 0, 0.6);
+  color: inherit;
 }

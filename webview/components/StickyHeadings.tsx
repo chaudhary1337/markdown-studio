@@ -1,18 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { BlockNoteEditor } from "@blocknote/core";
+import { getHeadingLevel, scrollToBlock } from "../utils";
 
 interface StickyHeading {
   id: string;
   text: string;
   level: number;
-}
-
-function getHeadingLevel(el: Element): number {
-  const inner = el.querySelector("h1, h2, h3, h4, h5, h6");
-  if (inner) {
-    return parseInt(inner.tagName[1], 10);
-  }
-  return 1;
 }
 
 export function StickyHeadings({ editor }: { editor: BlockNoteEditor }) {
@@ -22,50 +15,37 @@ export function StickyHeadings({ editor }: { editor: BlockNoteEditor }) {
     const container = document.querySelector(".editor-container");
     if (!container) return;
 
-    const headingEls = container.querySelectorAll(
-      '[data-content-type="heading"]'
-    );
+    const headingEls = container.querySelectorAll('[data-content-type="heading"]');
     const containerRect = container.getBoundingClientRect();
-
     const stickyEl = container.querySelector(".sticky-headings");
     const stickyHeight = stickyEl ? stickyEl.getBoundingClientRect().height : 0;
     const threshold = containerRect.top + stickyHeight + 4;
 
     const aboveViewport: StickyHeading[] = [];
-
     headingEls.forEach((el, index) => {
       const rect = el.getBoundingClientRect();
       if (rect.top < threshold) {
-        const level = getHeadingLevel(el);
-        const text = el.textContent || "";
-        const blockWrapper = el.closest("[data-id]");
-        const id = blockWrapper?.getAttribute("data-id") || `heading-${index}`;
-        if (text.trim()) {
-          aboveViewport.push({ id, text: text.trim(), level });
+        const text = el.textContent?.trim();
+        if (text) {
+          const id = el.closest("[data-id]")?.getAttribute("data-id") || `heading-${index}`;
+          aboveViewport.push({ id, text, level: getHeadingLevel(el) });
         }
       }
     });
 
     const stack: StickyHeading[] = [];
     for (const h of aboveViewport) {
-      while (stack.length > 0 && stack[stack.length - 1].level >= h.level) {
-        stack.pop();
-      }
+      while (stack.length > 0 && stack[stack.length - 1].level >= h.level) stack.pop();
       stack.push(h);
     }
-
     setStickyStack(stack);
   }, []);
 
   useEffect(() => {
     const container = document.querySelector(".editor-container");
     if (!container) return;
-
-    container.addEventListener("scroll", updateStickyHeadings, {
-      passive: true,
-    });
+    container.addEventListener("scroll", updateStickyHeadings, { passive: true });
     const interval = setInterval(updateStickyHeadings, 1000);
-
     return () => {
       container.removeEventListener("scroll", updateStickyHeadings);
       clearInterval(interval);
@@ -80,7 +60,7 @@ export function StickyHeadings({ editor }: { editor: BlockNoteEditor }) {
         <div
           key={h.id}
           className={`sticky-heading sticky-heading-h${h.level}`}
-          onClick={() => scrollToHeading(h.id)}
+          onClick={() => scrollToBlock(h.id)}
           role="button"
           tabIndex={0}
         >
@@ -89,18 +69,4 @@ export function StickyHeadings({ editor }: { editor: BlockNoteEditor }) {
       ))}
     </div>
   );
-}
-
-function scrollToHeading(id: string) {
-  const el = document.querySelector(`[data-id="${id}"]`);
-  const container = document.querySelector(".editor-container");
-  const stickyEl = document.querySelector(".sticky-headings");
-  if (!el || !container) return;
-
-  const stickyHeight = stickyEl ? stickyEl.getBoundingClientRect().height : 0;
-  const elTop = el.getBoundingClientRect().top;
-  const containerTop = container.getBoundingClientRect().top;
-  const offset = elTop - containerTop + container.scrollTop - stickyHeight;
-
-  container.scrollTo({ top: offset, behavior: "smooth" });
 }

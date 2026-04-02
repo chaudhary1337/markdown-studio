@@ -6,22 +6,15 @@
  * https://github.com/remarkjs/remark/tree/main/packages/remark-stringify#options
  */
 export const MARKDOWN_CONFIG = {
-  // Lists
-  bullet: "-" as const,         // unordered list marker: "-" not "*"
-  bulletOther: "*" as const,     // alternate marker for nested lists
-  bulletOrdered: "." as const,   // ordered list marker style: "1."
-  listItemIndent: "one" as const, // single space after marker, not 3
-
-  // Emphasis
-  emphasis: "_" as const,        // italics with _underscores_ not *stars*
-  strong: "*" as const,           // bold character (doubled by remark-stringify)
-
-  // Code
-  fence: "`" as const,           // fence character (repeated 3x by remark-stringify)
-  fences: true,                  // always use fences, never indented code blocks
-
-  // Other
-  rule: "-" as const,             // horizontal rule character (repeated 3x)
+  bullet: "-" as const,
+  bulletOther: "*" as const,
+  bulletOrdered: "." as const,
+  listItemIndent: "one" as const,
+  emphasis: "_" as const,
+  strong: "*" as const,
+  fence: "`" as const,
+  fences: true,
+  rule: "-" as const,
 };
 
 /**
@@ -29,37 +22,24 @@ export const MARKDOWN_CONFIG = {
  * that remark-stringify doesn't handle correctly.
  */
 export function normalizeMarkdown(md: string): string {
-  // 0. Normalize code block language names
   md = md.replace(/^```shellscript$/gm, "```bash");
-  // 1. Convert indented code blocks to fenced (do this FIRST)
-  md = indentedToFenced(md);
-  // 2. Replace "* " or "*   " list markers with "- "
   md = md.replace(/^(\s*)\*\s{1,3}/gm, "$1- ");
-  // 3. Replace *text* emphasis with _text_ (but not in code spans or **bold**)
-  md = replaceEmphasis(md);
-  // 4. Normalize ordered lists: "1.  " to "1. " (single space)
   md = md.replace(/^(\s*\d+\.)\s{2,}/gm, "$1 ");
-  // 5. Fix task list checkboxes (escaped brackets and formatting)
   md = fixTaskLists(md);
-  // 6. Renumber ordered lists (BlockNote restarts each item at 1)
   md = renumberOrderedLists(md);
-  // 6. Fix table headers (BlockNote flattens <thead> into regular rows)
   md = fixTableHeaders(md);
-  // 7. Fix double tildes: remark-gfm escapes single ~ to ~~ to avoid strikethrough
-  //    Revert ~~ back to ~ when there's no matching closing ~~
-  md = fixDoubleTildes(md);
-  // 8. Remove duplicate image captions (BlockNote outputs caption as both
-  //    alt text and as a separate line after the image)
+  md = unescapeSpecialChars(md);
   md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
+  md = fixOrphanedListMarkers(md);
   return md;
 }
 
 /**
- * Fix remark-gfm doubling single ~ to ~~.
- * Only revert when ~~ doesn't have a matching closing ~~ (i.e., not actual strikethrough).
+ * Remove unnecessary backslash escapes that remark-stringify adds.
+ * Specifically: \~, \*, \_ outside code blocks/spans.
+ * Preserves real strikethrough (~~text~~) and emphasis markers.
  */
-function fixDoubleTildes(md: string): string {
-  // Process line by line, skip code blocks
+function unescapeSpecialChars(md: string): string {
   const lines = md.split("\n");
   let inCodeBlock = false;
   const result: string[] = [];
@@ -75,77 +55,71 @@ function fixDoubleTildes(md: string): string {
       continue;
     }
 
-    // Count ~~ occurrences. If odd number, the last one is an escaped single ~
-    // More robust: replace ~~ that isn't part of a ~~...~~ pair
-    // A real strikethrough has ~~text~~ (opening and closing).
-    // An escaped tilde is ~~ followed by text with no closing ~~.
-    let fixed = line;
-    // Match ~~ that are NOT part of strikethrough pairs
-    // Strategy: find all ~~ positions, pair them up, unpaired ones become ~
-    const parts: string[] = fixed.split("~~");
-    if (parts.length > 1) {
-      // If odd number of ~~ markers (even number of parts), they pair up = strikethrough
-      // If even number of ~~ markers (odd number of parts), last one is unpaired
-      if (parts.length % 2 === 0) {
-        // Odd number of ~~: last is unpaired, rejoin all but last with ~~, last with ~
-        fixed = parts.slice(0, -1).join("~~") + "~" + parts[parts.length - 1];
+    // Process outside inline code spans
+    let processed = "";
+    let remaining = line;
+    while (remaining.length > 0) {
+      const codeStart = remaining.indexOf("`");
+      if (codeStart === -1) {
+        processed += unescapeText(remaining);
+        break;
       }
-      // else: even number of ~~ markers = all paired = real strikethrough, keep as-is
+      processed += unescapeText(remaining.slice(0, codeStart));
+      const codeEnd = remaining.indexOf("`", codeStart + 1);
+      if (codeEnd === -1) {
+        processed += remaining.slice(codeStart);
+        break;
+      }
+      processed += remaining.slice(codeStart, codeEnd + 1);
+      remaining = remaining.slice(codeEnd + 1);
     }
-    result.push(fixed);
+    result.push(processed);
   }
   return result.join("\n");
 }
 
+function unescapeText(text: string): string {
+  // Remove backslash before ~ (remark-gfm escapes tildes)
+  text = text.replace(/\\~/g, "~");
+  // Remove backslash before * that isn't part of bold/emphasis markup
+  // Only unescape standalone \* (e.g. "2 \* 3") not emphasis markers
+  text = text.replace(/(?<=\s|^)\\\*(?=\s|$)/g, "*");
+  return text;
+}
+
 /**
  * Fix task list formatting. BlockNote produces patterns like:
- *   - \[ ]            or    - [ ]
- *
- *       text                    text
- *
- * This merges them into: - [ ] text
+ *   - \[ ] text   or   - [ ]\n\n    text
+ * Merges them into: - [ ] text
  */
 function fixTaskLists(md: string): string {
-  // Fix escaped brackets in task lists
   md = md.replace(/^(\s*-\s)\\\[(\s)\\\]/gm, "$1[$2]");
   md = md.replace(/^(\s*-\s)\\\[([xX])\\\]/gm, "$1[$2]");
   md = md.replace(/^(\s*-\s)\\(\[[\sxX]\])/gm, "$1$2");
 
-  // Merge checkbox line + indented content on next line(s)
-  // Pattern: "- [ ]" or "- [x]" alone on a line, followed by blank line + indented text
   const lines = md.split("\n");
   const result: string[] = [];
   let i = 0;
 
   while (i < lines.length) {
     const line = lines[i];
-    // Match a bare checkbox line (with no text after the checkbox)
     const checkboxMatch = line.match(/^(\s*-\s\[[\sxX]\])\s*$/);
     if (checkboxMatch) {
-      const prefix = checkboxMatch[1];
-      // Look ahead: skip blank lines, find the next non-empty line
       let j = i + 1;
       while (j < lines.length && lines[j].trim() === "") j++;
-
       if (j < lines.length && lines[j].trim() !== "") {
-        // Merge: checkbox + next content line
-        const content = lines[j].trim();
-        result.push(`${prefix} ${content}`);
+        result.push(`${checkboxMatch[1]} ${lines[j].trim()}`);
         i = j + 1;
         continue;
       }
     }
 
-    // Also handle: indented task items under an empty "- " parent
     const indentedTask = line.match(/^\s{2,}(-\s\[[\sxX]\]\s*.*)$/);
-    if (indentedTask && result.length > 0) {
-      const prev = result[result.length - 1];
-      if (/^-\s*$/.test(prev.trim())) {
-        result.pop();
-        result.push(indentedTask[1]);
-        i++;
-        continue;
-      }
+    if (indentedTask && result.length > 0 && /^-\s*$/.test(result[result.length - 1].trim())) {
+      result.pop();
+      result.push(indentedTask[1]);
+      i++;
+      continue;
     }
 
     result.push(line);
@@ -160,7 +134,7 @@ function fixTaskLists(md: string): string {
       k > 0 && /^-\s\[[\sxX]\]\s/.test(result[k - 1]) &&
       k + 1 < result.length && /^-\s\[[\sxX]\]\s/.test(result[k + 1])
     ) {
-      continue; // skip blank line between task items
+      continue;
     }
     final.push(result[k]);
   }
@@ -170,7 +144,6 @@ function fixTaskLists(md: string): string {
 /**
  * Renumber consecutive ordered list items.
  * BlockNote outputs each item as "1." — this fixes them to 1. 2. 3. etc.
- * Handles items separated by blank lines (loose lists) as one sequence.
  */
 function renumberOrderedLists(md: string): string {
   const lines = md.split("\n");
@@ -179,31 +152,18 @@ function renumberOrderedLists(md: string): string {
   let inList = false;
   let blankLineGap = false;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  for (const line of lines) {
     const match = line.match(/^(\s*)(\d+)\.\s(.*)$/);
-
-    if (match) {
-      const [, indent, , content] = match;
-      // Only renumber top-level items (no indent)
-      if (indent === "") {
-        counter++;
-        inList = true;
-        blankLineGap = false;
-        result.push(`${counter}. ${content}`);
-      } else {
-        result.push(line);
-      }
+    if (match && match[1] === "") {
+      counter++;
+      inList = true;
+      blankLineGap = false;
+      result.push(`${counter}. ${match[3]}`);
     } else if (line.trim() === "" && inList) {
-      // Blank line within a list — keep tracking
       blankLineGap = true;
       result.push(line);
     } else {
-      // Non-list line after a blank gap means list ended
-      if (inList && (!blankLineGap || line.trim() === "")) {
-        // Still could be in the list
-      }
-      if (line.trim() !== "" && !line.match(/^(\s*)\d+\.\s/)) {
+      if (line.trim() !== "" && !line.match(/^\s*\d+\.\s/)) {
         inList = false;
         counter = 0;
         blankLineGap = false;
@@ -215,117 +175,7 @@ function renumberOrderedLists(md: string): string {
 }
 
 /**
- * Replace *text* with _text_ for emphasis, but skip:
- * - code blocks (``` ... ```)
- * - inline code (`...`)
- * - **bold** (double asterisks)
- * - standalone * used as multiplication or bullets
- */
-function replaceEmphasis(md: string): string {
-  const lines = md.split("\n");
-  let inCodeBlock = false;
-  const result: string[] = [];
-
-  for (const line of lines) {
-    if (/^```/.test(line)) {
-      inCodeBlock = !inCodeBlock;
-      result.push(line);
-      continue;
-    }
-    if (inCodeBlock) {
-      result.push(line);
-      continue;
-    }
-
-    // Process line: split by inline code spans to protect them
-    let processed = "";
-    let remaining = line;
-    while (remaining.length > 0) {
-      const codeStart = remaining.indexOf("`");
-      if (codeStart === -1) {
-        // No more code spans — process the rest
-        processed += convertEmphasisInText(remaining);
-        break;
-      }
-      // Process text before the code span
-      processed += convertEmphasisInText(remaining.slice(0, codeStart));
-      // Find the closing backtick
-      const codeEnd = remaining.indexOf("`", codeStart + 1);
-      if (codeEnd === -1) {
-        // Unclosed backtick — just append the rest
-        processed += remaining.slice(codeStart);
-        break;
-      }
-      // Append code span unchanged
-      processed += remaining.slice(codeStart, codeEnd + 1);
-      remaining = remaining.slice(codeEnd + 1);
-    }
-    result.push(processed);
-  }
-  return result.join("\n");
-}
-
-function convertEmphasisInText(text: string): string {
-  // Match *text* but not **text** and not standalone *
-  return text.replace(/(?<!\*)\*(?!\*|\s)(.+?)(?<!\*|\s)\*(?!\*)/g, "_$1_");
-}
-
-/**
- * Convert indented code blocks (4 spaces / tab) to fenced ``` blocks.
- */
-function indentedToFenced(md: string): string {
-  const lines = md.split("\n");
-  const result: string[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-    // Check if this line is indented code (4 spaces or tab)
-    // and NOT inside a list (previous non-empty line doesn't start with - or digit.)
-    if (/^(?:    |\t)\S/.test(line) || /^(?:    |\t)$/.test(line)) {
-      // Look back: if prev non-empty line is a list item, skip (it's list continuation)
-      let prevNonEmpty = "";
-      for (let j = result.length - 1; j >= 0; j--) {
-        if (result[j].trim() !== "") {
-          prevNonEmpty = result[j];
-          break;
-        }
-      }
-      if (/^\s*[-*]\s/.test(prevNonEmpty) || /^\s*\d+\.\s/.test(prevNonEmpty)) {
-        result.push(line);
-        i++;
-        continue;
-      }
-
-      // Collect all indented lines
-      const codeLines: string[] = [];
-      while (i < lines.length && (/^(?:    |\t)/.test(lines[i]) || lines[i].trim() === "")) {
-        if (lines[i].trim() === "" && i + 1 < lines.length && !/^(?:    |\t)/.test(lines[i + 1])) {
-          break; // End of code block
-        }
-        codeLines.push(lines[i].replace(/^(?:    |\t)/, ""));
-        i++;
-      }
-      // Trim trailing empty lines
-      while (codeLines.length > 0 && codeLines[codeLines.length - 1].trim() === "") {
-        codeLines.pop();
-      }
-      if (codeLines.length > 0) {
-        result.push("```");
-        result.push(...codeLines);
-        result.push("```");
-      }
-    } else {
-      result.push(line);
-      i++;
-    }
-  }
-  return result.join("\n");
-}
-
-/**
  * Fix tables where rehype-remark adds an empty header row.
- * Pattern: empty row | separator | data rows → remove empty row, promote first data row to header.
  */
 function fixTableHeaders(md: string): string {
   const lines = md.split("\n");
@@ -334,32 +184,21 @@ function fixTableHeaders(md: string): string {
 
   while (i < lines.length) {
     if (/^\|.+\|/.test(lines[i])) {
-      // Collect entire table block
       const tableLines: string[] = [];
       while (i < lines.length && /^\|.+\|/.test(lines[i])) {
         tableLines.push(lines[i]);
         i++;
       }
 
-      // Check for the pattern: empty header row + separator + data rows
-      // Empty row: all cells are whitespace only (e.g., "|       |       |")
-      if (
-        tableLines.length >= 3 &&
-        isEmptyRow(tableLines[0]) &&
-        isSeparatorRow(tableLines[1])
-      ) {
-        // Remove empty header, make first data row the new header
+      if (tableLines.length >= 3 && isEmptyRow(tableLines[0]) && isSeparatorRow(tableLines[1])) {
         const dataRows = tableLines.slice(2);
-        const separator = buildSeparator(dataRows);
         result.push(dataRows[0]);
-        result.push(separator);
+        result.push(buildSeparator(dataRows));
         result.push(...dataRows.slice(1));
-      } else if (isSeparatorRow(tableLines[1])) {
-        // Table already has a separator — rebuild it to match column widths
+      } else if (tableLines.length >= 2 && isSeparatorRow(tableLines[1])) {
         const dataRows = [tableLines[0], ...tableLines.slice(2)];
-        const separator = buildSeparator(dataRows);
         result.push(tableLines[0]);
-        result.push(separator);
+        result.push(buildSeparator(dataRows));
         result.push(...tableLines.slice(2));
       } else {
         result.push(...tableLines);
@@ -372,29 +211,47 @@ function fixTableHeaders(md: string): string {
   return result.join("\n");
 }
 
-/**
- * Build a separator row (| --- | --- |) with dashes matching column widths.
- */
 function buildSeparator(rows: string[]): string {
-  // Parse cells from each row to find max width per column
   const colWidths: number[] = [];
   for (const row of rows) {
-    const cells = row.split("|").slice(1, -1); // remove leading/trailing empty
+    const cells = row.split("|").slice(1, -1);
     cells.forEach((cell, idx) => {
-      const width = cell.trim().length;
-      colWidths[idx] = Math.max(colWidths[idx] || 3, width);
+      colWidths[idx] = Math.max(colWidths[idx] || 3, cell.trim().length);
     });
   }
-  // Build separator with dashes padded to column width
-  const parts = colWidths.map((w) => " " + "-".repeat(Math.max(w, 3)) + " ");
-  return "|" + parts.join("|") + "|";
+  return "|" + colWidths.map((w) => " " + "-".repeat(Math.max(w, 3)) + " ").join("|") + "|";
 }
 
 function isEmptyRow(line: string): boolean {
-  // A row where all cells contain only whitespace
   return /^\|(\s*\|)+\s*$/.test(line);
 }
 
 function isSeparatorRow(line: string): boolean {
   return /^\|\s*[-:]+[-|\s:]*$/.test(line);
+}
+
+/**
+ * Fix orphaned list markers: bare "- " on its own line followed by
+ * blank lines + content → merge into single line.
+ */
+function fixOrphanedListMarkers(md: string): string {
+  const lines = md.split("\n");
+  const result: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const markerMatch = lines[i].match(/^(\s*)-\s*$/);
+    if (markerMatch) {
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim() === "") j++;
+      if (j < lines.length && lines[j].trim()) {
+        result.push(`${markerMatch[1]}- ${lines[j].trim()}`);
+        i = j + 1;
+        continue;
+      }
+    }
+    result.push(lines[i]);
+    i++;
+  }
+  return result.join("\n");
 }

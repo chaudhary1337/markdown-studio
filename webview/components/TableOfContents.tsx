@@ -1,19 +1,12 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { BlockNoteEditor } from "@blocknote/core";
 import { GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
+import { getHeadingLevel, scrollToBlock } from "../utils";
 
 interface TocEntry {
   id: string;
   text: string;
   level: number;
-}
-
-function getHeadingLevel(el: Element): number {
-  const inner = el.querySelector("h1, h2, h3, h4, h5, h6");
-  if (inner) {
-    return parseInt(inner.tagName[1], 10);
-  }
-  return 1;
 }
 
 const COLLAPSE_THRESHOLD = 80;
@@ -36,18 +29,13 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
     const container = document.querySelector(".editor-container");
     if (!container) return;
 
-    const headingEls = container.querySelectorAll(
-      '[data-content-type="heading"]'
-    );
-
+    const headingEls = container.querySelectorAll('[data-content-type="heading"]');
     const newEntries: TocEntry[] = [];
     headingEls.forEach((el, index) => {
-      const level = getHeadingLevel(el);
-      const text = el.textContent || "";
-      const blockWrapper = el.closest("[data-id]");
-      const id = blockWrapper?.getAttribute("data-id") || `toc-${index}`;
-      if (text.trim()) {
-        newEntries.push({ id, text: text.trim(), level });
+      const text = el.textContent?.trim();
+      if (text) {
+        const id = el.closest("[data-id]")?.getAttribute("data-id") || `toc-${index}`;
+        newEntries.push({ id, text, level: getHeadingLevel(el) });
       }
     });
     setEntries(newEntries);
@@ -58,8 +46,7 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
     headingEls.forEach((el, index) => {
       const rect = el.getBoundingClientRect();
       const dist = Math.abs(rect.top - containerRect.top);
-      const blockWrapper = el.closest("[data-id]");
-      const id = blockWrapper?.getAttribute("data-id") || `toc-${index}`;
+      const id = el.closest("[data-id]")?.getAttribute("data-id") || `toc-${index}`;
       if (rect.top <= containerRect.top + 100 && dist < closestDist) {
         closestDist = dist;
         closestId = id;
@@ -71,11 +58,9 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
   useEffect(() => {
     const container = document.querySelector(".editor-container");
     if (!container) return;
-
     container.addEventListener("scroll", updateToc, { passive: true });
     const interval = setInterval(updateToc, 1000);
     setTimeout(updateToc, 500);
-
     return () => {
       container.removeEventListener("scroll", updateToc);
       clearInterval(interval);
@@ -86,57 +71,46 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!dragging.current) return;
-      const delta = startX.current - e.clientX;
-      const raw = startWidth.current + delta;
+      const raw = startWidth.current + (startX.current - e.clientX);
 
       if (wasCollapsed.current) {
-        // Dragging from collapsed: always show, width follows cursor
-        const w = Math.min(MAX_WIDTH, Math.max(0, raw));
-        if (w >= COLLAPSE_THRESHOLD) {
+        if (raw >= COLLAPSE_THRESHOLD) {
+          const w = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, raw));
           setCollapsed(false);
-          const clamped = Math.max(MIN_WIDTH, w);
-          setWidth(clamped);
-          lastOpenWidth.current = clamped;
-        }
-      } else {
-        // Dragging from expanded: allow collapsing
-        if (raw < COLLAPSE_THRESHOLD) {
-          setCollapsed(true);
-        } else {
-          setCollapsed(false);
-          const w = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, raw));
           setWidth(w);
           lastOpenWidth.current = w;
         }
+      } else if (raw < COLLAPSE_THRESHOLD) {
+        setCollapsed(true);
+      } else {
+        const w = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, raw));
+        setCollapsed(false);
+        setWidth(w);
+        lastOpenWidth.current = w;
       }
     };
+
     const stopDrag = () => {
-      if (dragging.current) {
-        dragging.current = false;
-        wasCollapsed.current = false;
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-      }
+      if (!dragging.current) return;
+      dragging.current = false;
+      wasCollapsed.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     };
-    const onMouseUp = stopDrag;
-    // If cursor leaves the viewport, treat as drop
+
     const onMouseLeave = (e: MouseEvent) => {
       if (!dragging.current) return;
-      if (
-        e.clientX <= 0 ||
-        e.clientY <= 0 ||
-        e.clientX >= window.innerWidth ||
-        e.clientY >= window.innerHeight
-      ) {
+      if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
         stopDrag();
       }
     };
+
     document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("mouseup", stopDrag);
     document.addEventListener("mouseleave", onMouseLeave);
     return () => {
       document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("mouseup", stopDrag);
       document.removeEventListener("mouseleave", onMouseLeave);
     };
   }, []);
@@ -175,10 +149,7 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
             <ChevronRight
               size={12}
               className="toc-collapse-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setCollapsed(true);
-              }}
+              onClick={(e) => { e.stopPropagation(); setCollapsed(true); }}
             />
             <GripVertical size={12} className="toc-grip" />
           </>
@@ -191,29 +162,15 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
             <div
               key={entry.id}
               className={`toc-entry toc-entry-h${entry.level}${entry.id === activeId ? " toc-active" : ""}`}
-              onClick={() => scrollToEntry(entry.id)}
+              onClick={() => scrollToBlock(entry.id)}
               role="button"
               tabIndex={0}
             >
-              {entry.text}
+              {entry.text.length > 128 ? entry.text.slice(0, 128) + "\u2026" : entry.text}
             </div>
           ))}
         </div>
       )}
     </>
   );
-}
-
-function scrollToEntry(id: string) {
-  const el = document.querySelector(`[data-id="${id}"]`);
-  const container = document.querySelector(".editor-container");
-  const stickyEl = document.querySelector(".sticky-headings");
-  if (!el || !container) return;
-
-  const stickyHeight = stickyEl ? stickyEl.getBoundingClientRect().height : 0;
-  const elTop = el.getBoundingClientRect().top;
-  const containerTop = container.getBoundingClientRect().top;
-  const offset = elTop - containerTop + container.scrollTop - stickyHeight;
-
-  container.scrollTo({ top: offset, behavior: "smooth" });
 }
