@@ -166,7 +166,24 @@ html, body, #root {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--vscode-descriptionForeground, #888);
-  padding: 0 4px 8px;
+  padding: 0 4px 4px;
+}
+
+.toc-filter {
+  width: calc(100% - 12px);
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #ccc);
+  border: 1px solid var(--vscode-input-border, #5a5a5a);
+  border-radius: 2px;
+  padding: 3px 4px;
+  font-size: 11px;
+  font-family: inherit;
+  margin: 0 4px 6px;
+  outline: none;
+}
+
+.toc-filter:focus {
+  border-color: var(--vscode-focusBorder, #007fd4);
 }
 
 .toc-entry {

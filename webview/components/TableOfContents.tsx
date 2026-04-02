@@ -17,6 +17,7 @@ const DEFAULT_WIDTH = 200;
 export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
   const [entries, setEntries] = useState<TocEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [filter, setFilter] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const lastOpenWidth = useRef(DEFAULT_WIDTH);
@@ -158,17 +159,27 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
       {!collapsed && (
         <div className="toc-sidebar" style={{ width }}>
           <div className="toc-title">Contents</div>
-          {entries.map((entry) => (
-            <div
-              key={entry.id}
-              className={`toc-entry toc-entry-h${entry.level}${entry.id === activeId ? " toc-active" : ""}`}
-              onClick={() => scrollToBlock(entry.id)}
-              role="button"
-              tabIndex={0}
-            >
-              {entry.text.length > 128 ? entry.text.slice(0, 128) + "\u2026" : entry.text}
-            </div>
-          ))}
+          <input
+            className="toc-filter"
+            type="text"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter\u2026"
+            spellCheck={false}
+          />
+          {entries
+            .filter((e) => !filter || e.text.toLowerCase().includes(filter.toLowerCase()))
+            .map((entry) => (
+              <div
+                key={entry.id}
+                className={`toc-entry toc-entry-h${entry.level}${entry.id === activeId ? " toc-active" : ""}`}
+                onClick={() => scrollToBlock(entry.id)}
+                role="button"
+                tabIndex={0}
+              >
+                {entry.text.length > 128 ? entry.text.slice(0, 128) + "\u2026" : entry.text}
+              </div>
+            ))}
         </div>
       )}
     </>

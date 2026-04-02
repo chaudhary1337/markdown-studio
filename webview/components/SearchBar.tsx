@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 
-// TypeScript declarations for CSS Custom Highlight API
 declare class Highlight {
   constructor(...ranges: Range[]);
 }
@@ -52,44 +51,36 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
 
     let pattern: RegExp;
     try {
-      if (useRegex) {
-        pattern = new RegExp(query, caseSensitive ? "g" : "gi");
-      } else {
-        const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        pattern = new RegExp(escaped, caseSensitive ? "g" : "gi");
-      }
+      const src = useRegex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      pattern = new RegExp(src, caseSensitive ? "g" : "gi");
     } catch {
       setMatchCount(0);
       setCurrentMatch(0);
       return;
     }
 
-    const containers = [
-      document.querySelector(".bn-editor"),
-      document.querySelector(".toc-sidebar"),
-    ].filter(Boolean) as Element[];
+    // Search editor content only
+    const container = document.querySelector(".bn-editor");
+    if (!container) return;
 
     const ranges: Range[] = [];
-    for (const container of containers) {
-      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
-      let node: Text | null;
-      while ((node = walker.nextNode() as Text | null)) {
-        const text = node.textContent || "";
-        let match;
-        pattern.lastIndex = 0;
-        while ((match = pattern.exec(text)) !== null) {
-          if (match[0].length === 0) break;
-          const range = document.createRange();
-          range.setStart(node, match.index);
-          range.setEnd(node, match.index + match[0].length);
-          ranges.push(range);
-        }
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    let node: Text | null;
+    while ((node = walker.nextNode() as Text | null)) {
+      const text = node.textContent || "";
+      let match;
+      pattern.lastIndex = 0;
+      while ((match = pattern.exec(text)) !== null) {
+        if (match[0].length === 0) break;
+        const range = document.createRange();
+        range.setStart(node, match.index);
+        range.setEnd(node, match.index + match[0].length);
+        ranges.push(range);
       }
     }
 
     matchRanges.current = ranges;
     setMatchCount(ranges.length);
-
     if (ranges.length > 0) {
       setCurrentMatch(1);
       applyHighlights(ranges, 0);
@@ -98,29 +89,20 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
     }
   }, [query, caseSensitive, useRegex]);
 
-  useEffect(() => {
-    doSearch();
-  }, [doSearch]);
+  useEffect(() => { doSearch(); }, [doSearch]);
 
-  const navigateMatch = useCallback(
-    (direction: 1 | -1) => {
-      if (matchCount === 0) return;
-      let next = currentMatch + direction;
-      if (next > matchCount) next = 1;
-      if (next < 1) next = matchCount;
-      setCurrentMatch(next);
-      applyHighlights(matchRanges.current, next - 1);
-    },
-    [currentMatch, matchCount]
-  );
+  const navigateMatch = useCallback((direction: 1 | -1) => {
+    if (matchCount === 0) return;
+    let next = currentMatch + direction;
+    if (next > matchCount) next = 1;
+    if (next < 1) next = matchCount;
+    setCurrentMatch(next);
+    applyHighlights(matchRanges.current, next - 1);
+  }, [currentMatch, matchCount]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      onClose();
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      navigateMatch(e.shiftKey ? -1 : 1);
-    }
+    if (e.key === "Escape") onClose();
+    else if (e.key === "Enter") { e.preventDefault(); navigateMatch(e.shiftKey ? -1 : 1); }
   };
 
   if (!visible) return null;
@@ -134,7 +116,7 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Find\u2026"
+        placeholder="Find in document\u2026"
         spellCheck={false}
       />
       <span className="search-count">
@@ -144,62 +126,39 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
         className={`search-toggle ${caseSensitive ? "search-toggle-active" : ""}`}
         onClick={() => setCaseSensitive(!caseSensitive)}
         title="Match case"
-      >
-        Aa
-      </button>
+      >Aa</button>
       <button
         className={`search-toggle ${useRegex ? "search-toggle-active" : ""}`}
         onClick={() => setUseRegex(!useRegex)}
         title="Use regex"
-      >
-        .*
-      </button>
-      <button className="search-nav" onClick={() => navigateMatch(-1)} title="Previous (Shift+Enter)">
-        &#x25B2;
-      </button>
-      <button className="search-nav" onClick={() => navigateMatch(1)} title="Next (Enter)">
-        &#x25BC;
-      </button>
-      <button className="search-close" onClick={onClose} title="Close (Esc)">
-        &#x2715;
-      </button>
+      >.*</button>
+      <button className="search-nav" onClick={() => navigateMatch(-1)} title="Previous (Shift+Enter)">&#x25B2;</button>
+      <button className="search-nav" onClick={() => navigateMatch(1)} title="Next (Enter)">&#x25BC;</button>
+      <button className="search-close" onClick={onClose} title="Close (Esc)">&#x2715;</button>
     </div>
   );
 }
 
 function applyHighlights(ranges: Range[], activeIndex: number) {
   if (ranges.length === 0) return;
-
-  // Remove old mark elements first
   clearMarkElements();
 
   if (supportsHighlightAPI) {
     const highlights = (CSS as any).highlights as Map<string, Highlight>;
     const inactive = ranges.filter((_, i) => i !== activeIndex);
-    if (inactive.length > 0) {
-      highlights.set("search-match", new Highlight(...inactive));
-    }
-    if (ranges[activeIndex]) {
-      highlights.set("search-match-active", new Highlight(ranges[activeIndex]));
-    }
+    if (inactive.length > 0) highlights.set("search-match", new Highlight(...inactive));
+    if (ranges[activeIndex]) highlights.set("search-match-active", new Highlight(ranges[activeIndex]));
   } else {
-    // Fallback: wrap matches in <mark> elements (won't work perfectly in
-    // contenteditable but provides visual feedback)
     for (let i = ranges.length - 1; i >= 0; i--) {
       try {
         const mark = document.createElement("mark");
         mark.className = i === activeIndex ? "search-mark-active" : "search-mark";
         mark.dataset.searchMark = "true";
         ranges[i].surroundContents(mark);
-      } catch {
-        // surroundContents fails if range crosses element boundaries — skip
-      }
+      } catch { /* skip cross-boundary ranges */ }
     }
   }
-
-  if (ranges[activeIndex]) {
-    scrollToRange(ranges[activeIndex]);
-  }
+  if (ranges[activeIndex]) scrollToRange(ranges[activeIndex]);
 }
 
 function clearAllHighlights() {
@@ -224,7 +183,6 @@ function scrollToRange(range: Range) {
   const rect = range.getBoundingClientRect();
   const container = document.querySelector(".editor-container");
   if (!container) return;
-
   const containerRect = container.getBoundingClientRect();
   if (rect.top < containerRect.top || rect.bottom > containerRect.bottom) {
     const stickyEl = container.querySelector(".sticky-headings");

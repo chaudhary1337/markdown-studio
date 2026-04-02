@@ -354,12 +354,16 @@ function replaceEmphasis(md: string): string {
 }
 
 /**
- * Convert 4-space list indentation to 2-space.
- * BlockNote uses 4-space indent; we prefer 2-space for compactness.
+ * Convert 4-space list indentation to standard widths.
+ * BlockNote uses 4 spaces per nesting level. We convert to:
+ *   - 2 spaces under unordered markers (- )
+ *   - 3 spaces under ordered markers (1. )
  */
 function normalizeListIndent(md: string): string {
   const lines = md.split("\n");
   let inCodeBlock = false;
+  // Track original indent→marker type to determine parent context
+  const indentStack: { indent: number; ordered: boolean }[] = [];
   const result: string[] = [];
 
   for (const line of lines) {
@@ -373,15 +377,30 @@ function normalizeListIndent(md: string): string {
       continue;
     }
 
-    // Match lines that start with spaces followed by a list marker
-    const match = line.match(/^(\s+)([-*]|\d+\.)\s/);
+    const match = line.match(/^(\s*)([-*]|\d+\.)\s/);
     if (match) {
-      const spaces = match[1];
-      const level = Math.floor(spaces.length / 4);
-      const remainder = spaces.length % 4;
-      const newIndent = "  ".repeat(level) + " ".repeat(Math.min(remainder, 2));
-      result.push(newIndent + line.trimStart());
+      const origIndent = match[1].length;
+      const isOrdered = /^\d+\./.test(match[2]);
+
+      // Find parent: most recent stack entry with less indent
+      while (indentStack.length > 0 && indentStack[indentStack.length - 1].indent >= origIndent) {
+        indentStack.pop();
+      }
+      const parentIsOrdered = indentStack.length > 0 && indentStack[indentStack.length - 1].ordered;
+      indentStack.push({ indent: origIndent, ordered: isOrdered });
+
+      if (origIndent === 0) {
+        result.push(line); // top-level: no change
+      } else {
+        const level = Math.floor(origIndent / 4);
+        const step = parentIsOrdered ? 3 : 2;
+        result.push(" ".repeat(level * step) + line.trimStart());
+      }
     } else {
+      // Non-list line resets the stack if at top level
+      if (line.trim() !== "" && !/^\s/.test(line)) {
+        indentStack.length = 0;
+      }
       result.push(line);
     }
   }
