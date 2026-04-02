@@ -109,6 +109,14 @@ export async function blocksToMarkdown(
   let md: string;
 
   try {
+    // Set a language on code blocks that have none — blocksToMarkdownLossy
+    // outputs language-less code blocks as indented (4 spaces) which is
+    // ambiguous with list continuation. Setting "text" forces fenced output.
+    for (const block of iterBlocks(editor.document)) {
+      if (block.type === "codeBlock" && !block.props?.language) {
+        editor.updateBlock(block, { props: { language: "text" } } as any);
+      }
+    }
     md = await editor.blocksToMarkdownLossy(editor.document);
   } catch {
     // Fallback: HTML → remark pipeline (may lose nesting but handles edge cases)
@@ -186,5 +194,13 @@ function restoreRelativePaths(
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Recursively iterate all blocks including children. */
+function* iterBlocks(blocks: any[]): Generator<any> {
+  for (const block of blocks) {
+    yield block;
+    if (block.children?.length) yield* iterBlocks(block.children);
+  }
 }
 

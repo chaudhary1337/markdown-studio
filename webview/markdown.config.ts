@@ -24,7 +24,10 @@ export const MARKDOWN_CONFIG = {
 export function normalizeMarkdown(md: string): string {
   md = md.replace(/^```shellscript$/gm, "```bash");
   md = md.replace(/^(\s*)\*\s{1,3}/gm, "$1- ");
+  md = replaceEmphasis(md);
   md = md.replace(/^(\s*\d+\.)\s{2,}/gm, "$1 ");
+  md = normalizeListIndent(md);
+  md = indentedToFenced(md);
   md = fixTaskLists(md);
   md = renumberOrderedLists(md);
   md = fixTableHeaders(md);
@@ -263,6 +266,8 @@ function fixOrphanedListMarkers(md: string): string {
  */
 function compactLists(md: string): string {
   const LIST_ITEM = /^(\s*)(?:[-*]|\d+\.)\s/;
+  const ORDERED = /^(\s*)\d+\.\s/;
+  const UNORDERED = /^(\s*)[-*]\s/;
   const lines = md.split("\n");
   const result: string[] = [];
   let inCodeBlock = false;
@@ -274,26 +279,169 @@ function compactLists(md: string): string {
       continue;
     }
 
-    // Skip blank lines that sit between two list items
     if (lines[i].trim() === "") {
-      // Look backward for a list item
-      let prevList = false;
+      let prevLine = "";
       for (let p = result.length - 1; p >= 0; p--) {
-        if (result[p].trim() === "") continue;
-        prevList = LIST_ITEM.test(result[p]);
-        break;
+        if (result[p].trim() !== "") { prevLine = result[p]; break; }
       }
-      // Look forward for a list item
-      let nextList = false;
+      let nextLine = "";
       for (let n = i + 1; n < lines.length; n++) {
-        if (lines[n].trim() === "") continue;
-        nextList = LIST_ITEM.test(lines[n]);
-        break;
+        if (lines[n].trim() !== "") { nextLine = lines[n]; break; }
       }
-      if (prevList && nextList) continue; // skip this blank line
+
+      const prevIsList = LIST_ITEM.test(prevLine);
+      const nextIsList = LIST_ITEM.test(nextLine);
+
+      if (prevIsList && nextIsList) {
+        // Keep blank line between different list types at top level
+        const prevIndent = prevLine.match(/^(\s*)/)?.[1]?.length ?? 0;
+        const nextIndent = nextLine.match(/^(\s*)/)?.[1]?.length ?? 0;
+        const sameType = (ORDERED.test(prevLine) && ORDERED.test(nextLine)) ||
+                         (UNORDERED.test(prevLine) && UNORDERED.test(nextLine));
+        if (prevIndent === 0 && nextIndent === 0 && !sameType) {
+          result.push(lines[i]); // keep the blank line
+        }
+        // else: skip (compact)
+        continue;
+      }
     }
 
     result.push(lines[i]);
+  }
+  return result.join("\n");
+}
+
+/**
+ * Replace *text* with _text_ for emphasis.
+ * Skips code blocks, inline code, and **bold** (double asterisks).
+ */
+function replaceEmphasis(md: string): string {
+  const lines = md.split("\n");
+  let inCodeBlock = false;
+  const result: string[] = [];
+
+  for (const line of lines) {
+    if (/^```/.test(line)) {
+      inCodeBlock = !inCodeBlock;
+      result.push(line);
+      continue;
+    }
+    if (inCodeBlock) {
+      result.push(line);
+      continue;
+    }
+
+    let processed = "";
+    let remaining = line;
+    while (remaining.length > 0) {
+      const codeStart = remaining.indexOf("`");
+      if (codeStart === -1) {
+        processed += remaining.replace(/(?<!\*)\*(?!\*|\s)(.+?)(?<!\*|\s)\*(?!\*)/g, "_$1_");
+        break;
+      }
+      processed += remaining.slice(0, codeStart).replace(/(?<!\*)\*(?!\*|\s)(.+?)(?<!\*|\s)\*(?!\*)/g, "_$1_");
+      const codeEnd = remaining.indexOf("`", codeStart + 1);
+      if (codeEnd === -1) {
+        processed += remaining.slice(codeStart);
+        break;
+      }
+      processed += remaining.slice(codeStart, codeEnd + 1);
+      remaining = remaining.slice(codeEnd + 1);
+    }
+    result.push(processed);
+  }
+  return result.join("\n");
+}
+
+/**
+ * Convert 4-space list indentation to 2-space.
+ * BlockNote uses 4-space indent; we prefer 2-space for compactness.
+ */
+function normalizeListIndent(md: string): string {
+  const lines = md.split("\n");
+  let inCodeBlock = false;
+  const result: string[] = [];
+
+  for (const line of lines) {
+    if (/^```/.test(line)) {
+      inCodeBlock = !inCodeBlock;
+      result.push(line);
+      continue;
+    }
+    if (inCodeBlock) {
+      result.push(line);
+      continue;
+    }
+
+    // Match lines that start with spaces followed by a list marker
+    const match = line.match(/^(\s+)([-*]|\d+\.)\s/);
+    if (match) {
+      const spaces = match[1];
+      const level = Math.floor(spaces.length / 4);
+      const remainder = spaces.length % 4;
+      const newIndent = "  ".repeat(level) + " ".repeat(Math.min(remainder, 2));
+      result.push(newIndent + line.trimStart());
+    } else {
+      result.push(line);
+    }
+  }
+  return result.join("\n");
+}
+
+/**
+ * Convert indented code blocks (4 spaces) to fenced ``` blocks.
+ * Tracks fenced code block state to avoid corrupting content inside fences.
+ */
+function indentedToFenced(md: string): string {
+  const lines = md.split("\n");
+  const result: string[] = [];
+  let i = 0;
+  let inFencedBlock = false;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (/^```/.test(line)) {
+      inFencedBlock = !inFencedBlock;
+      result.push(line);
+      i++;
+      continue;
+    }
+
+    if (inFencedBlock) {
+      result.push(line);
+      i++;
+      continue;
+    }
+
+    if (/^(?:    |\t)\S/.test(line) || /^(?:    |\t)$/.test(line)) {
+      // Skip if previous non-empty line is a list item
+      let prevNonEmpty = "";
+      for (let j = result.length - 1; j >= 0; j--) {
+        if (result[j].trim() !== "") { prevNonEmpty = result[j]; break; }
+      }
+      if (/^\s*[-*]\s/.test(prevNonEmpty) || /^\s*\d+\.\s/.test(prevNonEmpty)) {
+        result.push(line);
+        i++;
+        continue;
+      }
+
+      const codeLines: string[] = [];
+      while (i < lines.length && (/^(?:    |\t)/.test(lines[i]) || lines[i].trim() === "")) {
+        if (lines[i].trim() === "" && i + 1 < lines.length && !/^(?:    |\t)/.test(lines[i + 1])) break;
+        codeLines.push(lines[i].replace(/^(?:    |\t)/, ""));
+        i++;
+      }
+      while (codeLines.length > 0 && codeLines[codeLines.length - 1].trim() === "") codeLines.pop();
+      if (codeLines.length > 0) {
+        result.push("```");
+        result.push(...codeLines);
+        result.push("```");
+      }
+    } else {
+      result.push(line);
+      i++;
+    }
   }
   return result.join("\n");
 }
