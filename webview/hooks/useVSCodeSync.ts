@@ -153,6 +153,19 @@ export async function htmlToMarkdown(
   // Strip <p> from inside <li> so rehype-remark produces tight lists
   html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
 
+  // Escape | inside <code> within table cells — rehype-remark treats
+  // unescaped | as column separators, corrupting table structure
+  {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    doc.querySelectorAll("td code, th code").forEach((code) => {
+      const text = code.textContent || "";
+      if (text.includes("|")) {
+        code.textContent = text.replace(/\|/g, "\\|");
+      }
+    });
+    html = doc.body.innerHTML;
+  }
+
   // Wrap bare <img> tags in <p> so each image gets its own paragraph
   // Tiptap outputs images as top-level <img> without <p> wrappers
   html = html.replace(/(?<!\w)(<img\s[^>]*>)/g, "<p>$1</p>");
@@ -169,6 +182,10 @@ export async function htmlToMarkdown(
     .process(html);
 
   let md = normalizeMarkdown(String(result));
+
+  // Replace HTML entities that leak through
+  md = md.replace(/&#x20;/g, " ");
+  md = md.replace(/&amp;/g, "&");
 
   // Strip BlockNote-style default alt text
   md = md.replace(/!\[BlockNote image\]/g, "![]");

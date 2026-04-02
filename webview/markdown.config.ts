@@ -87,6 +87,9 @@ function unescapeText(text: string): string {
   // Remove backslash before * that isn't part of bold/emphasis markup
   // Only unescape standalone \* (e.g. "2 \* 3") not emphasis markers
   text = text.replace(/(?<=\s|^)\\\*(?=\s|$)/g, "*");
+  // Remove backslash before _ inside words (e.g. future\_relevance → future_relevance)
+  // but keep \_ at word boundaries where it prevents emphasis
+  text = text.replace(/(\w)\\_(\w)/g, "$1_$2");
   return text;
 }
 
@@ -217,12 +220,37 @@ function fixTableHeaders(md: string): string {
 function buildSeparator(rows: string[]): string {
   const colWidths: number[] = [];
   for (const row of rows) {
-    const cells = row.split("|").slice(1, -1);
+    const cells = splitTableRow(row);
     cells.forEach((cell, idx) => {
       colWidths[idx] = Math.max(colWidths[idx] || 3, cell.trim().length);
     });
   }
   return "|" + colWidths.map((w) => " " + "-".repeat(Math.max(w, 3)) + " ").join("|") + "|";
+}
+
+/** Split a markdown table row into cells, respecting | inside backtick spans. */
+function splitTableRow(row: string): string[] {
+  const cells: string[] = [];
+  let current = "";
+  let inCode = false;
+  // Skip leading |
+  let i = row.indexOf("|") + 1;
+  for (; i < row.length; i++) {
+    const ch = row[i];
+    if (ch === "`") {
+      inCode = !inCode;
+      current += ch;
+    } else if (ch === "|" && !inCode) {
+      cells.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  // Drop trailing empty cell (from trailing |)
+  if (cells.length > 0 && current.trim() === "") return cells;
+  if (current) cells.push(current);
+  return cells;
 }
 
 function isEmptyRow(line: string): boolean {
