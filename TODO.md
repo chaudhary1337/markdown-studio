@@ -1,16 +1,36 @@
 # Better Markdown — TODO
 
-- [x] Add a button to travel back and forth between the rich editor and the default text editor
-- [x] Add Ctrl+F find-in-page with highlighting in the webview
-- [x] Preserve h4-h6 headings (####, #####, ######) — currently downgraded to h3 (BlockNote only supports h1-h3)
-- [x] Prefix all console logging with `[better-markdown]` for easier filtering in devtools
-- [x] Fix linter breaking markdown list items
-- [x] Fix syntax highlighting not working
-- [x] Ctrl+F searches editor content; persistent filter on TOC
-- [x] Line-wrap table of contents entries and truncate to 128 characters if longer
+## Done
+
+- [x] Toggle between rich/source editor (Cmd+Shift+M)
+- [x] Ctrl+F find-in-page with highlighting (CSS Custom Highlight API + mark fallback)
+- [x] Preserve h4-h6 headings via metadata comment
+- [x] Prefix all console logging with `[better-markdown]`
+- [x] Fix list item formatting (orphaned markers, loose lists)
+- [x] Syntax highlighting in code blocks (lowlight)
+- [x] Ctrl+F for editor content; persistent filter on TOC
+- [x] Line-wrap TOC entries, truncate at 128 chars
+- [x] Migrate from BlockNote to Tiptap (blockquotes, HRs, h1-h6, task lists)
+- [x] Slash command menu (/ at start of line)
+- [x] Fix list nesting round-trip (wrap bare `<li>` text in `<p>` for Tiptap parser)
+- [x] Fix table corruption with `|` inside code spans (protect pipes before remark parse)
+- [x] Unescape `\_` in variable names, `\[` brackets, `\~` tildes
+- [x] Task list checkbox round-trip (GFM ↔ Tiptap taskItem conversion)
+- [x] Image separation (each image in its own `<p>` block)
+
+## Remaining
+
+- [ ] Fix remark-stringify escaping `\` inside code spans (`\|` → `\\|` on each round-trip)
 - [ ] Git diffs should work
 - [ ] Make copy work (paste already works)
-- [ ] Blockquotes (`> text`) — requires editor with blockquote block type (BlockNote doesn't have one)
-- [ ] Horizontal rules (`---`) — requires editor with HR block type (BlockNote doesn't have one)
-- [ ] Settings page (indentation size, etc.)
-- [ ] Migrate from BlockNote to Tiptap for full CommonMark support (blockquotes, HRs, better nesting)
+- [ ] Settings page (indentation size, emphasis style, etc.)
+- [ ] `compactLists` removes blank lines between bullet list and following paragraph that's indented under a list item — cosmetic but changes structure
+- [ ] `β\_kl` not unescaped (Unicode chars don't match `\w` in regex)
+
+## Known Limitations
+
+- Escaped markdown characters (`\*`, `\_`) lose backslash on round-trip (Tiptap stores rendered text, not source)
+- Table rows with `|` inside code spans: protected on input via placeholder, but remark-stringify re-escapes `\` inside code spans causing `\|` → `\\|`
+- Empty code blocks (``` with no language) stay as-is
+- YAML frontmatter not handled
+- First load has brief flash while Tiptap initializes

@@ -6,7 +6,7 @@ A VSCode extension that replaces the default markdown editor with a Notion-like 
 
 ## Core Features
 
-### Rich Block Editing (via BlockNote)
+### Rich Block Editing (via Tiptap)
 
 - Block-based editing with drag handles to reorder
 - Slash menu (`/`) for inserting block types (headings, lists, code, etc.)
@@ -42,12 +42,12 @@ A VSCode extension that replaces the default markdown editor with a Notion-like 
 
 - Open the same `.md` file in split view — both editors stay synced
 - Open multiple different `.md` files side by side
-- Each gets its own independent BlockNote instance
+- Each gets its own independent Tiptap instance
 
 ### Theme Integration
 
 - Matches VSCode's active color theme via CSS variables
-- Dark mode with Shiki syntax highlighting in code blocks
+- Dark mode with lowlight syntax highlighting in code blocks
 
 ## Architecture
 
@@ -60,10 +60,10 @@ VSCode Extension Host (Node.js)
 │   └── Search command (Ctrl+F → openSearch message)
 │
 Webview (Browser, React)
-├── BlockNote editor (ProseMirror/TipTap under the hood)
-├── Markdown ↔ Blocks conversion
-│   ├── Input: remark/rehype pipeline (md → HTML → blocks)
-│   └── Output: blocksToMarkdownLossy + normalizeMarkdown
+├── Tiptap editor (ProseMirror under the hood)
+├── Markdown ↔ HTML conversion
+│   ├── Input: remark/rehype pipeline (md → HTML → Tiptap)
+│   └── Output: Tiptap HTML → rehype-remark → normalizeMarkdown
 ├── SearchBar (CSS Custom Highlight API)
 ├── Sticky headings overlay (IntersectionObserver)
 ├── Table of contents sidebar (resizable, filterable)
@@ -98,7 +98,7 @@ better-markdown/
 ├── webview/
 │   ├── tsconfig.json         # Webview TS config (JSX)
 │   ├── index.tsx             # React mount
-│   ├── App.tsx               # BlockNote editor + sync + search
+│   ├── App.tsx               # Tiptap editor + sync + search
 │   ├── utils.ts              # Shared helpers (getHeadingLevel, scrollToBlock)
 │   ├── metadata.ts           # h4-h6 preservation via HTML comments
 │   ├── markdown.config.ts    # Formatting config + normalizeMarkdown
@@ -120,47 +120,40 @@ better-markdown/
 
 1. `extractMeta()` strips metadata comment from end of file
 2. `buildMeta()` scans for h4-h6 headings
-3. `unified().use(remarkParse, remarkGfm, remarkRehype, rehypeStringify)` → HTML
-4. HTML transforms: h4-h6 → h3, task list → checkListItem, `<p>` stripping in `<li>`, code language sanitization, image figcaption wrapping, relative path resolution
-5. `editor.tryParseHTMLToBlocks(html)` → BlockNote blocks
+3. `protectTableCodePipes()` — replace `|` inside code spans in table rows with placeholder (remark's GFM table parser splits on `|` even inside backticks)
+4. `unified().use(remarkParse, remarkGfm, remarkRehype, rehypeStringify)` → HTML, then restore placeholders
+5. DOMParser transforms: wrap bare `<li>` text in `<p>` (Tiptap needs block content), convert GFM task list HTML to Tiptap taskItem format, split multiple `<img>` in same `<p>` into separate blocks
+6. Trim code block trailing newlines, resolve relative image paths
+7. `editor.commands.setContent(html)` → Tiptap editor
 
 ### Output (editor → markdown)
 
-1. Set `language: "text"` on code blocks without a language (forces fenced output)
-2. `editor.blocksToMarkdownLossy()` → raw markdown (preserves list nesting)
-3. `normalizeMarkdown()` post-processing:
+1. `editor.getHTML()` → HTML
+2. DOMParser transforms: convert Tiptap taskItem back to GFM `<input type="checkbox">`, escape `|` in `<code>` within table cells
+3. Strip `<p>` from `<li>` (tight lists), wrap bare `<img>` in `<p>`
+4. `unified().use(rehypeParse, rehypeRemark, remarkGfm, remarkStringify)` → markdown
+5. `normalizeMarkdown()` post-processing:
    - `*` list markers → `-`
-   - `*text*` emphasis → `_text_`
-   - 4-space list indent → 2-space (3-space under ordered parents)
-   - Indented code blocks → fenced
-   - Ordered list renumbering (BlockNote outputs all as `1.`)
-   - Table header reconstruction
-   - `\~` unescaping (remark-gfm tilde escaping)
-   - Task list checkbox fixing (escaped brackets, orphaned markers)
+   - Ordered list renumbering
+   - Table header reconstruction (with code-span-aware cell splitting)
+   - Unescape `\~`, standalone `\*`, `\_` in words, `\[`
+   - Task list checkbox fixing
    - Compact lists (remove blank lines between items)
    - Orphaned list marker merging
-   - Duplicate image caption removal
-4. `restoreHeadings()` converts `### ` back to `####`/`#####`/`######` using metadata
-5. `appendMeta()` adds metadata comment at end of file
-6. Strip webview URI prefixes to restore relative image paths
+   - `&#x20;` / `&amp;` HTML entity cleanup
+6. `restoreHeadings()` converts `### ` back to `####`/`#####`/`######` using metadata
+7. `appendMeta()` adds metadata comment at end of file
+8. Strip webview URI prefixes to restore relative image paths
 
-### Fallback
+## Known Limitations
 
-If `blocksToMarkdownLossy` fails, falls back to HTML pipeline:
-`blocksToHTMLLossy` → strip figcaptions → strip `<p>` in `<li>` → rehype-remark → remark-stringify
-
-## Known Limitations (BlockNote 0.22.0)
-
-- **Blockquotes not supported** — BlockNote has no blockquote block type; `> text` becomes plain paragraph on load
-- **Horizontal rules not supported** — BlockNote has no HR block type; `---` is lost on load
-- **h4-h6 render as h3** in editor (restored on save via metadata)
-- **Code blocks with 4-space indented content** may lose indented lines (BlockNote parser issue)
-- **Escaped markdown characters** (`\*`, `\_`, etc.) lose their backslash on round-trip
-- Image captions shown in rich editor but can accumulate on malformed round-trips
+- **remark-stringify escapes `\` inside code spans**: `\|` becomes `\\|` on each round-trip (remark bug — code spans should be verbatim)
+- **Escaped markdown characters** (`\*`, `\_`) lose backslash on round-trip (Tiptap stores rendered text)
+- **`β\_kl` not unescaped**: Unicode chars don't match `\w` in the unescape regex
 - Raw HTML blocks and footnotes may not round-trip perfectly
-- YAML frontmatter needs special handling (future)
-- Webview bundle is ~2MB compressed (ProseMirror + Mantine + Shiki)
+- YAML frontmatter not handled
 - No git diff integration in rich editor
+- Webview bundle ~380KB compressed
 
 ## Testing
 
@@ -170,4 +163,4 @@ npx tsx scripts/test-roundtrip.ts # Same, explicit
 npx tsx scripts/test-roundtrip.ts path/to/file.md  # Test specific file
 ```
 
-The round-trip test exercises the remark/rehype pipeline and `normalizeMarkdown` without needing a browser. It catches formatting regressions but cannot test BlockNote-specific behavior.
+The round-trip test exercises the remark/rehype pipeline and `normalizeMarkdown` without needing a browser. It catches formatting regressions but cannot test Tiptap-specific behavior.
