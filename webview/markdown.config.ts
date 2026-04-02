@@ -90,6 +90,8 @@ function unescapeText(text: string): string {
   // Remove backslash before _ inside words (e.g. future\_relevance → future_relevance)
   // but keep \_ at word boundaries where it prevents emphasis
   text = text.replace(/(\w)\\_(\w)/g, "$1_$2");
+  // Remove backslash before [ when not part of a link (remark escapes all [)
+  text = text.replace(/\\\[/g, "[");
   return text;
 }
 
