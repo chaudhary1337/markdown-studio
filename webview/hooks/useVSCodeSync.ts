@@ -163,7 +163,8 @@ export async function htmlToMarkdown(
     doc.querySelectorAll("td code, th code").forEach((code) => {
       const text = code.textContent || "";
       if (text.includes("|")) {
-        code.textContent = text.replace(/\|/g, "\\|");
+        // Only escape bare |, not already-escaped \|
+        code.textContent = text.replace(/(?<!\\)\|/g, "\\|");
       }
     });
     html = doc.body.innerHTML;
