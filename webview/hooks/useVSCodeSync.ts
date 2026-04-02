@@ -37,22 +37,27 @@ export async function markdownToHtml(
     (_m, open, content, close) => open + content.replace(/\n$/, "") + close
   );
 
-  // Wrap bare text inside <li> with <p> tags — Tiptap's ProseMirror list_item
-  // schema expects block content (paragraph). Without <p>, bare text nodes
-  // cause the parser to miss nested <ul>/<ol> children, flattening the list.
-  html = html.replace(
-    /<li([^>]*)>([^<])/g,
-    "<li$1><p>$2"
-  );
-  html = html.replace(
-    /([^>])\n<(ul|ol)/g,
-    "$1</p>\n<$2"
-  );
-  // Also close <p> for simple <li>text</li> (no nested list)
-  html = html.replace(
-    /<li([^>]*)><p>([^<]*)<\/li>/g,
-    "<li$1><p>$2</p></li>"
-  );
+  // Wrap bare text inside <li> with <p> tags and compact the HTML.
+  // Tiptap's ProseMirror parser needs: <li><p>text</p><ul>...</ul></li>
+  // with NO whitespace between </p> and <ul>. Newlines between tags
+  // create text nodes that break ProseMirror's content parsing.
+  {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    doc.querySelectorAll("li").forEach((li) => {
+      const firstChild = li.childNodes[0];
+      // If first child is a text node (bare text, no <p>), wrap it
+      if (firstChild && firstChild.nodeType === Node.TEXT_NODE && firstChild.textContent?.trim()) {
+        const p = doc.createElement("p");
+        // Move all inline nodes into <p> until we hit a block element
+        while (li.firstChild && !(li.firstChild as Element).tagName?.match(/^(UL|OL|DIV|BLOCKQUOTE|PRE|TABLE)$/i)) {
+          p.appendChild(li.firstChild);
+        }
+        li.insertBefore(p, li.firstChild);
+      }
+    });
+    // Re-serialize — innerHTML produces compact HTML without extra whitespace
+    html = doc.body.innerHTML;
+  }
 
   // Resolve relative image paths to webview URIs
   if (baseUri) {
