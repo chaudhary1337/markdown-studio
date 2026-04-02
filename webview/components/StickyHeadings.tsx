@@ -48,11 +48,17 @@ export function StickyHeadings() {
   useEffect(() => {
     const container = document.querySelector(".editor-container");
     if (!container) return;
-    container.addEventListener("scroll", update, { passive: true });
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(update);
+    };
+    container.addEventListener("scroll", onScroll, { passive: true });
     const interval = setInterval(update, 2000);
     return () => {
-      container.removeEventListener("scroll", update);
+      container.removeEventListener("scroll", onScroll);
       clearInterval(interval);
+      cancelAnimationFrame(raf);
     };
   }, [update]);
 

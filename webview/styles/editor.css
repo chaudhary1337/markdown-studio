@@ -327,6 +327,9 @@ html, body, #root {
 .toc-entry-h1 { padding-left: 4px; font-weight: 600; }
 .toc-entry-h2 { padding-left: 14px; }
 .toc-entry-h3 { padding-left: 24px; }
+.toc-entry-h4 { padding-left: 34px; }
+.toc-entry-h5 { padding-left: 44px; }
+.toc-entry-h6 { padding-left: 54px; }
 
 
 /* Sticky headings overlay */
