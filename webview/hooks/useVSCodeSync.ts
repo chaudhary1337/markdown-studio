@@ -37,6 +37,23 @@ export async function markdownToHtml(
     (_m, open, content, close) => open + content.replace(/\n$/, "") + close
   );
 
+  // Wrap bare text inside <li> with <p> tags — Tiptap's ProseMirror list_item
+  // schema expects block content (paragraph). Without <p>, bare text nodes
+  // cause the parser to miss nested <ul>/<ol> children, flattening the list.
+  html = html.replace(
+    /<li([^>]*)>([^<])/g,
+    "<li$1><p>$2"
+  );
+  html = html.replace(
+    /([^>])\n<(ul|ol)/g,
+    "$1</p>\n<$2"
+  );
+  // Also close <p> for simple <li>text</li> (no nested list)
+  html = html.replace(
+    /<li([^>]*)><p>([^<]*)<\/li>/g,
+    "<li$1><p>$2</p></li>"
+  );
+
   // Resolve relative image paths to webview URIs
   if (baseUri) {
     html = html.replace(
@@ -59,6 +76,9 @@ export async function htmlToMarkdown(
   baseUri?: string,
   docFolderPath?: string
 ): Promise<string> {
+  // Strip <p> from inside <li> so rehype-remark produces tight lists
+  html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
+
   const result = await unified()
     .use(rehypeParse, { fragment: true })
     .use(rehypeRemark)
