@@ -12,10 +12,18 @@ import { MARKDOWN_CONFIG, normalizeMarkdown } from "../markdown.config";
 /**
  * Convert markdown to HTML for Tiptap editor.
  */
+// Placeholder for | inside code spans in table rows.
+// Remark's GFM table parser splits on | even inside backtick code,
+// corrupting cells like `||value||`. We replace before parse, restore after.
+const PIPE_PH = "%%BTRMK_PIPE%%";
+
 export async function markdownToHtml(
   md: string,
   baseUri?: string
 ): Promise<string> {
+  // Protect | inside code spans within table rows
+  md = protectTableCodePipes(md);
+
   const result = await unified()
     .use(remarkParse)
     .use(remarkGfm)
@@ -23,7 +31,8 @@ export async function markdownToHtml(
     .use(rehypeStringify)
     .process(md);
 
-  let html = String(result);
+  // Restore pipes
+  let html = String(result).replace(new RegExp(PIPE_PH, "g"), "|");
 
   // Trim trailing newlines inside <code> blocks
   html = html.replace(
@@ -225,4 +234,40 @@ function restoreRelativePaths(
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * In table rows, replace | inside backtick code spans with a placeholder.
+ * Remark's GFM table parser splits on | even inside code spans,
+ * corrupting cells like `||value||`.
+ */
+function protectTableCodePipes(md: string): string {
+  const lines = md.split("\n");
+  let inTable = false;
+
+  return lines.map((line) => {
+    // Detect table rows (start with |)
+    if (/^\|/.test(line.trim())) {
+      inTable = true;
+    } else if (inTable && line.trim() !== "") {
+      inTable = false;
+    }
+
+    if (!inTable) return line;
+
+    // Replace | inside backtick code spans with placeholder
+    let result = "";
+    let inCode = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === "`") {
+        inCode = !inCode;
+        result += "`";
+      } else if (line[i] === "|" && inCode) {
+        result += PIPE_PH;
+      } else {
+        result += line[i];
+      }
+    }
+    return result;
+  }).join("\n");
 }
