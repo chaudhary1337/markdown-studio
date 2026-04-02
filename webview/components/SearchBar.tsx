@@ -101,6 +101,7 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
   }, [currentMatch, matchCount]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation(); // prevent ProseMirror from capturing
     if (e.key === "Escape") onClose();
     else if (e.key === "Enter") { e.preventDefault(); navigateMatch(e.shiftKey ? -1 : 1); }
   };

@@ -93,6 +93,25 @@ export function App() {
     return () => window.removeEventListener("message", handler);
   }, [editor]);
 
+  // Assign IDs to headings for TOC scrolling
+  useEffect(() => {
+    if (!editor) return;
+    const assignIds = () => {
+      const el = document.querySelector(".tiptap-editor");
+      if (!el) return;
+      el.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((h, i) => {
+        if (!h.id) {
+          const slug = (h.textContent || "").trim().toLowerCase().replace(/[^\w]+/g, "-").replace(/^-|-$/g, "");
+          h.id = slug ? `heading-${slug}` : `heading-${i}`;
+        }
+      });
+    };
+    editor.on("update", assignIds);
+    // Also run on first render
+    setTimeout(assignIds, 200);
+    return () => { editor.off("update", assignIds); };
+  }, [editor]);
+
   // Ctrl+F / Cmd+F: open search bar
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
