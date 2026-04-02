@@ -1,7 +1,23 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { BlockNoteEditor } from "@blocknote/core";
 import { GripVertical, ChevronLeft, ChevronRight, Filter } from "lucide-react";
-import { scrollToBlock } from "../utils";
+
+/** Scroll to the Nth heading element in the editor. */
+function scrollToHeadingByIndex(index: number) {
+  const container = document.querySelector(".editor-container");
+  if (!container) return;
+  const headings = container.querySelectorAll(
+    ".tiptap-editor h1, .tiptap-editor h2, .tiptap-editor h3, .tiptap-editor h4, .tiptap-editor h5, .tiptap-editor h6"
+  );
+  const el = headings[index];
+  if (!el) return;
+
+  const stickyEl = container.querySelector(".sticky-headings");
+  const stickyHeight = stickyEl ? stickyEl.getBoundingClientRect().height : 0;
+  const elTop = el.getBoundingClientRect().top;
+  const containerTop = container.getBoundingClientRect().top;
+  const offset = elTop - containerTop + container.scrollTop - stickyHeight;
+  container.scrollTo({ top: offset, behavior: "smooth" });
+}
 
 interface TocEntry {
   id: string;
@@ -34,23 +50,12 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
       ".tiptap-editor h1, .tiptap-editor h2, .tiptap-editor h3, .tiptap-editor h4, .tiptap-editor h5, .tiptap-editor h6"
     );
 
-    // Ensure all headings have IDs (for TOC click-to-scroll)
-    const usedIds = new Set<string>();
-    headingEls.forEach((el, index) => {
-      if (!el.id) {
-        const slug = (el.textContent || "").trim().toLowerCase().replace(/[^\w]+/g, "-").replace(/^-|-$/g, "");
-        let id = slug ? `h-${slug}` : `h-${index}`;
-        while (usedIds.has(id)) id += `-${index}`;
-        (el as HTMLElement).id = id;
-      }
-      usedIds.add(el.id);
-    });
-
+    // Use index as identifier — never modify the editor DOM
     const newEntries: TocEntry[] = [];
-    headingEls.forEach((el) => {
+    headingEls.forEach((el, index) => {
       const text = el.textContent?.trim();
       if (text) {
-        newEntries.push({ id: el.id, text, level: parseInt(el.tagName[1], 10) });
+        newEntries.push({ id: String(index), text, level: parseInt(el.tagName[1], 10) });
       }
     });
     setEntries(newEntries);
@@ -58,12 +63,12 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
     const containerRect = container.getBoundingClientRect();
     let closestId: string | null = null;
     let closestDist = Infinity;
-    headingEls.forEach((el) => {
+    headingEls.forEach((el, index) => {
       const rect = el.getBoundingClientRect();
       const dist = Math.abs(rect.top - containerRect.top);
       if (rect.top <= containerRect.top + 100 && dist < closestDist) {
         closestDist = dist;
-        closestId = el.id;
+        closestId = String(index);
       }
     });
     setActiveId(closestId);
@@ -189,7 +194,7 @@ export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
               <div
                 key={entry.id}
                 className={`toc-entry toc-entry-h${entry.level}${entry.id === activeId ? " toc-active" : ""}`}
-                onClick={() => scrollToBlock(entry.id)}
+                onClick={() => scrollToHeadingByIndex(parseInt(entry.id, 10))}
                 role="button"
                 tabIndex={0}
               >

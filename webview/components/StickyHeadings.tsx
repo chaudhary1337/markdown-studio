@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { scrollToBlock } from "../utils";
 
 interface StickyHeading {
-  id: string;
+  index: number;
   text: string;
   level: number;
 }
 
 export function StickyHeadings() {
   const [stickyStack, setStickyStack] = useState<StickyHeading[]>([]);
-  const prevStackRef = useRef<string>("");
+  const prevKeyRef = useRef("");
 
   const update = useCallback(() => {
     const container = document.querySelector(".editor-container");
@@ -21,20 +20,14 @@ export function StickyHeadings() {
     const containerRect = container.getBoundingClientRect();
     const stickyEl = container.querySelector(".sticky-headings");
     const stickyHeight = stickyEl ? stickyEl.getBoundingClientRect().height : 0;
-    // Hysteresis: heading must be 12px past the threshold to register
     const threshold = containerRect.top + stickyHeight + 12;
 
     const aboveViewport: StickyHeading[] = [];
     headingEls.forEach((el, index) => {
-      const rect = el.getBoundingClientRect();
-      if (rect.bottom < threshold) {
+      if (el.getBoundingClientRect().bottom < threshold) {
         const text = el.textContent?.trim();
         if (text) {
-          aboveViewport.push({
-            id: el.id || `heading-${index}`,
-            text,
-            level: parseInt(el.tagName[1], 10),
-          });
+          aboveViewport.push({ index, text, level: parseInt(el.tagName[1], 10) });
         }
       }
     });
@@ -45,10 +38,9 @@ export function StickyHeadings() {
       stack.push(h);
     }
 
-    // Only update state if the stack actually changed (prevents flicker)
-    const key = stack.map((h) => h.id).join(",");
-    if (key !== prevStackRef.current) {
-      prevStackRef.current = key;
+    const key = stack.map((h) => `${h.index}:${h.text}`).join("|");
+    if (key !== prevKeyRef.current) {
+      prevKeyRef.current = key;
       setStickyStack(stack);
     }
   }, []);
@@ -57,12 +49,28 @@ export function StickyHeadings() {
     const container = document.querySelector(".editor-container");
     if (!container) return;
     container.addEventListener("scroll", update, { passive: true });
-    const interval = setInterval(update, 1500);
+    const interval = setInterval(update, 2000);
     return () => {
       container.removeEventListener("scroll", update);
       clearInterval(interval);
     };
   }, [update]);
+
+  const scrollToHeading = (index: number) => {
+    const container = document.querySelector(".editor-container");
+    if (!container) return;
+    const headings = container.querySelectorAll(
+      ".tiptap-editor h1, .tiptap-editor h2, .tiptap-editor h3, .tiptap-editor h4, .tiptap-editor h5, .tiptap-editor h6"
+    );
+    const el = headings[index];
+    if (!el) return;
+    const stickyEl = container.querySelector(".sticky-headings");
+    const stickyHeight = stickyEl ? stickyEl.getBoundingClientRect().height : 0;
+    const elTop = el.getBoundingClientRect().top;
+    const containerTop = container.getBoundingClientRect().top;
+    const offset = elTop - containerTop + container.scrollTop - stickyHeight;
+    container.scrollTo({ top: offset, behavior: "smooth" });
+  };
 
   if (stickyStack.length === 0) return null;
 
@@ -70,9 +78,9 @@ export function StickyHeadings() {
     <div className="sticky-headings">
       {stickyStack.map((h) => (
         <div
-          key={h.id}
+          key={h.index}
           className={`sticky-heading sticky-heading-h${h.level}`}
-          onClick={() => scrollToBlock(h.id)}
+          onClick={() => scrollToHeading(h.index)}
           role="button"
           tabIndex={0}
         >
