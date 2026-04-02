@@ -153,6 +153,14 @@ export async function htmlToMarkdown(
   // Strip <p> from inside <li> so rehype-remark produces tight lists
   html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
 
+  // Wrap bare <img> tags in <p> so each image gets its own paragraph
+  // Tiptap outputs images as top-level <img> without <p> wrappers
+  html = html.replace(/(?<!\w)(<img\s[^>]*>)/g, "<p>$1</p>");
+  // Clean up any <p><p><img></p></p> double-wrapping
+  html = html.replace(/<p>\s*<p>(<img\s[^>]*>)<\/p>\s*<\/p>/g, "<p>$1</p>");
+  // Remove empty <p></p> between images
+  html = html.replace(/<\/p>\s*<p>\s*<\/p>\s*<p>/g, "</p>\n<p>");
+
   const result = await unified()
     .use(rehypeParse, { fragment: true })
     .use(rehypeRemark)
