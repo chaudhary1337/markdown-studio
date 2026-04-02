@@ -49,9 +49,10 @@ export async function markdownToBlocks(
     }
   );
 
-  // Strip <p> wrappers inside <li> — loose lists (items separated by blank lines)
-  // produce <li>\n<p>text</p>\n</li> which BlockNote misinterprets as nested blocks
-  html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>\s*<\/li>/g, "<li$1>$2</li>");
+  // Strip <p> wrappers inside <li> — loose lists produce <li><p>text</p></li>
+  // which BlockNote misinterprets as nested blocks. Use a targeted regex that
+  // only strips the first <p>...</p> after <li>, preserving nested <ul> elements.
+  html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
 
   // Sanitize: ensure all <code> inside <pre> have a language class
   // BlockNote crashes on <pre><code> without class="language-*"
@@ -102,70 +103,35 @@ export async function blocksToMarkdown(
   baseUri?: string,
   docFolderPath?: string
 ): Promise<string> {
+  // Use BlockNote's own markdown converter as primary — it preserves list
+  // nesting from the block structure. The custom HTML pipeline (below) is
+  // kept as fallback since blocksToMarkdownLossy can fail on some content.
   let md: string;
 
   try {
-    let html = await editor.blocksToHTMLLossy(editor.document);
-    // Strip <figure>/<figcaption> wrappers — leave bare <img alt="caption">
-    // so rehype-remark produces clean ![caption](url) without duplication
-    html = html.replace(/<figcaption>[\s\S]*?<\/figcaption>/g, "");
-    html = html.replace(/<\/?figure>/g, "");
-
-    // Strip <p> wrappers inside <li> to prevent remark-stringify from
-    // producing loose lists (bare marker on one line, content on next)
-    html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>\s*<\/li>/g, "<li$1>$2</li>");
-
-    // Convert BlockNote's checkListItem blocks to proper <ul><li> with checkbox
-    // so rehype-remark produces "- [ ] text" instead of splitting them.
-    // Use DOM parser for reliability since BlockNote nests multiple divs.
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-    const checkItems = doc.querySelectorAll('[data-content-type="checkListItem"]');
-    if (checkItems.length > 0) {
-      checkItems.forEach((div) => {
-        const input = div.querySelector("input[type=checkbox]");
-        const checked = input?.hasAttribute("checked") ?? false;
-        const p = div.querySelector("p");
-        const content = p?.innerHTML?.trim() ?? div.textContent?.trim() ?? "";
-
-        const li = doc.createElement("li");
-        const checkbox = doc.createElement("input");
-        checkbox.type = "checkbox";
-        if (checked) checkbox.setAttribute("checked", "");
-        li.appendChild(checkbox);
-        li.append(" " + content);
-
-        div.replaceWith(li);
-      });
-      // Wrap consecutive <li> (that were checkListItems) in <ul>
-      const allLi = doc.body.querySelectorAll("li");
-      let currentUl: HTMLUListElement | null = null;
-      allLi.forEach((li) => {
-        if (li.querySelector("input[type=checkbox]")) {
-          if (!currentUl || li.previousElementSibling !== currentUl.lastElementChild) {
-            currentUl = doc.createElement("ul");
-            li.before(currentUl);
-          }
-          currentUl.appendChild(li);
-        } else {
-          currentUl = null;
-        }
-      });
-      html = doc.body.innerHTML;
-    }
-
-    const result = await unified()
-      .use(rehypeParse, { fragment: true })
-      .use(rehypeRemark)
-      .use(remarkGfm)
-      .use(remarkStringify, MARKDOWN_CONFIG)
-      .process(html);
-    md = normalizeMarkdown(String(result));
-  } catch (err) {
-    console.error("[better-markdown] Custom pipeline failed, using fallback:", err);
     md = await editor.blocksToMarkdownLossy(editor.document);
-    md = normalizeMarkdown(md);
+  } catch {
+    // Fallback: HTML → remark pipeline (may lose nesting but handles edge cases)
+    try {
+      let html = await editor.blocksToHTMLLossy(editor.document);
+      html = html.replace(/<figcaption>[\s\S]*?<\/figcaption>/g, "");
+      html = html.replace(/<\/?figure>/g, "");
+      html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
+
+      const result = await unified()
+        .use(rehypeParse, { fragment: true })
+        .use(rehypeRemark)
+        .use(remarkGfm)
+        .use(remarkStringify, MARKDOWN_CONFIG)
+        .process(html);
+      md = String(result);
+    } catch (err) {
+      console.error("[better-markdown] All pipelines failed:", err);
+      md = "";
+    }
   }
+
+  md = normalizeMarkdown(md);
 
   // Strip BlockNote's default alt text, keep real captions
   md = md.replace(/!\[BlockNote image\]/g, "![]");

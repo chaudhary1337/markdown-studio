@@ -4,7 +4,18 @@ import { BetterMarkdownProvider } from "./provider";
 const CUSTOM_EDITOR_VIEW_TYPE = "betterMarkdown.editor";
 
 export function activate(context: vscode.ExtensionContext) {
-  context.subscriptions.push(BetterMarkdownProvider.register(context));
+  const provider = new BetterMarkdownProvider(context);
+
+  context.subscriptions.push(
+    vscode.window.registerCustomEditorProvider(
+      CUSTOM_EDITOR_VIEW_TYPE,
+      provider,
+      {
+        supportsMultipleEditorsPerDocument: true,
+        webviewOptions: { retainContextWhenHidden: true },
+      }
+    )
+  );
 
   // Toggle command
   context.subscriptions.push(
@@ -27,6 +38,13 @@ export function activate(context: vscode.ExtensionContext) {
       } else {
         await vscode.commands.executeCommand("vscode.openWith", uri, CUSTOM_EDITOR_VIEW_TYPE);
       }
+    })
+  );
+
+  // Find command — sends message to active webview
+  context.subscriptions.push(
+    vscode.commands.registerCommand("betterMarkdown.find", () => {
+      provider.openSearch();
     })
   );
 

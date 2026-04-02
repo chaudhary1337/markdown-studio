@@ -34,6 +34,11 @@
         "title": "Toggle Rich/Source Editor",
         "category": "Better Markdown",
         "icon": "$(notebook-render-output)"
+      },
+      {
+        "command": "betterMarkdown.find",
+        "title": "Find in Document",
+        "category": "Better Markdown"
       }
     ],
     "keybindings": [
@@ -42,6 +47,12 @@
         "key": "ctrl+shift+m",
         "mac": "cmd+shift+m",
         "when": "resourceExtname == .md"
+      },
+      {
+        "command": "betterMarkdown.find",
+        "key": "ctrl+f",
+        "mac": "cmd+f",
+        "when": "activeCustomEditorId == betterMarkdown.editor"
       }
     ],
     "menus": {

@@ -348,3 +348,14 @@ html, body, #root {
   background-color: rgba(255, 140, 0, 0.6);
   color: inherit;
 }
+
+/* Fallback <mark> elements for browsers without Highlight API */
+.search-mark {
+  background-color: rgba(255, 200, 0, 0.3);
+  color: inherit;
+}
+
+.search-mark-active {
+  background-color: rgba(255, 140, 0, 0.6);
+  color: inherit;
+}

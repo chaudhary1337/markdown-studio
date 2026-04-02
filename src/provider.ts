@@ -2,19 +2,12 @@ import * as vscode from "vscode";
 import * as path from "path";
 
 export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
-  private static readonly viewType = "betterMarkdown.editor";
+  constructor(readonly context: vscode.ExtensionContext) {}
 
-  constructor(private readonly context: vscode.ExtensionContext) {}
+  private activeWebview: vscode.Webview | null = null;
 
-  static register(context: vscode.ExtensionContext): vscode.Disposable {
-    return vscode.window.registerCustomEditorProvider(
-      BetterMarkdownProvider.viewType,
-      new BetterMarkdownProvider(context),
-      {
-        supportsMultipleEditorsPerDocument: true,
-        webviewOptions: { retainContextWhenHidden: true },
-      }
-    );
+  openSearch() {
+    this.activeWebview?.postMessage({ type: "openSearch" });
   }
 
   async resolveCustomTextEditor(
@@ -86,6 +79,12 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
     });
 
     webview.html = this.getHtmlForWebview(webview);
+
+    // Track active webview for search command
+    if (webviewPanel.active) this.activeWebview = webview;
+    webviewPanel.onDidChangeViewState(() => {
+      if (webviewPanel.active) this.activeWebview = webview;
+    });
 
     const docChangeDisposable = vscode.workspace.onDidChangeTextDocument(
       (e) => {

@@ -39,14 +39,14 @@ async function roundTrip(md: string): Promise<string> {
 
   // 3. Apply the same HTML transforms as markdownToBlocks
   html = html.replace(/<(\/?)h[456](\s|>)/g, "<$1h3$2");
-  html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>\s*<\/li>/g, "<li$1>$2</li>");
+  html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
   html = html.replace(/<pre><code(?![^>]*class="language-)/g, '<pre><code class="language-text"');
   html = html.replace(/(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
     (_m, open, c, close) => open + c.replace(/\n$/, "") + close);
 
   // 4. HTML → md (same pipeline as blocksToMarkdown)
   // Also strip <p> inside <li> on output path
-  html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>\s*<\/li>/g, "<li$1>$2</li>");
+  html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
   const mdResult = await unified()
     .use(rehypeParse, { fragment: true })
     .use(rehypeRemark)

@@ -49,6 +49,8 @@ export function App() {
           }
         }
         setStatus(null);
+      } else if (msg.type === "openSearch") {
+        setSearchVisible(true);
       } else if (msg.type === "update" && initialized.current) {
         try {
           const { content, meta: existingMeta } = extractMeta(msg.content);

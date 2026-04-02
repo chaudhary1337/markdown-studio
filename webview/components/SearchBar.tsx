@@ -1,9 +1,22 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 
+// TypeScript declarations for CSS Custom Highlight API
+declare class Highlight {
+  constructor(...ranges: Range[]);
+}
+declare global {
+  interface CSSStyleDeclaration {
+    highlights?: Map<string, Highlight>;
+  }
+  var Highlight: typeof Highlight;
+}
+
 interface SearchBarProps {
   visible: boolean;
   onClose: () => void;
 }
+
+const supportsHighlightAPI = typeof globalThis.Highlight !== "undefined" && !!(CSS as any).highlights;
 
 export function SearchBar({ visible, onClose }: SearchBarProps) {
   const [query, setQuery] = useState("");
@@ -20,7 +33,7 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
       inputRef.current.select();
     }
     if (!visible) {
-      clearHighlights();
+      clearAllHighlights();
       setQuery("");
       setMatchCount(0);
       setCurrentMatch(0);
@@ -28,7 +41,7 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
   }, [visible]);
 
   const doSearch = useCallback(() => {
-    clearHighlights();
+    clearAllHighlights();
     matchRanges.current = [];
 
     if (!query) {
@@ -51,7 +64,6 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
       return;
     }
 
-    // Search both editor and TOC
     const containers = [
       document.querySelector(".bn-editor"),
       document.querySelector(".toc-sidebar"),
@@ -66,7 +78,7 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
         let match;
         pattern.lastIndex = 0;
         while ((match = pattern.exec(text)) !== null) {
-          if (match[0].length === 0) break; // avoid infinite loop on zero-length matches
+          if (match[0].length === 0) break;
           const range = document.createRange();
           range.setStart(node, match.index);
           range.setEnd(node, match.index + match[0].length);
@@ -122,7 +134,7 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Find…"
+        placeholder="Find\u2026"
         spellCheck={false}
       />
       <span className="search-count">
@@ -155,36 +167,57 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
   );
 }
 
-/**
- * Apply highlights using CSS Custom Highlight API if available,
- * otherwise fall back to wrapping matches in <mark> elements.
- */
 function applyHighlights(ranges: Range[], activeIndex: number) {
   if (ranges.length === 0) return;
 
-  if ("Highlight" in window && CSS.highlights) {
-    const allRanges = ranges.filter((_, i) => i !== activeIndex);
-    const highlight = new Highlight(...allRanges);
-    CSS.highlights.set("search-match", highlight);
+  // Remove old mark elements first
+  clearMarkElements();
 
+  if (supportsHighlightAPI) {
+    const highlights = (CSS as any).highlights as Map<string, Highlight>;
+    const inactive = ranges.filter((_, i) => i !== activeIndex);
+    if (inactive.length > 0) {
+      highlights.set("search-match", new Highlight(...inactive));
+    }
     if (ranges[activeIndex]) {
-      const active = new Highlight(ranges[activeIndex]);
-      CSS.highlights.set("search-match-active", active);
-      scrollToRange(ranges[activeIndex]);
+      highlights.set("search-match-active", new Highlight(ranges[activeIndex]));
     }
   } else {
-    // Fallback: scroll to the active match
-    if (ranges[activeIndex]) {
-      scrollToRange(ranges[activeIndex]);
+    // Fallback: wrap matches in <mark> elements (won't work perfectly in
+    // contenteditable but provides visual feedback)
+    for (let i = ranges.length - 1; i >= 0; i--) {
+      try {
+        const mark = document.createElement("mark");
+        mark.className = i === activeIndex ? "search-mark-active" : "search-mark";
+        mark.dataset.searchMark = "true";
+        ranges[i].surroundContents(mark);
+      } catch {
+        // surroundContents fails if range crosses element boundaries — skip
+      }
     }
+  }
+
+  if (ranges[activeIndex]) {
+    scrollToRange(ranges[activeIndex]);
   }
 }
 
-function clearHighlights() {
-  if (CSS.highlights) {
-    CSS.highlights.delete("search-match");
-    CSS.highlights.delete("search-match-active");
+function clearAllHighlights() {
+  if (supportsHighlightAPI) {
+    const highlights = (CSS as any).highlights as Map<string, Highlight> | undefined;
+    highlights?.delete("search-match");
+    highlights?.delete("search-match-active");
   }
+  clearMarkElements();
+}
+
+function clearMarkElements() {
+  document.querySelectorAll("[data-search-mark]").forEach((mark) => {
+    const parent = mark.parentNode;
+    if (!parent) return;
+    while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+    parent.removeChild(mark);
+  });
 }
 
 function scrollToRange(range: Range) {
@@ -193,7 +226,6 @@ function scrollToRange(range: Range) {
   if (!container) return;
 
   const containerRect = container.getBoundingClientRect();
-  // Only scroll if the match is not visible
   if (rect.top < containerRect.top || rect.bottom > containerRect.bottom) {
     const stickyEl = container.querySelector(".sticky-headings");
     const stickyHeight = stickyEl ? stickyEl.getBoundingClientRect().height : 0;
