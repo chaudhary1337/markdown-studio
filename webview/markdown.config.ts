@@ -31,6 +31,7 @@ export function normalizeMarkdown(md: string): string {
   md = unescapeSpecialChars(md);
   md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
   md = fixOrphanedListMarkers(md);
+  md = compactLists(md);
   return md;
 }
 
@@ -252,6 +253,47 @@ function fixOrphanedListMarkers(md: string): string {
     }
     result.push(lines[i]);
     i++;
+  }
+  return result.join("\n");
+}
+
+/**
+ * Remove blank lines between consecutive list items to produce tight lists.
+ * Preserves blank lines around non-list content.
+ */
+function compactLists(md: string): string {
+  const LIST_ITEM = /^(\s*)(?:[-*]|\d+\.)\s/;
+  const lines = md.split("\n");
+  const result: string[] = [];
+  let inCodeBlock = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (/^```/.test(lines[i])) inCodeBlock = !inCodeBlock;
+    if (inCodeBlock) {
+      result.push(lines[i]);
+      continue;
+    }
+
+    // Skip blank lines that sit between two list items
+    if (lines[i].trim() === "") {
+      // Look backward for a list item
+      let prevList = false;
+      for (let p = result.length - 1; p >= 0; p--) {
+        if (result[p].trim() === "") continue;
+        prevList = LIST_ITEM.test(result[p]);
+        break;
+      }
+      // Look forward for a list item
+      let nextList = false;
+      for (let n = i + 1; n < lines.length; n++) {
+        if (lines[n].trim() === "") continue;
+        nextList = LIST_ITEM.test(lines[n]);
+        break;
+      }
+      if (prevList && nextList) continue; // skip this blank line
+    }
+
+    result.push(lines[i]);
   }
   return result.join("\n");
 }

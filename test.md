@@ -33,10 +33,8 @@ Mixed: **bold and _italic_ together** and more text.
 
 - Parent item
   - Child item
-
   - Another child
     - Grandchild
-
 - Back to parent
 
 ### Ordered
@@ -50,7 +48,6 @@ Mixed: **bold and _italic_ together** and more text.
 1. First
    1. Sub-first
    2. Sub-second
-
 2. Second
 
 ### Mixed
@@ -58,7 +55,6 @@ Mixed: **bold and _italic_ together** and more text.
 - Unordered
   1. Ordered child
   2. Another ordered
-
 - Back to unordered
 
 ## Task lists
@@ -79,7 +75,9 @@ A paragraph with [inline link](https://example.com) in it.
 
 ## Images
 
-![Alt text](image.png)![](no-alt.png)
+![Alt text](image.png)
+
+![](no-alt.png)
 
 ## Code blocks
 
@@ -91,12 +89,7 @@ function hello() {
 
 ```python
 def hello():
-```
-
-print("world")
-
-```
-
+    print("world")
 ```
 
 ```
@@ -117,23 +110,25 @@ echo "hello world"
 
 ## Blockquotes
 
-This is a blockquote.
+> This is a blockquote.
+>
+> With multiple paragraphs.
 
-With multiple paragraphs.
-
-Nested:
-
-Inner quote
+> Nested:
+>
+> > Inner quote
 
 ## Horizontal rules
 
+---
+
 ## Special characters
 
-Tildes: \~ single tilde and \~\~ double tildes \~\~.
+Tildes: ~ single tilde and ~~ double tildes ~~.
 
-Asterisks in text: 2 \* 3 = 6.
+Asterisks in text: 2 * 3 = 6.
 
-Escaped characters: \* \_ \` \[ ]
+Escaped characters: \* \_ \` \[ \]
 
 ## Bold in lists (regression test)
 
@@ -145,5 +140,3 @@ Escaped characters: \* \_ \` \[ ]
 ## Long heading for TOC truncation test
 
 ### This is a very long heading that should be truncated in the table of contents because it exceeds one hundred and twenty-eight characters which is the configured maximum length for display
-
-<!-- better-markdown-meta {"h":[{"t":"Heading 4","l":4},{"t":"Heading 5","l":5},{"t":"Heading 6","l":6}]} -->
