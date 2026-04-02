@@ -25,12 +25,6 @@ export async function markdownToHtml(
 
   let html = String(result);
 
-  // Ensure all <code> inside <pre> have a language class
-  html = html.replace(
-    /<pre><code(?![^>]*class="language-)/g,
-    '<pre><code class="language-text"'
-  );
-
   // Trim trailing newlines inside <code> blocks
   html = html.replace(
     /(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
