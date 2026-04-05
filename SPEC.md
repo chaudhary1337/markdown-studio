@@ -129,25 +129,26 @@ better-markdown/
 ### Output (editor → markdown)
 
 1. `editor.getHTML()` → HTML
-2. DOMParser transforms: convert Tiptap taskItem back to GFM `<input type="checkbox">`, escape `|` in `<code>` within table cells
+2. DOMParser transforms: convert Tiptap taskItem back to GFM `<input type="checkbox">`, escape bare `|` in `<code>` within table cells (leaves `\|` alone via negative lookbehind)
 3. Strip `<p>` from `<li>` (tight lists), wrap bare `<img>` in `<p>`
 4. `unified().use(rehypeParse, rehypeRemark, remarkGfm, remarkStringify)` → markdown
 5. `normalizeMarkdown()` post-processing:
+   - `shellscript` language label → `bash`
    - `*` list markers → `-`
    - Ordered list renumbering
    - Table header reconstruction (with code-span-aware cell splitting)
    - Unescape `\~`, standalone `\*`, `\_` in words, `\[`
    - Task list checkbox fixing
+   - Image followed by duplicate alt-text line → dedup
    - Compact lists (remove blank lines between items)
    - Orphaned list marker merging
-   - `&#x20;` / `&amp;` HTML entity cleanup
-6. `restoreHeadings()` converts `### ` back to `####`/`#####`/`######` using metadata
-7. `appendMeta()` adds metadata comment at end of file
-8. Strip webview URI prefixes to restore relative image paths
+6. `&#x20;` / `&amp;` HTML entity cleanup
+7. `restoreHeadings()` converts `### ` back to `####`/`#####`/`######` using metadata
+8. `appendMeta()` adds metadata comment at end of file
+9. Strip webview URI prefixes to restore relative image paths
 
 ## Known Limitations
 
-- **remark-stringify escapes `\` inside code spans**: `\|` becomes `\\|` on each round-trip (remark bug — code spans should be verbatim)
 - **Escaped markdown characters** (`\*`, `\_`) lose backslash on round-trip (Tiptap stores rendered text)
 - **`β\_kl` not unescaped**: Unicode chars don't match `\w` in the unescape regex
 - Raw HTML blocks and footnotes may not round-trip perfectly

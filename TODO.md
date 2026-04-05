@@ -17,10 +17,10 @@
 - [x] Unescape `\_` in variable names, `\[` brackets, `\~` tildes
 - [x] Task list checkbox round-trip (GFM ↔ Tiptap taskItem conversion)
 - [x] Image separation (each image in its own `<p>` block)
+- [x] Fix `\|` double-escape in code spans within table cells (use negative lookbehind)
 
 ## Remaining
 
-- [ ] Fix remark-stringify escaping `\` inside code spans (`\|` → `\\|` on each round-trip)
 - [ ] Git diffs should work
 - [ ] Make copy work (paste already works)
 - [ ] Settings page (indentation size, emphasis style, etc.)
@@ -30,7 +30,6 @@
 ## Known Limitations
 
 - Escaped markdown characters (`\*`, `\_`) lose backslash on round-trip (Tiptap stores rendered text, not source)
-- Table rows with `|` inside code spans: protected on input via placeholder, but remark-stringify re-escapes `\` inside code spans causing `\|` → `\\|`
 - Empty code blocks (``` with no language) stay as-is
 - YAML frontmatter not handled
 - First load has brief flash while Tiptap initializes
