@@ -34,9 +34,11 @@ export function App() {
   const docFolderPath = useRef("");
   const metaRef = useRef<Metadata>({ h: [] });
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isReadonly = useRef(false);
   const [status, setStatus] = React.useState<string | null>(
     "Loading document...",
   );
+  const [readonly, setReadonly] = React.useState(false);
   const [searchVisible, setSearchVisible] = React.useState(false);
 
   const editor = useEditor({
@@ -61,6 +63,12 @@ export function App() {
     },
   });
 
+  // Propagate readonly state to the Tiptap editor
+  useEffect(() => {
+    if (!editor) return;
+    editor.setEditable(!readonly);
+  }, [editor, readonly]);
+
   // On mount: request content from host, load into editor
   useEffect(() => {
     if (!editor) return;
@@ -71,6 +79,10 @@ export function App() {
         initialized.current = true;
         if (msg.baseUri) baseUri.current = msg.baseUri;
         if (msg.docFolderPath) docFolderPath.current = msg.docFolderPath;
+        if (msg.isReadonly) {
+          isReadonly.current = true;
+          setReadonly(true);
+        }
         const rawMd = (msg.content as string) || "";
         if (rawMd.trim()) {
           setStatus("Parsing markdown...");
@@ -140,6 +152,7 @@ export function App() {
   // Sync: editor changes → extension host
   const handleUpdate = useCallback(() => {
     if (!initialized.current || !editor) return;
+    if (isReadonly.current) return; // never write back for git: and friends
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(async () => {
       try {
@@ -182,6 +195,7 @@ export function App() {
           onClose={() => setSearchVisible(false)}
         />
         {status && <div className="status-bar">{status}</div>}
+        {readonly && <div className="readonly-badge">Read-only</div>}
         <StickyHeadings />
         <span
           className="toggle-source"

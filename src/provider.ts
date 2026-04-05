@@ -17,6 +17,11 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   ): Promise<void> {
     const webview = webviewPanel.webview;
 
+    // Non-file schemes (git:, conflictResolution:, vscode-scm:, ...) are read-
+    // only. We still render them — e.g. git diff side panes get the rich
+    // Tiptap view — but we suppress edit sync so we never try to write back.
+    const isReadonly = document.uri.scheme !== "file";
+
     // Allow loading resources from the document's folder (for images)
     const docFolder = vscode.Uri.joinPath(document.uri, "..");
     webview.options = {
@@ -42,6 +47,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           content: document.getText(),
           baseUri,
           docFolderPath,
+          isReadonly,
         });
       } else if (msg.type === "toggleEditor") {
         vscode.commands.executeCommand(
@@ -65,6 +71,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           }
         }
       } else if (msg.type === "edit") {
+        if (isReadonly) return; // guard: webview shouldn't send these, but double-check
         const newContent = msg.content as string;
         if (newContent === document.getText()) return;
         pendingWebviewEdits++;
