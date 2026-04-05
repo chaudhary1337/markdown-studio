@@ -1047,14 +1047,13 @@ html, body, #root {
   padding: 2px 4px;
 }
 
-/* Focused hunk (Prev/Next navigation) — stronger ring + scroll anchor */
+/* Focused hunk (Prev/Next navigation) — no visual ring, just a
+   scroll-margin anchor so it lands visibly under the sticky toolbar.
+   The existing green/red highlighting makes the change obvious on its
+   own; the ring was redundant. */
 .diff-rendered .diff-hunk-current {
-  outline: 2px solid var(--vscode-focusBorder, #007acc) !important;
-  outline-offset: 2px;
   scroll-margin-top: 80px;
   scroll-margin-bottom: 80px;
-  border-radius: 3px;
-  transition: outline-color 0.15s;
 }
 
 /* Prev/Next navigation controls in the diff toolbar */

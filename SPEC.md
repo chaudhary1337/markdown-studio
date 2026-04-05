@@ -85,8 +85,12 @@ A VSCode extension that replaces the default markdown editor with a Notion-like 
   - **Source**: line-by-line diff via `diff` + `diff2html` (unified or
     side-by-side layout, green/red/blue matching git conventions).
   - **Rendered**: word-level HTML diff — both sides rendered via
-    `markdownToHtml`, then `node-htmldiff` produces `<ins>`/`<del>`
-    markers, styled with green/red highlights.
+    `markdownToDisplayHtml`, then `node-htmldiff` produces
+    `<ins>`/`<del>` markers, styled with green/red highlights. Native
+    GFM task-list checkboxes are preserved.
+- **Prev/Next hunk navigation** (Rendered mode only): ↑/↓ buttons in
+  the toolbar with a position counter, plus keyboard shortcuts
+  `j`/`k` / `ArrowUp`/`ArrowDown`. Wraps around at both ends.
 - Panel refreshes when either side changes on disk.
 
 ## Architecture

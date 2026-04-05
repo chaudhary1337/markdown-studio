@@ -23,6 +23,9 @@
 - [x] Git diffs work — non-file URIs render read-only in Tiptap with a badge
 - [x] Copy as markdown source — selection serialised to .md on Cmd+C / Cmd+X
 - [x] Settings panel in webview — every normalization step + serializer marker configurable, persisted via globalState
+- [x] Rich diff view — inline toggle (vs HEAD) + standalone panel via `betterMarkdown.openDiff`, wired into SCM context menu, diff-editor toolbar, and command palette
+- [x] Diff view has Source (line, diff2html) and Rendered (word-level, node-htmldiff) modes with green/red/blue highlighting and native GFM checkbox rendering
+- [x] Prev/Next hunk navigation in Rendered diff (↑/↓ buttons, j/k shortcuts)
 
 ## Remaining
 
