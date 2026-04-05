@@ -970,6 +970,18 @@ html, body, #root {
 .diff-rendered p { margin: 0.5em 0; }
 .diff-rendered ul,
 .diff-rendered ol { padding-left: 1.5em; margin: 0.5em 0; }
+
+/* GFM task lists — remark-gfm emits <ul class="contains-task-list"> and
+   <li class="task-list-item"> with a real <input type="checkbox">. Hide
+   bullets and pull the checkbox inline with the text. */
+.diff-rendered ul.contains-task-list { padding-left: 0.5em; list-style: none; }
+.diff-rendered li.task-list-item { display: list-item; list-style: none; }
+.diff-rendered li.task-list-item > input[type="checkbox"] {
+  margin: 0 0.5em 0 0;
+  vertical-align: middle;
+  cursor: default;
+  accent-color: var(--vscode-button-background, #0e639c);
+}
 .diff-rendered code {
   background: var(--vscode-textCodeBlock-background, rgba(255,255,255,0.08));
   padding: 2px 4px;

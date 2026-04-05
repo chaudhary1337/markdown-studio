@@ -18,6 +18,28 @@ import { DEFAULT_SETTINGS, type BetterMarkdownSettings } from "../settings";
 // corrupting cells like `||value||`. We replace before parse, restore after.
 const PIPE_PH = "%%BTRMK_PIPE%%";
 
+/**
+ * Render markdown to plain HTML suitable for display (NOT for Tiptap
+ * ingestion). Keeps native GFM output: real `<input type="checkbox">`
+ * elements, `contains-task-list` class on <ul>, etc. Used by the rich
+ * diff view where we render directly to the DOM without Tiptap.
+ */
+export async function markdownToDisplayHtml(md: string): Promise<string> {
+  md = protectTableCodePipes(md);
+  const result = await unified()
+    .use(remarkParse)
+    .use(remarkGfm)
+    .use(remarkRehype)
+    .use(rehypeStringify)
+    .process(md);
+  let html = String(result).replace(new RegExp(PIPE_PH, "g"), "|");
+  html = html.replace(
+    /(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
+    (_m, open, c, close) => open + c.replace(/\n$/, "") + close
+  );
+  return html;
+}
+
 export async function markdownToHtml(
   md: string,
   baseUri?: string

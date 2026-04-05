@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createTwoFilesPatch } from "diff";
 import { html as diff2html } from "diff2html";
 import htmldiff from "node-htmldiff";
-import { markdownToHtml } from "../hooks/useVSCodeSync";
+import { markdownToDisplayHtml } from "../hooks/useVSCodeSync";
 
 export type DiffMode = "source" | "rendered";
 export type DiffLayout = "unified" | "side-by-side";
@@ -64,8 +64,8 @@ export function DiffView({
       try {
         setRenderedErr(null);
         const [oldHtml, newHtml] = await Promise.all([
-          markdownToHtml(oldContent),
-          markdownToHtml(newContent),
+          markdownToDisplayHtml(oldContent),
+          markdownToDisplayHtml(newContent),
         ]);
         if (cancelled) return;
         const diffed = htmldiff(oldHtml, newHtml);
