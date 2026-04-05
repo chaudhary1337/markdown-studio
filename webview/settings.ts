@@ -58,7 +58,9 @@ export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
   shellscriptToBash: true,
   fixTableHeaders: true,
   dedupImageAltText: true,
-  defaultCodeBlockLang: "text",
+  // Leave bare ``` fences alone — don't add a language label unless the
+  // user explicitly opts in via the settings panel.
+  defaultCodeBlockLang: "",
 };
 
 /**

@@ -114,10 +114,6 @@ export async function roundTrip(
   html = html.replace(/<(\/?)h[456](\s|>)/g, "<$1h3$2"); // h4-h6 → h3
   html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
   html = html.replace(
-    /<pre><code(?![^>]*class="language-)/g,
-    '<pre><code class="language-text"'
-  );
-  html = html.replace(
     /(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
     (_m, open, c, close) => open + c.replace(/\n$/, "") + close
   );

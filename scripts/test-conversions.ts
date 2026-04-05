@@ -252,9 +252,8 @@ async function run() {
     '```bash\necho "hello world"\n```'
   );
   await roundtripCase(
-    "code block no language → text label",
-    "```\nplain code\nno language\n```",
-    "```text\nplain code\nno language\n```"
+    "code block no language stays bare",
+    "```\nplain code\nno language\n```"
   );
 
   // shellscript → bash normalization
@@ -568,14 +567,10 @@ async function run() {
   // (was: "compactLists: indented para after list loses blank" — now fixed,
   //  see L.compactLists positive assertions below)
 
-  // Empty fenced code block → gets `text` language label but stays empty.
-  // We don't treat this as lossy: the parser-added "text" label is the same
-  // default we apply to unlabelled code blocks everywhere else.
-  await roundtripCase(
-    "empty fenced code block → text-labelled",
-    "```\n```",
-    "```text\n```"
-  );
+  // Empty fenced code block round-trips to itself (no language label
+  // added or removed — we only touch labels when the user opts in via
+  // defaultCodeBlockLang).
+  await roundtripCase("empty fenced code block stays bare", "```\n```");
 
   // --------------------------------------------------------------------------
   category("N. Settings-driven behavior");
@@ -682,8 +677,13 @@ async function run() {
 
   // defaultCodeBlockLang
   eq(
-    "settings: defaultCodeBlockLang='text' labels bare fences (default)",
+    "settings: defaultCodeBlockLang='' leaves bare fences alone (default)",
     normalizeMarkdown("```\nhello\n```\n", DEFAULT_SETTINGS),
+    "```\nhello\n```\n"
+  );
+  eq(
+    "settings: defaultCodeBlockLang='text' labels bare fences when user opts in",
+    normalizeMarkdown("```\nhello\n```\n", mergeSettings({ defaultCodeBlockLang: "text" })),
     "```text\nhello\n```\n"
   );
   eq(
