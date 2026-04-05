@@ -15,7 +15,8 @@ import { SlashCommand } from "./extensions/SlashCommand";
 import { StickyHeadings } from "./components/StickyHeadings";
 import { TableOfContents } from "./components/TableOfContents";
 import { SearchBar } from "./components/SearchBar";
-import { markdownToHtml, htmlToMarkdown } from "./hooks/useVSCodeSync";
+import { DOMSerializer } from "@tiptap/pm/model";
+import { markdownToHtml, htmlToMarkdown, htmlToMarkdownSync } from "./hooks/useVSCodeSync";
 import {
   extractMeta,
   buildMeta,
@@ -127,6 +128,56 @@ export function App() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  // Copy/cut: serialize the selection to markdown so text editors (and
+  // git commits, slack, etc.) receive .md source instead of rendered text.
+  useEffect(() => {
+    if (!editor) return;
+    const dom = editor.view.dom as HTMLElement;
+
+    const handler = (e: ClipboardEvent) => {
+      if (!e.clipboardData) return;
+      const { from, to, empty } = editor.state.selection;
+      if (empty || from === to) return;
+
+      const slice = editor.state.doc.slice(from, to);
+      const serializer = DOMSerializer.fromSchema(editor.schema);
+      const fragment = serializer.serializeFragment(slice.content);
+      const tmp = document.createElement("div");
+      tmp.appendChild(fragment);
+      const html = tmp.innerHTML;
+
+      let markdown: string;
+      try {
+        markdown = htmlToMarkdownSync(
+          html,
+          baseUri.current,
+          docFolderPath.current,
+        );
+      } catch (err) {
+        console.error("[better-markdown] copy → markdown failed:", err);
+        return; // let Tiptap's default behavior run
+      }
+
+      e.preventDefault();
+      e.clipboardData.setData("text/plain", markdown.replace(/\n+$/, ""));
+      e.clipboardData.setData("text/html", html);
+
+      // For cut, also delete the selection (we preventDefault'd the copy,
+      // and the browser's cut would have removed it automatically — we must
+      // do that manually now).
+      if (e.type === "cut" && editor.isEditable) {
+        editor.commands.deleteSelection();
+      }
+    };
+
+    dom.addEventListener("copy", handler);
+    dom.addEventListener("cut", handler);
+    return () => {
+      dom.removeEventListener("copy", handler);
+      dom.removeEventListener("cut", handler);
+    };
+  }, [editor]);
 
   // Link handling: Cmd+click / Ctrl+click
   useEffect(() => {

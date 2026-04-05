@@ -116,13 +116,10 @@ export async function markdownToHtml(
 }
 
 /**
- * Convert HTML from Tiptap editor back to markdown.
+ * Reshape Tiptap's HTML into the shape rehype-remark expects, ahead of
+ * either a sync or async stringify step.
  */
-export async function htmlToMarkdown(
-  html: string,
-  baseUri?: string,
-  docFolderPath?: string
-): Promise<string> {
+function preprocessTiptapHtml(html: string): string {
   // Convert Tiptap task list HTML to standard GFM format for rehype-remark
   {
     const doc = new DOMParser().parseFromString(html, "text/html");
@@ -178,26 +175,61 @@ export async function htmlToMarkdown(
   // Remove empty <p></p> between images
   html = html.replace(/<\/p>\s*<p>\s*<\/p>\s*<p>/g, "</p>\n<p>");
 
+  return html;
+}
+
+function postprocessMarkdown(
+  md: string,
+  baseUri?: string,
+  docFolderPath?: string
+): string {
+  md = normalizeMarkdown(md);
+  // Replace HTML entities that leak through
+  md = md.replace(/&#x20;/g, " ");
+  md = md.replace(/&amp;/g, "&");
+  // Strip BlockNote-style default alt text
+  md = md.replace(/!\[BlockNote image\]/g, "![]");
+  // Restore relative paths
+  md = restoreRelativePaths(md, baseUri, docFolderPath);
+  return md;
+}
+
+/**
+ * Convert HTML from Tiptap editor back to markdown.
+ */
+export async function htmlToMarkdown(
+  html: string,
+  baseUri?: string,
+  docFolderPath?: string
+): Promise<string> {
+  html = preprocessTiptapHtml(html);
   const result = await unified()
     .use(rehypeParse, { fragment: true })
     .use(rehypeRemark)
     .use(remarkGfm)
     .use(remarkStringify, MARKDOWN_CONFIG)
     .process(html);
+  return postprocessMarkdown(String(result), baseUri, docFolderPath);
+}
 
-  let md = normalizeMarkdown(String(result));
-
-  // Replace HTML entities that leak through
-  md = md.replace(/&#x20;/g, " ");
-  md = md.replace(/&amp;/g, "&");
-
-  // Strip BlockNote-style default alt text
-  md = md.replace(/!\[BlockNote image\]/g, "![]");
-
-  // Restore relative paths
-  md = restoreRelativePaths(md, baseUri, docFolderPath);
-
-  return md;
+/**
+ * Synchronous variant of htmlToMarkdown. Needed for the clipboard copy
+ * handler, which has to call clipboardData.setData() inside the DOM event
+ * (async writes aren't supported there without navigator.clipboard).
+ */
+export function htmlToMarkdownSync(
+  html: string,
+  baseUri?: string,
+  docFolderPath?: string
+): string {
+  html = preprocessTiptapHtml(html);
+  const result = unified()
+    .use(rehypeParse, { fragment: true })
+    .use(rehypeRemark)
+    .use(remarkGfm)
+    .use(remarkStringify, MARKDOWN_CONFIG)
+    .processSync(html);
+  return postprocessMarkdown(String(result), baseUri, docFolderPath);
 }
 
 function restoreRelativePaths(
