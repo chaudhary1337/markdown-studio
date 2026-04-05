@@ -120,7 +120,18 @@ export function SettingsPanel({
           <section>
             <h3>Diff view</h3>
 
-            <Row label="Layout">
+            <Row label="Default mode">
+              <Segmented
+                value={settings.diffMode}
+                options={[
+                  { value: "source", label: "Source" },
+                  { value: "rendered", label: "Rendered" },
+                ]}
+                onChange={(v) => set("diffMode", v as "source" | "rendered")}
+              />
+            </Row>
+
+            <Row label="Source layout">
               <Segmented
                 value={settings.diffLayout}
                 options={[

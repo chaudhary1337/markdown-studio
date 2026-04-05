@@ -102,6 +102,7 @@
     "diff2html": "^3.4.56",
     "lowlight": "^3.3.0",
     "lucide-react": "^1.7.0",
+    "node-htmldiff": "^0.9.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "rehype-parse": "^9.0.1",

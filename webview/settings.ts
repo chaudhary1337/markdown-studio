@@ -46,8 +46,10 @@ export interface BetterMarkdownSettings {
   defaultCodeBlockLang: string;
 
   // --- diff view ---
-  /** Layout for the git diff toggle. */
+  /** Layout for the source (line-level) diff toggle. */
   diffLayout: "unified" | "side-by-side";
+  /** Default diff view mode: source (line diff) or rendered (HTML diff). */
+  diffMode: "source" | "rendered";
 }
 
 export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
@@ -66,6 +68,7 @@ export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
   // user explicitly opts in via the settings panel.
   defaultCodeBlockLang: "",
   diffLayout: "side-by-side",
+  diffMode: "source",
 };
 
 /**

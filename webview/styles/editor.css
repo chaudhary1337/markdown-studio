@@ -943,3 +943,94 @@ html, body, #root {
   background: var(--vscode-editorWidget-background, #252526) !important;
   border-color: var(--vscode-widget-border, #333) !important;
 }
+
+/* Rendered (HTML-level) diff — node-htmldiff output with <ins>/<del> */
+.diff-rendered {
+  font-size: 15px;
+  line-height: 1.6;
+  padding: 0.5rem 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.diff-rendered h1,
+.diff-rendered h2,
+.diff-rendered h3,
+.diff-rendered h4,
+.diff-rendered h5,
+.diff-rendered h6 {
+  margin: 1em 0 0.4em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.diff-rendered h1 { font-size: 1.8em; }
+.diff-rendered h2 { font-size: 1.5em; }
+.diff-rendered h3 { font-size: 1.25em; }
+.diff-rendered p { margin: 0.5em 0; }
+.diff-rendered ul,
+.diff-rendered ol { padding-left: 1.5em; margin: 0.5em 0; }
+.diff-rendered code {
+  background: var(--vscode-textCodeBlock-background, rgba(255,255,255,0.08));
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.9em;
+}
+.diff-rendered pre {
+  background: var(--vscode-textCodeBlock-background, rgba(255,255,255,0.05));
+  padding: 0.8em 1em;
+  border-radius: 4px;
+  overflow: auto;
+}
+.diff-rendered pre code {
+  background: transparent;
+  padding: 0;
+}
+.diff-rendered blockquote {
+  border-left: 3px solid var(--vscode-widget-border, #454545);
+  padding-left: 1em;
+  margin: 0.5em 0;
+  color: var(--vscode-descriptionForeground, #888);
+}
+.diff-rendered table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+}
+.diff-rendered th,
+.diff-rendered td {
+  border: 1px solid var(--vscode-widget-border, #454545);
+  padding: 4px 8px;
+}
+
+/* node-htmldiff emits <ins>/<del> with data-operation-index attributes.
+   Style them with the familiar github-green/red. */
+.diff-rendered ins {
+  background: rgba(46, 160, 67, 0.25);
+  text-decoration: none;
+  border-radius: 2px;
+  padding: 0 2px;
+  box-shadow: inset 0 -1px 0 rgba(46, 160, 67, 0.9);
+}
+.diff-rendered del {
+  background: rgba(248, 81, 73, 0.25);
+  text-decoration: line-through;
+  border-radius: 2px;
+  padding: 0 2px;
+  box-shadow: inset 0 -1px 0 rgba(248, 81, 73, 0.9);
+}
+
+/* Whole-node ins/del: node-htmldiff marks added/removed blocks via
+   data-diff-node="ins"|"del" */
+.diff-rendered [data-diff-node="ins"] {
+  background: rgba(46, 160, 67, 0.12);
+  outline: 1px solid rgba(46, 160, 67, 0.4);
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+.diff-rendered [data-diff-node="del"] {
+  background: rgba(248, 81, 73, 0.12);
+  outline: 1px solid rgba(248, 81, 73, 0.4);
+  border-radius: 3px;
+  padding: 2px 4px;
+}

@@ -354,9 +354,13 @@ export function App() {
             newContent={currentMarkdown}
             fileName={diffData.fileName}
             layout={settings.diffLayout}
+            mode={settings.diffMode}
             onClose={() => setDiffVisible(false)}
             onLayoutChange={(layout) =>
               updateSettings({ ...settings, diffLayout: layout })
+            }
+            onModeChange={(diffMode) =>
+              updateSettings({ ...settings, diffMode })
             }
           />
         )}
