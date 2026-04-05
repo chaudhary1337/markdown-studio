@@ -1,13 +1,28 @@
 import * as vscode from "vscode";
 import * as path from "path";
 
+const SETTINGS_KEY = "betterMarkdown.settings";
+
 export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   constructor(readonly context: vscode.ExtensionContext) {}
 
   private activeWebview: vscode.Webview | null = null;
+  private openWebviews = new Set<vscode.Webview>();
 
   openSearch() {
     this.activeWebview?.postMessage({ type: "openSearch" });
+  }
+
+  private loadSettings(): Record<string, unknown> {
+    return this.context.globalState.get<Record<string, unknown>>(SETTINGS_KEY, {}) ?? {};
+  }
+
+  private async saveSettings(next: Record<string, unknown>) {
+    await this.context.globalState.update(SETTINGS_KEY, next);
+    // Echo updated settings to every open panel so they stay in sync
+    for (const wv of this.openWebviews) {
+      wv.postMessage({ type: "settingsUpdated", settings: next });
+    }
   }
 
   async resolveCustomTextEditor(
@@ -40,6 +55,8 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
 
     let pendingWebviewEdits = 0;
 
+    this.openWebviews.add(webview);
+
     const msgDisposable = webview.onDidReceiveMessage(async (msg) => {
       if (msg.type === "ready") {
         webview.postMessage({
@@ -48,7 +65,10 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           baseUri,
           docFolderPath,
           isReadonly,
+          settings: this.loadSettings(),
         });
+      } else if (msg.type === "saveSettings") {
+        await this.saveSettings(msg.settings as Record<string, unknown>);
       } else if (msg.type === "toggleEditor") {
         vscode.commands.executeCommand(
           "vscode.openWith",
@@ -115,6 +135,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
     webviewPanel.onDidDispose(() => {
       msgDisposable.dispose();
       docChangeDisposable.dispose();
+      this.openWebviews.delete(webview);
     });
   }
 

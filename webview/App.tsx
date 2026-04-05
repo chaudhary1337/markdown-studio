@@ -15,6 +15,7 @@ import { SlashCommand } from "./extensions/SlashCommand";
 import { StickyHeadings } from "./components/StickyHeadings";
 import { TableOfContents } from "./components/TableOfContents";
 import { SearchBar } from "./components/SearchBar";
+import { SettingsPanel } from "./components/SettingsPanel";
 import { DOMSerializer } from "@tiptap/pm/model";
 import { markdownToHtml, htmlToMarkdown, htmlToMarkdownSync } from "./hooks/useVSCodeSync";
 import {
@@ -25,6 +26,7 @@ import {
   mergeMetadata,
   type Metadata,
 } from "./metadata";
+import { DEFAULT_SETTINGS, mergeSettings, type BetterMarkdownSettings } from "./settings";
 
 const vscodeApi = acquireVsCodeApi();
 const lowlight = createLowlight(common);
@@ -36,11 +38,29 @@ export function App() {
   const metaRef = useRef<Metadata>({ h: [] });
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isReadonly = useRef(false);
+  const settingsRef = useRef<BetterMarkdownSettings>(DEFAULT_SETTINGS);
   const [status, setStatus] = React.useState<string | null>(
     "Loading document...",
   );
   const [readonly, setReadonly] = React.useState(false);
   const [searchVisible, setSearchVisible] = React.useState(false);
+  const [settings, setSettings] = React.useState<BetterMarkdownSettings>(DEFAULT_SETTINGS);
+  const [settingsVisible, setSettingsVisible] = React.useState(false);
+  const handleUpdateRef = useRef<() => void>(() => {});
+
+  // Keep the ref in sync with state — the save pipeline runs on a
+  // debounced timer and reads the ref so it always sees the latest value.
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  const updateSettings = useCallback((next: BetterMarkdownSettings) => {
+    settingsRef.current = next; // set synchronously so next save sees it
+    setSettings(next);
+    vscodeApi.postMessage({ type: "saveSettings", settings: next });
+    // Re-serialize the document with the new settings immediately
+    handleUpdateRef.current();
+  }, []);
 
   const editor = useEditor({
     extensions: [
@@ -80,6 +100,11 @@ export function App() {
         initialized.current = true;
         if (msg.baseUri) baseUri.current = msg.baseUri;
         if (msg.docFolderPath) docFolderPath.current = msg.docFolderPath;
+        if (msg.settings) {
+          const merged = mergeSettings(msg.settings);
+          settingsRef.current = merged;
+          setSettings(merged);
+        }
         if (msg.isReadonly) {
           isReadonly.current = true;
           setReadonly(true);
@@ -110,6 +135,10 @@ export function App() {
         }
       } else if (msg.type === "openSearch") {
         setSearchVisible(true);
+      } else if (msg.type === "settingsUpdated") {
+        const merged = mergeSettings(msg.settings);
+        settingsRef.current = merged;
+        setSettings(merged);
       }
     };
     window.addEventListener("message", handler);
@@ -117,12 +146,14 @@ export function App() {
     return () => window.removeEventListener("message", handler);
   }, [editor]);
 
-  // Ctrl+F / Cmd+F: open search bar
+  // Ctrl+F / Cmd+F: open search bar. Escape: close settings.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "f") {
         e.preventDefault();
         setSearchVisible(true);
+      } else if (e.key === "Escape") {
+        setSettingsVisible(false);
       }
     };
     window.addEventListener("keydown", handler);
@@ -153,6 +184,7 @@ export function App() {
           html,
           baseUri.current,
           docFolderPath.current,
+          settingsRef.current,
         );
       } catch (err) {
         console.error("[better-markdown] copy → markdown failed:", err);
@@ -212,6 +244,7 @@ export function App() {
           html,
           baseUri.current,
           docFolderPath.current,
+          settingsRef.current,
         );
         markdown = restoreHeadings(markdown, metaRef.current);
         markdown = appendMeta(markdown, metaRef.current);
@@ -226,6 +259,7 @@ export function App() {
 
   useEffect(() => {
     if (!editor) return;
+    handleUpdateRef.current = handleUpdate;
     editor.on("update", handleUpdate);
     return () => {
       editor.off("update", handleUpdate);
@@ -247,6 +281,21 @@ export function App() {
         />
         {status && <div className="status-bar">{status}</div>}
         {readonly && <div className="readonly-badge">Read-only</div>}
+        <button
+          className="settings-button"
+          onClick={() => setSettingsVisible(true)}
+          title="Markdown settings"
+          aria-label="Open markdown settings"
+          style={readonly ? { right: 96 } : undefined}
+        >
+          ⚙
+        </button>
+        <SettingsPanel
+          visible={settingsVisible}
+          settings={settings}
+          onChange={updateSettings}
+          onClose={() => setSettingsVisible(false)}
+        />
         <StickyHeadings />
         <span
           className="toggle-source"
