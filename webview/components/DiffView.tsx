@@ -84,12 +84,15 @@ export function DiffView({
   // the user step through with Prev/Next (and j/k / ArrowUp/ArrowDown).
   const renderedRef = useRef<HTMLDivElement | null>(null);
   const [hunks, setHunks] = useState<HTMLElement[]>([]);
-  const [cursor, setCursor] = useState(0);
+  // -1 = nothing focused yet. Only becomes a real index once the user
+  // presses Prev/Next, so the diff doesn't auto-highlight the first
+  // hunk on open.
+  const [cursor, setCursor] = useState(-1);
 
   useEffect(() => {
     if (mode !== "rendered" || !renderedHtml) {
       setHunks([]);
-      setCursor(0);
+      setCursor(-1);
       return;
     }
     // Wait for the DOM to be populated after setting innerHTML
@@ -109,25 +112,30 @@ export function DiffView({
         firsts.push(el);
       }
       setHunks(firsts);
-      setCursor(0);
+      setCursor(-1);
     });
     return () => cancelAnimationFrame(id);
   }, [renderedHtml, mode]);
 
-  // Apply "current" class to the focused hunk and scroll it into view
+  // Apply "current" class to the focused hunk and scroll it into view.
+  // Skipped when cursor === -1 (initial state, no user navigation yet).
   useEffect(() => {
     hunks.forEach((el, i) => {
       if (i === cursor) el.classList.add("diff-hunk-current");
       else el.classList.remove("diff-hunk-current");
     });
+    if (cursor < 0) return;
     const el = hunks[cursor];
-    if (el)
-      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [hunks, cursor]);
 
   const gotoHunk = (delta: number) => {
     if (hunks.length === 0) return;
-    setCursor((c) => (c + delta + hunks.length) % hunks.length);
+    setCursor((c) => {
+      // First press: land on 0 (Next) or last (Prev) instead of wrapping
+      if (c < 0) return delta > 0 ? 0 : hunks.length - 1;
+      return (c + delta + hunks.length) % hunks.length;
+    });
   };
 
   // Keyboard shortcuts while the diff is open
@@ -169,7 +177,7 @@ export function DiffView({
                 ↑
               </button>
               <span className="diff-nav-counter">
-                {cursor + 1} / {hunks.length}
+                {cursor < 0 ? "—" : cursor + 1} / {hunks.length}
               </span>
               <button
                 className="diff-nav-btn"
