@@ -1046,3 +1046,45 @@ html, body, #root {
   border-radius: 3px;
   padding: 2px 4px;
 }
+
+/* Focused hunk (Prev/Next navigation) — stronger ring + scroll anchor */
+.diff-rendered .diff-hunk-current {
+  outline: 2px solid var(--vscode-focusBorder, #007acc) !important;
+  outline-offset: 2px;
+  scroll-margin-top: 80px;
+  scroll-margin-bottom: 80px;
+  border-radius: 3px;
+  transition: outline-color 0.15s;
+}
+
+/* Prev/Next navigation controls in the diff toolbar */
+.diff-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+}
+
+.diff-nav-btn {
+  background: transparent;
+  border: 1px solid var(--vscode-widget-border, #454545);
+  border-radius: 3px;
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  padding: 2px 8px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.diff-nav-btn:hover {
+  background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.08));
+}
+
+.diff-nav-counter {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground, #888);
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: center;
+}
