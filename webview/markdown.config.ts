@@ -1,40 +1,102 @@
 /**
  * Markdown formatting preferences.
- * These control how BlockNote's output is serialized back to markdown.
+ * These control how Tiptap's output is serialized back to markdown.
  *
  * See remark-stringify options:
  * https://github.com/remarkjs/remark/tree/main/packages/remark-stringify#options
  */
-export const MARKDOWN_CONFIG = {
-  bullet: "-" as const,
-  bulletOther: "*" as const,
-  bulletOrdered: "." as const,
-  listItemIndent: "one" as const,
-  emphasis: "_" as const,
-  strong: "*" as const,
-  fence: "`" as const,
-  fences: true,
-  rule: "-" as const,
-};
+import { DEFAULT_SETTINGS, type BetterMarkdownSettings } from "./settings";
+
+/**
+ * Build a remark-stringify options object from user settings.
+ * `strong` and `emphasis` are single-char in remark's API (the stringifier
+ * doubles strong automatically), so we map our user-friendly `**`/`__` down.
+ */
+export function buildMarkdownConfig(settings: BetterMarkdownSettings = DEFAULT_SETTINGS) {
+  return {
+    bullet: settings.bullet,
+    bulletOther: (settings.bullet === "-" ? "*" : "-") as "-" | "*" | "+",
+    bulletOrdered: "." as const,
+    listItemIndent: settings.listItemIndent,
+    emphasis: settings.emphasis,
+    strong: (settings.strong === "**" ? "*" : "_") as "*" | "_",
+    fence: "`" as const,
+    fences: true,
+    rule: settings.rule,
+  };
+}
+
+/** Back-compat export for the default config. */
+export const MARKDOWN_CONFIG = buildMarkdownConfig(DEFAULT_SETTINGS);
 
 /**
  * Post-process markdown to fix formatting issues
  * that remark-stringify doesn't handle correctly.
+ *
+ * Every step corresponds to a toggleable setting; passing no settings
+ * uses the defaults (which enable everything).
  */
-export function normalizeMarkdown(md: string): string {
-  md = md.replace(/^```shellscript$/gm, "```bash");
-  // Replace * list markers with - (remark config handles this but bulletOther may produce *)
-  md = md.replace(/^(\s*)\*\s{1,3}/gm, "$1- ");
+export function normalizeMarkdown(
+  md: string,
+  settings: BetterMarkdownSettings = DEFAULT_SETTINGS
+): string {
+  if (settings.shellscriptToBash) {
+    md = md.replace(/^```shellscript$/gm, "```bash");
+  }
+  // Replace non-preferred bullet markers with the preferred one
+  // (remark config handles this but bulletOther may still produce the other)
+  const others = (["-", "*", "+"] as const).filter((b) => b !== settings.bullet);
+  // Use a non-character-class alternation to sidestep regex-escape pitfalls
+  const otherBulletsPattern = others.map((b) => (b === "*" ? "\\*" : b === "+" ? "\\+" : "-")).join("|");
+  md = md.replace(
+    new RegExp(`^(\\s*)(?:${otherBulletsPattern})\\s{1,3}`, "gm"),
+    `$1${settings.bullet} `
+  );
   // Normalize ordered list spacing: "1.  " → "1. "
   md = md.replace(/^(\s*\d+\.)\s{2,}/gm, "$1 ");
   md = fixTaskLists(md);
-  md = renumberOrderedLists(md);
-  md = fixTableHeaders(md);
-  md = unescapeSpecialChars(md);
-  md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
+  if (settings.renumberOrderedLists) {
+    md = renumberOrderedLists(md);
+  }
+  if (settings.fixTableHeaders) {
+    md = fixTableHeaders(md);
+  }
+  if (settings.unescapeSpecialChars) {
+    md = unescapeSpecialChars(md);
+  }
+  if (settings.dedupImageAltText) {
+    md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
+  }
   md = fixOrphanedListMarkers(md);
-  md = compactLists(md);
+  if (settings.compactLists) {
+    md = compactLists(md);
+  }
+  // Apply / strip default code block language label.
+  md = applyDefaultCodeBlockLang(md, settings.defaultCodeBlockLang);
   return md;
+}
+
+/**
+ * When the user picks a defaultCodeBlockLang, give bare ``` fences that
+ * label. When it's empty, strip labels that look like our default ("text",
+ * "plaintext") — never strip real languages.
+ */
+function applyDefaultCodeBlockLang(md: string, lang: string): string {
+  const lines = md.split("\n");
+  let fenceCount = 0; // 0 = outside, odd = just opened, even = closed
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^(\s*)```([^\s`]*)\s*$/);
+    if (!m) continue;
+    fenceCount++;
+    if (fenceCount % 2 === 0) continue; // closing fence
+    const [, indent, existing] = m;
+    if (!existing && lang) {
+      lines[i] = `${indent}\`\`\`${lang}`;
+    } else if (existing && !lang && (existing === "text" || existing === "plaintext")) {
+      lines[i] = `${indent}\`\`\``;
+    }
+  }
+  return lines.join("\n");
 }
 
 /**

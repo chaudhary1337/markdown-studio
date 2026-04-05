@@ -20,7 +20,8 @@
  */
 
 import { roundTrip, mdToHtml, htmlToMd } from "./pipeline";
-import { normalizeMarkdown } from "../webview/markdown.config";
+import { normalizeMarkdown, buildMarkdownConfig } from "../webview/markdown.config";
+import { DEFAULT_SETTINGS, mergeSettings } from "../webview/settings";
 import {
   extractMeta,
   buildMeta,
@@ -574,6 +575,126 @@ async function run() {
     "empty fenced code block → text-labelled",
     "```\n```",
     "```text\n```"
+  );
+
+  // --------------------------------------------------------------------------
+  category("N. Settings-driven behavior");
+  // --------------------------------------------------------------------------
+
+  // mergeSettings with nothing returns defaults
+  eq(
+    "mergeSettings: null/undefined → defaults",
+    JSON.stringify(mergeSettings(null)),
+    JSON.stringify(DEFAULT_SETTINGS)
+  );
+
+  // Partial settings merge onto defaults
+  const partial = mergeSettings({ bullet: "*" });
+  assert(
+    "mergeSettings: partial settings keep defaults for missing keys",
+    partial.bullet === "*" && partial.emphasis === "_" && partial.compactLists === true,
+    JSON.stringify(partial)
+  );
+
+  // buildMarkdownConfig maps user-friendly "**"/"__" down to remark's single char
+  const cfgStarStar = buildMarkdownConfig(mergeSettings({ strong: "**" }));
+  const cfgUnderUnder = buildMarkdownConfig(mergeSettings({ strong: "__" }));
+  assert(
+    "buildMarkdownConfig: strong ** → remark strong='*'",
+    cfgStarStar.strong === "*",
+    `got '${cfgStarStar.strong}'`
+  );
+  assert(
+    "buildMarkdownConfig: strong __ → remark strong='_'",
+    cfgUnderUnder.strong === "_",
+    `got '${cfgUnderUnder.strong}'`
+  );
+
+  // bulletOther is the complement of bullet
+  assert(
+    "buildMarkdownConfig: bullet='-' → bulletOther='*'",
+    buildMarkdownConfig(mergeSettings({ bullet: "-" })).bulletOther === "*"
+  );
+  assert(
+    "buildMarkdownConfig: bullet='*' → bulletOther='-'",
+    buildMarkdownConfig(mergeSettings({ bullet: "*" })).bulletOther === "-"
+  );
+
+  // compactLists toggle: when disabled, blank lines between list items remain
+  eq(
+    "settings: compactLists=false preserves blanks between items",
+    normalizeMarkdown("- a\n\n- b\n\n- c\n", mergeSettings({ compactLists: false })),
+    "- a\n\n- b\n\n- c\n"
+  );
+  eq(
+    "settings: compactLists=true compacts blanks between items (default)",
+    normalizeMarkdown("- a\n\n- b\n\n- c\n", DEFAULT_SETTINGS),
+    "- a\n- b\n- c\n"
+  );
+
+  // unescapeSpecialChars toggle
+  eq(
+    "settings: unescapeSpecialChars=false keeps \\_ in words",
+    normalizeMarkdown("foo\\_bar\n", mergeSettings({ unescapeSpecialChars: false })),
+    "foo\\_bar\n"
+  );
+  eq(
+    "settings: unescapeSpecialChars=true unescapes \\_ in words (default)",
+    normalizeMarkdown("foo\\_bar\n", DEFAULT_SETTINGS),
+    "foo_bar\n"
+  );
+
+  // shellscriptToBash toggle
+  eq(
+    "settings: shellscriptToBash=true rewrites label (default)",
+    normalizeMarkdown("```shellscript\necho hi\n```\n", DEFAULT_SETTINGS),
+    "```bash\necho hi\n```\n"
+  );
+  eq(
+    "settings: shellscriptToBash=false keeps shellscript",
+    normalizeMarkdown("```shellscript\necho hi\n```\n", mergeSettings({ shellscriptToBash: false })),
+    "```shellscript\necho hi\n```\n"
+  );
+
+  // renumberOrderedLists toggle
+  eq(
+    "settings: renumberOrderedLists=true renumbers (default)",
+    normalizeMarkdown("1. a\n1. b\n1. c\n", DEFAULT_SETTINGS),
+    "1. a\n2. b\n3. c\n"
+  );
+  eq(
+    "settings: renumberOrderedLists=false keeps original numbers",
+    normalizeMarkdown("1. a\n1. b\n1. c\n", mergeSettings({ renumberOrderedLists: false })),
+    "1. a\n1. b\n1. c\n"
+  );
+
+  // bullet setting: normalizeMarkdown rewrites other bullets to preferred
+  eq(
+    "settings: bullet='*' converts - to *",
+    normalizeMarkdown("- one\n- two\n", mergeSettings({ bullet: "*" })),
+    "* one\n* two\n"
+  );
+  eq(
+    "settings: bullet='+' converts - to +",
+    normalizeMarkdown("- one\n- two\n", mergeSettings({ bullet: "+" })),
+    "+ one\n+ two\n"
+  );
+
+  // defaultCodeBlockLang
+  eq(
+    "settings: defaultCodeBlockLang='text' labels bare fences (default)",
+    normalizeMarkdown("```\nhello\n```\n", DEFAULT_SETTINGS),
+    "```text\nhello\n```\n"
+  );
+  eq(
+    "settings: defaultCodeBlockLang='' strips text label",
+    normalizeMarkdown("```text\nhello\n```\n", mergeSettings({ defaultCodeBlockLang: "" })),
+    "```\nhello\n```\n"
+  );
+  eq(
+    "settings: defaultCodeBlockLang leaves real languages alone",
+    normalizeMarkdown("```python\nprint('x')\n```\n", mergeSettings({ defaultCodeBlockLang: "" })),
+    "```python\nprint('x')\n```\n"
   );
 
   // --------------------------------------------------------------------------

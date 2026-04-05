@@ -7,7 +7,8 @@ import remarkStringify from "remark-stringify";
 import rehypeParse from "rehype-parse";
 import rehypeRemark from "rehype-remark";
 
-import { MARKDOWN_CONFIG, normalizeMarkdown } from "../markdown.config";
+import { buildMarkdownConfig, normalizeMarkdown } from "../markdown.config";
+import { DEFAULT_SETTINGS, type BetterMarkdownSettings } from "../settings";
 
 /**
  * Convert markdown to HTML for Tiptap editor.
@@ -180,10 +181,11 @@ function preprocessTiptapHtml(html: string): string {
 
 function postprocessMarkdown(
   md: string,
+  settings: BetterMarkdownSettings,
   baseUri?: string,
   docFolderPath?: string
 ): string {
-  md = normalizeMarkdown(md);
+  md = normalizeMarkdown(md, settings);
   // Replace HTML entities that leak through
   md = md.replace(/&#x20;/g, " ");
   md = md.replace(/&amp;/g, "&");
@@ -200,16 +202,17 @@ function postprocessMarkdown(
 export async function htmlToMarkdown(
   html: string,
   baseUri?: string,
-  docFolderPath?: string
+  docFolderPath?: string,
+  settings: BetterMarkdownSettings = DEFAULT_SETTINGS
 ): Promise<string> {
   html = preprocessTiptapHtml(html);
   const result = await unified()
     .use(rehypeParse, { fragment: true })
     .use(rehypeRemark)
     .use(remarkGfm)
-    .use(remarkStringify, MARKDOWN_CONFIG)
+    .use(remarkStringify, buildMarkdownConfig(settings))
     .process(html);
-  return postprocessMarkdown(String(result), baseUri, docFolderPath);
+  return postprocessMarkdown(String(result), settings, baseUri, docFolderPath);
 }
 
 /**
@@ -220,16 +223,17 @@ export async function htmlToMarkdown(
 export function htmlToMarkdownSync(
   html: string,
   baseUri?: string,
-  docFolderPath?: string
+  docFolderPath?: string,
+  settings: BetterMarkdownSettings = DEFAULT_SETTINGS
 ): string {
   html = preprocessTiptapHtml(html);
   const result = unified()
     .use(rehypeParse, { fragment: true })
     .use(rehypeRemark)
     .use(remarkGfm)
-    .use(remarkStringify, MARKDOWN_CONFIG)
+    .use(remarkStringify, buildMarkdownConfig(settings))
     .processSync(html);
-  return postprocessMarkdown(String(result), baseUri, docFolderPath);
+  return postprocessMarkdown(String(result), settings, baseUri, docFolderPath);
 }
 
 function restoreRelativePaths(
