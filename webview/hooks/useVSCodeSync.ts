@@ -154,19 +154,10 @@ function preprocessTiptapHtml(html: string): string {
   // Strip <p> from inside <li> so rehype-remark produces tight lists
   html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
 
-  // Escape | inside <code> within table cells — rehype-remark treats
-  // unescaped | as column separators, corrupting table structure
-  {
-    const doc = new DOMParser().parseFromString(html, "text/html");
-    doc.querySelectorAll("td code, th code").forEach((code) => {
-      const text = code.textContent || "";
-      if (text.includes("|")) {
-        // Only escape bare |, not already-escaped \|
-        code.textContent = text.replace(/(?<!\\)\|/g, "\\|");
-      }
-    });
-    html = doc.body.innerHTML;
-  }
+  // NOTE: we deliberately do NOT escape `|` inside <code> within table cells
+  // here. rehype-remark + remark-gfm already emit correct GFM escapes (`\|`)
+  // for table cell code spans. Escaping manually leads to double-escape
+  // (`\\|`) on round-trips.
 
   // Wrap bare <img> tags in <p> so each image gets its own paragraph
   // Tiptap outputs images as top-level <img> without <p> wrappers
@@ -299,6 +290,12 @@ function protectTableCodePipes(md: string): string {
       if (line[i] === "`") {
         inCode = !inCode;
         result += "`";
+      } else if (inCode && line[i] === "\\" && line[i + 1] === "|") {
+        // Consume the `\` alongside `|` — otherwise the backslash survives
+        // into the HTML and rehype-remark emits it verbatim, which combines
+        // with remark-gfm's own \| escape to produce \\| on round-trips.
+        result += PIPE_PH;
+        i++;
       } else if (line[i] === "|" && inCode) {
         result += PIPE_PH;
       } else {

@@ -5,12 +5,11 @@
 Always, in this order:
 
 1. **Run tests**: `npm test`
-   - Runs `scripts/test-conversions.ts` (70+ targeted cases: headings, lists,
+   - Runs `scripts/test-conversions.ts` (95+ targeted cases: headings, lists,
      tables, code blocks, task lists, images, escaping, metadata,
-     normalizeMarkdown unit tests) and then `scripts/test-roundtrip.ts`
-     (full-file round-trip on `test.md`).
-   - Expect: all named tests pass, 3 known-failing cases remain (documented
-     in category M of test-conversions.ts).
+     normalizeMarkdown unit tests, settings-driven behavior) and then
+     `scripts/test-roundtrip.ts` (full-file round-trip on `test.md`).
+   - Expect: all named tests pass, 0 known-failing.
 2. **Build the extension**: `npm run build`
    - Esbuild must succeed for both `src/extension.ts` (node) and
      `webview/index.tsx` (browser). Type errors in either halt the build.
@@ -41,24 +40,18 @@ In `scripts/test-conversions.ts`:
 - Mark a documented-lossy case with `{ known: true }`; it shows as `○`
   and doesn't fail the suite.
 
-## Known pipeline discrepancy (noted for future fixing)
+## Table cell code-span pipes
 
-`scripts/pipeline.ts` produces CLEANER output than production for table
-cells containing code spans with `|`. Specifically:
+`` `a|b` `` or `` `a\|b` `` inside a table cell round-trips to `` `a\|b` ``
+(single backslash, correct GFM escape). Production and the test pipeline
+agree — there are two coupled invariants keeping this clean:
 
-- Test pipeline: `` `a|b` `` in a table cell round-trips to `` `a\|b` ``
-  (single backslash — correct GFM escape).
-- Production (`useVSCodeSync.ts`): round-trips to `` `a\\|b` `` (double
-  backslash — leaks into source).
+1. `protectTableCodePipes` consumes `\|` as a single unit (strips the
+   leading `\` alongside the `|`). Otherwise the backslash leaks into HTML
+   and combines with remark-gfm's own escape to emit `\\|`.
+2. We do NOT manually escape `|` inside `<td>/<th> <code>` before
+   rehype-remark — remark-gfm handles table-cell pipe escaping natively.
+   Adding our own escape there caused the `\\|` double-escape.
 
-The production bug has two causes that must BOTH be fixed together:
-
-1. `protectTableCodePipes` leaves a leading `\` when it sees `\|`, which
-   surfaces as a literal backslash in HTML after placeholder restoration.
-   Fix: consume the `\` alongside the `|` (see pipeline.ts for pattern).
-2. `escapeCodePipesInTableCells` adds `\|` inside `<code>` before
-   rehype-remark, but rehype-remark + remark-gfm already escape table-cell
-   pipes natively. Fix: remove the manual escape.
-
-TODO.md line claiming this is done is partially right (it stops
-ESCALATION on re-saves) but the initial double-escape is still there.
+If you're touching either step, run category E tests and keep both
+invariants aligned between `useVSCodeSync.ts` and `scripts/pipeline.ts`.
