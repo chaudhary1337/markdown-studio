@@ -72,6 +72,23 @@ A VSCode extension that replaces the default markdown editor with a Notion-like 
   default code-block language label are configurable.
 - Settings persist in VSCode's globalState and sync across open panels.
 
+### Git Diff View
+
+- **Inline toggle**: "Diff" button (top-right of editor) compares live
+  buffer against HEAD. Uses `vscode.git` extension to fetch HEAD content.
+- **Standalone panel**: `betterMarkdown.openDiff` command opens a
+  dedicated rich diff webview between any two URIs. Accessible from:
+  - Command palette (Better Markdown: Open Rich Diff)
+  - SCM resource context menu (right-click changed .md file)
+  - Diff editor toolbar (when a .md diff is active)
+- **Two view modes**, switchable in the toolbar:
+  - **Source**: line-by-line diff via `diff` + `diff2html` (unified or
+    side-by-side layout, green/red/blue matching git conventions).
+  - **Rendered**: word-level HTML diff — both sides rendered via
+    `markdownToHtml`, then `node-htmldiff` produces `<ins>`/`<del>`
+    markers, styled with green/red highlights.
+- Panel refreshes when either side changes on disk.
+
 ## Architecture
 
 ```
@@ -121,11 +138,13 @@ better-markdown/
 │   └── test-roundtrip.ts     # Full-file round-trip test
 ├── src/
 │   ├── extension.ts          # Activation, commands, keybindings
+│   ├── diffPanel.ts          # Standalone rich diff webview panel
 │   └── provider.ts           # CustomTextEditorProvider + settings persistence
 ├── webview/
 │   ├── tsconfig.json         # Webview TS config (JSX)
-│   ├── index.tsx             # React mount
+│   ├── index.tsx             # React mount (App or DiffApp via __BTRMK_MODE__)
 │   ├── App.tsx               # Tiptap editor + sync + search + copy + settings
+│   ├── DiffApp.tsx           # Standalone diff panel entry
 │   ├── settings.ts           # User settings schema + defaults
 │   ├── utils.ts              # Shared helpers (getHeadingLevel, scrollToBlock)
 │   ├── metadata.ts           # h4-h6 preservation via HTML comments
@@ -133,6 +152,7 @@ better-markdown/
 │   ├── hooks/
 │   │   └── useVSCodeSync.ts  # md ↔ html conversion (async + sync variants)
 │   ├── components/
+│   │   ├── DiffView.tsx      # Source/Rendered diff UI (diff2html + htmldiff)
 │   │   ├── SearchBar.tsx     # Content search (Ctrl+F)
 │   │   ├── SettingsPanel.tsx # Settings modal (gear icon)
 │   │   ├── StickyHeadings.tsx
