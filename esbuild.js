@@ -40,12 +40,22 @@ const webviewBuild = esbuild.build({
   },
 });
 
-// 3. Copy CSS
+// 3. Copy CSS (editor + bundled diff2html styles)
 function copyCSS() {
   const src = path.join(__dirname, "webview", "styles", "editor.css");
   const dest = path.join(__dirname, "dist", "editor.css");
+  const diff2htmlCss = path.join(
+    __dirname,
+    "node_modules",
+    "diff2html",
+    "bundles",
+    "css",
+    "diff2html.min.css"
+  );
   fs.mkdirSync(path.join(__dirname, "dist"), { recursive: true });
-  fs.copyFileSync(src, dest);
+  const editor = fs.readFileSync(src, "utf-8");
+  const d2h = fs.readFileSync(diff2htmlCss, "utf-8");
+  fs.writeFileSync(dest, editor + "\n\n/* diff2html */\n" + d2h);
 }
 
 Promise.all([extensionBuild, webviewBuild])

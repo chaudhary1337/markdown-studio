@@ -44,6 +44,10 @@ export interface BetterMarkdownSettings {
    * (```\n...\n```), "text" / "plaintext" adds a default label.
    */
   defaultCodeBlockLang: string;
+
+  // --- diff view ---
+  /** Layout for the git diff toggle. */
+  diffLayout: "unified" | "side-by-side";
 }
 
 export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
@@ -61,6 +65,7 @@ export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
   // Leave bare ``` fences alone — don't add a language label unless the
   // user explicitly opts in via the settings panel.
   defaultCodeBlockLang: "",
+  diffLayout: "side-by-side",
 };
 
 /**

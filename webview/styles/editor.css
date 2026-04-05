@@ -768,3 +768,178 @@ html, body, #root {
   background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.08));
   color: var(--vscode-editor-foreground, #d4d4d4);
 }
+
+/* ================================================================ */
+/* Diff view                                                        */
+/* ================================================================ */
+
+.diff-button {
+  position: absolute;
+  top: 6px;
+  right: 48px;
+  z-index: 4;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--vscode-descriptionForeground, #888);
+  cursor: pointer;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.diff-button:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.08));
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  border-color: var(--vscode-widget-border, #454545);
+}
+
+.diff-button.active {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #fff);
+  border-color: var(--vscode-button-background, #0e639c);
+}
+
+.diff-view {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: var(--vscode-editor-background, #1e1e1e);
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--vscode-widget-border, #333);
+  background: var(--vscode-editorWidget-background, #252526);
+}
+
+.diff-toolbar-left,
+.diff-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.diff-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vscode-editor-foreground, #d4d4d4);
+}
+
+.diff-close {
+  background: transparent;
+  border: none;
+  color: var(--vscode-descriptionForeground, #888);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 6px;
+}
+
+.diff-close:hover {
+  color: var(--vscode-editor-foreground, #d4d4d4);
+}
+
+.diff-body {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 16px 16px;
+}
+
+.diff-empty {
+  padding: 32px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground, #888);
+  font-size: 13px;
+}
+
+/* diff2html defaults to a white background; restyle to match our dark theme */
+.diff-html .d2h-wrapper,
+.diff-html .d2h-file-wrapper,
+.diff-html .d2h-file-header,
+.diff-html .d2h-files-diff,
+.diff-html .d2h-code-wrapper,
+.diff-html .d2h-diff-table,
+.diff-html .d2h-code-side-line {
+  background: var(--vscode-editor-background, #1e1e1e) !important;
+  color: var(--vscode-editor-foreground, #d4d4d4) !important;
+  border-color: var(--vscode-widget-border, #333) !important;
+}
+
+.diff-html .d2h-file-header {
+  display: none; /* we show our own title in the toolbar */
+}
+
+.diff-html .d2h-code-linenumber,
+.diff-html .d2h-code-side-linenumber {
+  background: var(--vscode-editorLineNumber-background, transparent) !important;
+  color: var(--vscode-editorLineNumber-foreground, #858585) !important;
+  border-color: var(--vscode-widget-border, #333) !important;
+}
+
+.diff-html .d2h-ins,
+.diff-html .d2h-ins .d2h-code-side-linenumber,
+.diff-html .d2h-ins.d2h-change {
+  background: rgba(46, 160, 67, 0.15) !important;
+  color: var(--vscode-editor-foreground, #d4d4d4) !important;
+}
+
+.diff-html .d2h-ins.d2h-change {
+  /* lines modified on the "new" side → blue tint */
+  background: rgba(0, 122, 204, 0.18) !important;
+}
+
+.diff-html .d2h-del,
+.diff-html .d2h-del .d2h-code-side-linenumber {
+  background: rgba(248, 81, 73, 0.15) !important;
+  color: var(--vscode-editor-foreground, #d4d4d4) !important;
+}
+
+.diff-html .d2h-del.d2h-change {
+  /* lines modified on the "old" side → blue tint */
+  background: rgba(0, 122, 204, 0.18) !important;
+}
+
+.diff-html .d2h-ins .d2h-change,
+.diff-html .d2h-code-line ins {
+  background: rgba(46, 160, 67, 0.4) !important;
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.diff-html .d2h-del .d2h-change,
+.diff-html .d2h-code-line del {
+  background: rgba(248, 81, 73, 0.4) !important;
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.diff-html .d2h-info {
+  background: var(--vscode-editorWidget-background, #252526) !important;
+  color: var(--vscode-descriptionForeground, #888) !important;
+  border-color: var(--vscode-widget-border, #333) !important;
+}
+
+.diff-html .d2h-cntx {
+  background: transparent !important;
+  color: var(--vscode-editor-foreground, #d4d4d4) !important;
+}
+
+.diff-html .d2h-code-line,
+.diff-html .d2h-code-side-line {
+  color: var(--vscode-editor-foreground, #d4d4d4) !important;
+  font-family: var(--vscode-editor-font-family, monospace) !important;
+}
+
+.diff-html .d2h-emptyplaceholder {
+  background: var(--vscode-editorWidget-background, #252526) !important;
+  border-color: var(--vscode-widget-border, #333) !important;
+}

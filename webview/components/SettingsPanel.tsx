@@ -118,6 +118,23 @@ export function SettingsPanel({
           </section>
 
           <section>
+            <h3>Diff view</h3>
+
+            <Row label="Layout">
+              <Segmented
+                value={settings.diffLayout}
+                options={[
+                  { value: "unified", label: "Unified" },
+                  { value: "side-by-side", label: "Side-by-side" },
+                ]}
+                onChange={(v) =>
+                  set("diffLayout", v as "unified" | "side-by-side")
+                }
+              />
+            </Row>
+          </section>
+
+          <section>
             <h3>Normalization (toggle to disable)</h3>
 
             <Toggle

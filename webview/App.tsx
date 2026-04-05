@@ -16,6 +16,7 @@ import { StickyHeadings } from "./components/StickyHeadings";
 import { TableOfContents } from "./components/TableOfContents";
 import { SearchBar } from "./components/SearchBar";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { DiffView } from "./components/DiffView";
 import { DOMSerializer } from "@tiptap/pm/model";
 import { markdownToHtml, htmlToMarkdown, htmlToMarkdownSync } from "./hooks/useVSCodeSync";
 import {
@@ -46,6 +47,11 @@ export function App() {
   const [searchVisible, setSearchVisible] = React.useState(false);
   const [settings, setSettings] = React.useState<BetterMarkdownSettings>(DEFAULT_SETTINGS);
   const [settingsVisible, setSettingsVisible] = React.useState(false);
+  const [diffVisible, setDiffVisible] = React.useState(false);
+  const [diffData, setDiffData] = React.useState<{
+    headContent: string;
+    fileName: string;
+  } | null>(null);
   const handleUpdateRef = useRef<() => void>(() => {});
 
   // Keep the ref in sync with state — the save pipeline runs on a
@@ -139,6 +145,14 @@ export function App() {
         const merged = mergeSettings(msg.settings);
         settingsRef.current = merged;
         setSettings(merged);
+      } else if (msg.type === "gitDiffResponse") {
+        if (typeof msg.headContent !== "string") {
+          setStatus("Not tracked by git — nothing to diff against HEAD.");
+          setTimeout(() => setStatus(null), 3000);
+          setDiffVisible(false);
+          return;
+        }
+        setDiffData({ headContent: msg.headContent, fileName: msg.fileName });
       }
     };
     window.addEventListener("message", handler);
@@ -270,6 +284,34 @@ export function App() {
     vscodeApi.postMessage({ type: "toggleEditor" });
   };
 
+  const toggleDiff = () => {
+    if (diffVisible) {
+      setDiffVisible(false);
+      return;
+    }
+    setDiffVisible(true);
+    vscodeApi.postMessage({ type: "requestGitDiff" });
+  };
+
+  // Current editor content as markdown (for the diff "new" side)
+  const currentMarkdown = React.useMemo(() => {
+    if (!editor || !diffVisible) return "";
+    try {
+      const html = editor.getHTML();
+      // Synchronous converter for diff display. We tolerate a slightly
+      // stale snapshot vs the on-disk file — the user can re-toggle.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      return htmlToMarkdownSync(
+        html,
+        baseUri.current,
+        docFolderPath.current,
+        settingsRef.current,
+      );
+    } catch {
+      return "";
+    }
+  }, [editor, diffVisible, diffData]);
+
   if (!editor) return null;
 
   return (
@@ -281,6 +323,16 @@ export function App() {
         />
         {status && <div className="status-bar">{status}</div>}
         {readonly && <div className="readonly-badge">Read-only</div>}
+        {!readonly && (
+          <button
+            className={"diff-button" + (diffVisible ? " active" : "")}
+            onClick={toggleDiff}
+            title="Diff against HEAD"
+            aria-label="Toggle git diff view"
+          >
+            Diff
+          </button>
+        )}
         <button
           className="settings-button"
           onClick={() => setSettingsVisible(true)}
@@ -296,6 +348,18 @@ export function App() {
           onChange={updateSettings}
           onClose={() => setSettingsVisible(false)}
         />
+        {diffVisible && diffData && (
+          <DiffView
+            oldContent={diffData.headContent}
+            newContent={currentMarkdown}
+            fileName={diffData.fileName}
+            layout={settings.diffLayout}
+            onClose={() => setDiffVisible(false)}
+            onLayoutChange={(layout) =>
+              updateSettings({ ...settings, diffLayout: layout })
+            }
+          />
+        )}
         <StickyHeadings />
         <span
           className="toggle-source"

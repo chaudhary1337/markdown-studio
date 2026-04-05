@@ -25,6 +25,31 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
     }
   }
 
+  /**
+   * Fetch the HEAD version of a file via VSCode's built-in git extension.
+   * Returns null if git isn't available, the file isn't tracked, or the ref
+   * doesn't exist (e.g. new file).
+   */
+  private async getHeadContent(fileUri: vscode.Uri): Promise<string | null> {
+    try {
+      const gitExt = vscode.extensions.getExtension("vscode.git");
+      if (!gitExt) return null;
+      if (!gitExt.isActive) await gitExt.activate();
+      // The git extension API is un-typed in @types/vscode — loose typing.
+      const gitApi = (gitExt.exports as any).getAPI(1);
+      if (!gitApi) return null;
+      const repo = gitApi.repositories.find((r: any) =>
+        fileUri.fsPath.startsWith(r.rootUri.fsPath)
+      );
+      if (!repo) return null;
+      // Empty ref ('') = staged, 'HEAD' = committed. We want HEAD.
+      const head = await repo.show("HEAD", fileUri.fsPath);
+      return typeof head === "string" ? head : null;
+    } catch {
+      return null;
+    }
+  }
+
   async resolveCustomTextEditor(
     document: vscode.TextDocument,
     webviewPanel: vscode.WebviewPanel,
@@ -69,6 +94,18 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
         });
       } else if (msg.type === "saveSettings") {
         await this.saveSettings(msg.settings as Record<string, unknown>);
+      } else if (msg.type === "requestGitDiff") {
+        // Webview wants to see the HEAD version for diffing against the
+        // current buffer. Nothing to do for non-file URIs.
+        let headContent: string | null = null;
+        if (document.uri.scheme === "file") {
+          headContent = await this.getHeadContent(document.uri);
+        }
+        webview.postMessage({
+          type: "gitDiffResponse",
+          headContent,
+          fileName: path.basename(document.uri.fsPath),
+        });
       } else if (msg.type === "toggleEditor") {
         vscode.commands.executeCommand(
           "vscode.openWith",
