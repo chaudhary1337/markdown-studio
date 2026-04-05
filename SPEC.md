@@ -49,6 +49,29 @@ A VSCode extension that replaces the default markdown editor with a Notion-like 
 - Matches VSCode's active color theme via CSS variables
 - Dark mode with lowlight syntax highlighting in code blocks
 
+### Copy as Markdown
+
+- Cmd+C / Ctrl+C on a selection puts markdown source on the clipboard
+  (not Tiptap's rendered plain text). Both `text/plain` (markdown) and
+  `text/html` (HTML) are set, so rich paste targets still see structure.
+- Cut (Cmd+X) does the same and removes the selection.
+
+### Read-Only for Non-File URIs
+
+- Documents from git:, conflictResolution:, and similar non-file schemes
+  render as a read-only Tiptap view with a "Read-only" badge.
+- Git diff side panes get the full rich rendering on both sides.
+
+### Settings Panel
+
+- Gear icon in the top-right opens a modal settings panel.
+- Every normalization step (`compactLists`, `unescapeSpecialChars`,
+  `renumberOrderedLists`, `shellscriptToBash`, `fixTableHeaders`,
+  `dedupImageAltText`) is independently toggleable.
+- Serializer markers (bullet, italic, bold, rule, list indent) and the
+  default code-block language label are configurable.
+- Settings persist in VSCode's globalState and sync across open panels.
+
 ## Architecture
 
 ```
@@ -72,15 +95,17 @@ Webview (Browser, React)
 
 ## Sync Protocol
 
-| Direction      | Trigger                           | Message                                              |
-| -------------- | --------------------------------- | ---------------------------------------------------- |
-| Host → Webview | File opened                       | `{ type: "init", content: "# markdown..." }`         |
-| Host → Webview | External edit (git, other editor) | `{ type: "update", content: "..." }`                 |
-| Host → Webview | Ctrl+F pressed                    | `{ type: "openSearch" }`                             |
-| Webview → Host | User types/edits                  | `{ type: "edit", content: "..." }` (debounced 300ms) |
-| Webview → Host | Webview loaded                    | `{ type: "ready" }`                                  |
-| Webview → Host | Toggle editor                     | `{ type: "toggleEditor" }`                           |
-| Webview → Host | Open link                         | `{ type: "openLink", href: "..." }`                  |
+| Direction      | Trigger                           | Message                                                                       |
+| -------------- | --------------------------------- | ----------------------------------------------------------------------------- |
+| Host → Webview | File opened                       | `{ type: "init", content, baseUri, docFolderPath, isReadonly, settings }`     |
+| Host → Webview | External edit (git, other editor) | `{ type: "update", content: "..." }`                                          |
+| Host → Webview | Ctrl+F pressed                    | `{ type: "openSearch" }`                                                      |
+| Host → Webview | Another panel saved settings      | `{ type: "settingsUpdated", settings }`                                       |
+| Webview → Host | User types/edits                  | `{ type: "edit", content: "..." }` (debounced 300ms)                          |
+| Webview → Host | Webview loaded                    | `{ type: "ready" }`                                                           |
+| Webview → Host | Toggle editor                     | `{ type: "toggleEditor" }`                                                    |
+| Webview → Host | Open link                         | `{ type: "openLink", href: "..." }`                                           |
+| Webview → Host | Settings changed                  | `{ type: "saveSettings", settings }`                                          |
 
 ## File Structure
 
@@ -91,21 +116,25 @@ better-markdown/
 ├── esbuild.js                # Dual build (extension + webview)
 ├── scripts/
 │   ├── deploy.sh             # Build + package + optional publish
-│   └── test-roundtrip.ts     # Automated markdown round-trip test
+│   ├── pipeline.ts           # Shared md↔md round-trip used by tests
+│   ├── test-conversions.ts   # 95+ targeted conversion assertions
+│   └── test-roundtrip.ts     # Full-file round-trip test
 ├── src/
 │   ├── extension.ts          # Activation, commands, keybindings
-│   └── provider.ts           # CustomTextEditorProvider
+│   └── provider.ts           # CustomTextEditorProvider + settings persistence
 ├── webview/
 │   ├── tsconfig.json         # Webview TS config (JSX)
 │   ├── index.tsx             # React mount
-│   ├── App.tsx               # Tiptap editor + sync + search
+│   ├── App.tsx               # Tiptap editor + sync + search + copy + settings
+│   ├── settings.ts           # User settings schema + defaults
 │   ├── utils.ts              # Shared helpers (getHeadingLevel, scrollToBlock)
 │   ├── metadata.ts           # h4-h6 preservation via HTML comments
-│   ├── markdown.config.ts    # Formatting config + normalizeMarkdown
+│   ├── markdown.config.ts    # buildMarkdownConfig + normalizeMarkdown
 │   ├── hooks/
-│   │   └── useVSCodeSync.ts  # md ↔ blocks conversion pipelines
+│   │   └── useVSCodeSync.ts  # md ↔ html conversion (async + sync variants)
 │   ├── components/
 │   │   ├── SearchBar.tsx     # Content search (Ctrl+F)
+│   │   ├── SettingsPanel.tsx # Settings modal (gear icon)
 │   │   ├── StickyHeadings.tsx
 │   │   └── TableOfContents.tsx  # Sidebar + filter
 │   └── styles/

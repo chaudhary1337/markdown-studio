@@ -20,12 +20,13 @@
 - [x] Fix `\|` double-escape in code spans within table cells (use negative lookbehind)
 - [x] Unescape `\_` around Unicode word chars (β\_kl, 日\_本) — use `\p{L}` instead of `\w`
 - [x] `compactLists` preserves blank lines around indented paragraphs (verified via test coverage)
+- [x] Git diffs work — non-file URIs render read-only in Tiptap with a badge
+- [x] Copy as markdown source — selection serialised to .md on Cmd+C / Cmd+X
+- [x] Settings panel in webview — every normalization step + serializer marker configurable, persisted via globalState
 
 ## Remaining
 
-- [ ] Git diffs should work
-- [ ] Make copy work (paste already works)
-- [ ] Settings page (indentation size, emphasis style, etc.)
+(none currently tracked)
 
 ## Known Limitations
 
