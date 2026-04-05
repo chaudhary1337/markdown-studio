@@ -39,6 +39,12 @@
         "command": "betterMarkdown.find",
         "title": "Find in Document",
         "category": "Better Markdown"
+      },
+      {
+        "command": "betterMarkdown.openDiff",
+        "title": "Open Rich Diff",
+        "category": "Better Markdown",
+        "icon": "$(diff)"
       }
     ],
     "keybindings": [
@@ -56,11 +62,29 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "betterMarkdown.openDiff",
+          "when": "resourceExtname == .md || isInDiffEditor"
+        }
+      ],
       "editor/title": [
         {
           "command": "betterMarkdown.toggleEditor",
           "group": "navigation",
           "when": "resourceExtname == .md"
+        },
+        {
+          "command": "betterMarkdown.openDiff",
+          "group": "navigation",
+          "when": "isInDiffEditor && resourceExtname == .md"
+        }
+      ],
+      "scm/resourceState/context": [
+        {
+          "command": "betterMarkdown.openDiff",
+          "group": "1_modification",
+          "when": "scmProvider == git && resourceExtname == .md"
         }
       ]
     }
