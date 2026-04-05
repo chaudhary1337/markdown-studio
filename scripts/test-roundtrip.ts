@@ -1,66 +1,17 @@
 /**
- * Round-trip test: markdown → HTML → markdown
+ * Round-trip test: markdown → HTML → markdown (on a whole file).
  *
- * Tests the remark/rehype pipeline and normalizeMarkdown without needing
- * a browser or BlockNote. Catches most formatting regressions.
+ * Exercises the full pipeline (remark/rehype + normalizeMarkdown + metadata)
+ * without needing a browser. Catches most formatting regressions.
  *
  * Usage: npx tsx scripts/test-roundtrip.ts [file.md]
  */
 
 import { readFileSync } from "fs";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
-import remarkRehype from "remark-rehype";
-import rehypeStringify from "rehype-stringify";
-import rehypeParse from "rehype-parse";
-import rehypeRemark from "rehype-remark";
-import remarkStringify from "remark-stringify";
-import { MARKDOWN_CONFIG, normalizeMarkdown } from "../webview/markdown.config";
-import { extractMeta, buildMeta, restoreHeadings, appendMeta, mergeMetadata } from "../webview/metadata";
+import { roundTrip } from "./pipeline";
 
 const file = process.argv[2] || "test.md";
 const input = readFileSync(file, "utf-8");
-
-async function roundTrip(md: string): Promise<string> {
-  // 1. Extract metadata
-  const { content, meta: existingMeta } = extractMeta(md);
-  const scannedMeta = buildMeta(content);
-  const meta = mergeMetadata(scannedMeta, existingMeta);
-
-  // 2. md → HTML (same pipeline as markdownToBlocks)
-  const htmlResult = await unified()
-    .use(remarkParse)
-    .use(remarkGfm)
-    .use(remarkRehype)
-    .use(rehypeStringify)
-    .process(content);
-  let html = String(htmlResult);
-
-  // 3. Apply the same HTML transforms as markdownToBlocks
-  html = html.replace(/<(\/?)h[456](\s|>)/g, "<$1h3$2");
-  html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
-  html = html.replace(/<pre><code(?![^>]*class="language-)/g, '<pre><code class="language-text"');
-  html = html.replace(/(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
-    (_m, open, c, close) => open + c.replace(/\n$/, "") + close);
-
-  // 4. HTML → md (same pipeline as blocksToMarkdown)
-  // Also strip <p> inside <li> on output path
-  html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
-  const mdResult = await unified()
-    .use(rehypeParse, { fragment: true })
-    .use(rehypeRemark)
-    .use(remarkGfm)
-    .use(remarkStringify, MARKDOWN_CONFIG)
-    .process(html);
-  let output = normalizeMarkdown(String(mdResult));
-
-  // 5. Restore h4-h6 and append metadata
-  output = restoreHeadings(output, meta);
-  output = appendMeta(output, meta);
-
-  return output;
-}
 
 function showDiff(input: string, output: string) {
   const inLines = input.split("\n");
@@ -84,12 +35,14 @@ function showDiff(input: string, output: string) {
   } else {
     console.log(`\n\x1b[33m${diffs} line(s) differ\x1b[0m`);
   }
+  return diffs;
 }
 
 (async () => {
   console.log(`Testing round-trip: ${file}\n`);
   const output = await roundTrip(input);
-  showDiff(input, output);
+  const diffs = showDiff(input, output);
   console.log("\n--- Full output ---\n");
   console.log(output);
+  if (diffs > 0) process.exit(1);
 })();
