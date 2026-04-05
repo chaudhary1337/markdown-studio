@@ -88,8 +88,10 @@ function unescapeText(text: string): string {
   // Only unescape standalone \* (e.g. "2 \* 3") not emphasis markers
   text = text.replace(/(?<=\s|^)\\\*(?=\s|$)/g, "*");
   // Remove backslash before _ inside words (e.g. future\_relevance → future_relevance)
-  // but keep \_ at word boundaries where it prevents emphasis
-  text = text.replace(/(\w)\\_(\w)/g, "$1_$2");
+  // but keep \_ at word boundaries where it prevents emphasis.
+  // Use Unicode property escapes so non-ASCII letters (β, 日, 文…) count as
+  // word chars — plain \w is ASCII-only.
+  text = text.replace(/([\p{L}\p{N}_])\\_([\p{L}\p{N}_])/gu, "$1_$2");
   // Remove backslash before [ when not part of a link (remark escapes all [)
   text = text.replace(/\\\[/g, "[");
   return text;

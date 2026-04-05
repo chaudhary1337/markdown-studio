@@ -18,6 +18,7 @@
 - [x] Task list checkbox round-trip (GFM ↔ Tiptap taskItem conversion)
 - [x] Image separation (each image in its own `<p>` block)
 - [x] Fix `\|` double-escape in code spans within table cells (use negative lookbehind)
+- [x] Unescape `\_` around Unicode word chars (β\_kl, 日\_本) — use `\p{L}` instead of `\w`
 
 ## Remaining
 
@@ -25,7 +26,6 @@
 - [ ] Make copy work (paste already works)
 - [ ] Settings page (indentation size, emphasis style, etc.)
 - [ ] `compactLists` removes blank lines between bullet list and following paragraph that's indented under a list item — cosmetic but changes structure
-- [ ] `β\_kl` not unescaped (Unicode chars don't match `\w` in regex)
 
 ## Known Limitations
 
