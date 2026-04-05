@@ -123,7 +123,11 @@ function fixTaskLists(md: string): string {
     }
 
     const indentedTask = line.match(/^\s{2,}(-\s\[[\sxX]\]\s*.*)$/);
-    if (indentedTask && result.length > 0 && /^-\s*$/.test(result[result.length - 1].trim())) {
+    if (
+      indentedTask &&
+      result.length > 0 &&
+      /^-\s*$/.test(result[result.length - 1].trim())
+    ) {
       result.pop();
       result.push(indentedTask[1]);
       i++;
@@ -139,8 +143,10 @@ function fixTaskLists(md: string): string {
   for (let k = 0; k < result.length; k++) {
     if (
       result[k].trim() === "" &&
-      k > 0 && /^-\s\[[\sxX]\]\s/.test(result[k - 1]) &&
-      k + 1 < result.length && /^-\s\[[\sxX]\]\s/.test(result[k + 1])
+      k > 0 &&
+      /^-\s\[[\sxX]\]\s/.test(result[k - 1]) &&
+      k + 1 < result.length &&
+      /^-\s\[[\sxX]\]\s/.test(result[k + 1])
     ) {
       continue;
     }
@@ -198,7 +204,11 @@ function fixTableHeaders(md: string): string {
         i++;
       }
 
-      if (tableLines.length >= 3 && isEmptyRow(tableLines[0]) && isSeparatorRow(tableLines[1])) {
+      if (
+        tableLines.length >= 3 &&
+        isEmptyRow(tableLines[0]) &&
+        isSeparatorRow(tableLines[1])
+      ) {
         const dataRows = tableLines.slice(2);
         result.push(dataRows[0]);
         result.push(buildSeparator(dataRows));
@@ -227,7 +237,11 @@ function buildSeparator(rows: string[]): string {
       colWidths[idx] = Math.max(colWidths[idx] || 3, cell.trim().length);
     });
   }
-  return "|" + colWidths.map((w) => " " + "-".repeat(Math.max(w, 3)) + " ").join("|") + "|";
+  return (
+    "|" +
+    colWidths.map((w) => " " + "-".repeat(Math.max(w, 3)) + " ").join("|") +
+    "|"
+  );
 }
 
 /** Split a markdown table row into cells, respecting | inside backtick spans. */
@@ -311,11 +325,17 @@ function compactLists(md: string): string {
     if (lines[i].trim() === "") {
       let prevLine = "";
       for (let p = result.length - 1; p >= 0; p--) {
-        if (result[p].trim() !== "") { prevLine = result[p]; break; }
+        if (result[p].trim() !== "") {
+          prevLine = result[p];
+          break;
+        }
       }
       let nextLine = "";
       for (let n = i + 1; n < lines.length; n++) {
-        if (lines[n].trim() !== "") { nextLine = lines[n]; break; }
+        if (lines[n].trim() !== "") {
+          nextLine = lines[n];
+          break;
+        }
       }
 
       const prevIsList = LIST_ITEM.test(prevLine);
@@ -325,8 +345,9 @@ function compactLists(md: string): string {
         // Keep blank line between different list types at top level
         const prevIndent = prevLine.match(/^(\s*)/)?.[1]?.length ?? 0;
         const nextIndent = nextLine.match(/^(\s*)/)?.[1]?.length ?? 0;
-        const sameType = (ORDERED.test(prevLine) && ORDERED.test(nextLine)) ||
-                         (UNORDERED.test(prevLine) && UNORDERED.test(nextLine));
+        const sameType =
+          (ORDERED.test(prevLine) && ORDERED.test(nextLine)) ||
+          (UNORDERED.test(prevLine) && UNORDERED.test(nextLine));
         if (prevIndent === 0 && nextIndent === 0 && !sameType) {
           result.push(lines[i]); // keep the blank line
         }
@@ -339,4 +360,3 @@ function compactLists(md: string): string {
   }
   return result.join("\n");
 }
-

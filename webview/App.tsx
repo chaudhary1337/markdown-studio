@@ -16,7 +16,14 @@ import { StickyHeadings } from "./components/StickyHeadings";
 import { TableOfContents } from "./components/TableOfContents";
 import { SearchBar } from "./components/SearchBar";
 import { markdownToHtml, htmlToMarkdown } from "./hooks/useVSCodeSync";
-import { extractMeta, buildMeta, appendMeta, restoreHeadings, mergeMetadata, type Metadata } from "./metadata";
+import {
+  extractMeta,
+  buildMeta,
+  appendMeta,
+  restoreHeadings,
+  mergeMetadata,
+  type Metadata,
+} from "./metadata";
 
 const vscodeApi = acquireVsCodeApi();
 const lowlight = createLowlight(common);
@@ -27,7 +34,9 @@ export function App() {
   const docFolderPath = useRef("");
   const metaRef = useRef<Metadata>({ h: [] });
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [status, setStatus] = React.useState<string | null>("Loading document...");
+  const [status, setStatus] = React.useState<string | null>(
+    "Loading document...",
+  );
   const [searchVisible, setSearchVisible] = React.useState(false);
 
   const editor = useEditor({
@@ -135,7 +144,11 @@ export function App() {
     debounceTimer.current = setTimeout(async () => {
       try {
         const html = editor.getHTML();
-        let markdown = await htmlToMarkdown(html, baseUri.current, docFolderPath.current);
+        let markdown = await htmlToMarkdown(
+          html,
+          baseUri.current,
+          docFolderPath.current,
+        );
         markdown = restoreHeadings(markdown, metaRef.current);
         markdown = appendMeta(markdown, metaRef.current);
         vscodeApi.postMessage({ type: "edit", content: markdown });
@@ -150,7 +163,9 @@ export function App() {
   useEffect(() => {
     if (!editor) return;
     editor.on("update", handleUpdate);
-    return () => { editor.off("update", handleUpdate); };
+    return () => {
+      editor.off("update", handleUpdate);
+    };
   }, [editor, handleUpdate]);
 
   const switchToSource = () => {
@@ -162,10 +177,18 @@ export function App() {
   return (
     <div className="editor-layout">
       <div className="editor-container">
-        <SearchBar visible={searchVisible} onClose={() => setSearchVisible(false)} />
+        <SearchBar
+          visible={searchVisible}
+          onClose={() => setSearchVisible(false)}
+        />
         {status && <div className="status-bar">{status}</div>}
         <StickyHeadings />
-        <span className="toggle-source" onClick={switchToSource} role="button" tabIndex={0}>
+        <span
+          className="toggle-source"
+          onClick={switchToSource}
+          role="button"
+          tabIndex={0}
+        >
           Open in Default Editor
         </span>
         <EditorContent editor={editor} />

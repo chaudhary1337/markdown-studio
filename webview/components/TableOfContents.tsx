@@ -30,7 +30,7 @@ const MIN_WIDTH = 120;
 const MAX_WIDTH = 400;
 const DEFAULT_WIDTH = 200;
 
-export function TableOfContents({ editor }: { editor: BlockNoteEditor }) {
+export function TableOfContents() {
   const [entries, setEntries] = useState<TocEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
