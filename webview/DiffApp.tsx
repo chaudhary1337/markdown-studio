@@ -5,8 +5,7 @@ import {
   mergeSettings,
   type BetterMarkdownSettings,
 } from "./settings";
-
-const vscodeApi = acquireVsCodeApi();
+import { vscodeApi } from "./vscode-api";
 
 interface DiffInit {
   oldContent: string;
@@ -87,8 +86,3 @@ export function DiffApp() {
   );
 }
 
-declare function acquireVsCodeApi(): {
-  postMessage(msg: unknown): void;
-  getState(): unknown;
-  setState(state: unknown): void;
-};

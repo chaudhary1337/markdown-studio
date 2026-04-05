@@ -28,8 +28,8 @@ import {
   type Metadata,
 } from "./metadata";
 import { DEFAULT_SETTINGS, mergeSettings, type BetterMarkdownSettings } from "./settings";
+import { vscodeApi } from "./vscode-api";
 
-const vscodeApi = acquireVsCodeApi();
 const lowlight = createLowlight(common);
 
 export function App() {
@@ -382,8 +382,3 @@ export function App() {
   );
 }
 
-declare function acquireVsCodeApi(): {
-  postMessage(msg: unknown): void;
-  getState(): unknown;
-  setState(state: unknown): void;
-};
