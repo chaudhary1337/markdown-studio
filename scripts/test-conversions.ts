@@ -496,6 +496,24 @@ async function run() {
     mixedListOut
   );
 
+  // compactLists preserves blanks between list item and indented paragraph
+  // (structural: blank + indent = paragraph IS part of the list item)
+  eq(
+    "compactLists: preserves blank between list item and indented para (2sp)",
+    normalizeMarkdown("- item\n\n  indented para\n"),
+    "- item\n\n  indented para\n"
+  );
+  eq(
+    "compactLists: preserves blank between list item and 4-sp indent (code)",
+    normalizeMarkdown("- item\n\n    code-indented\n"),
+    "- item\n\n    code-indented\n"
+  );
+  eq(
+    "compactLists: preserves blank between list and following unindented para",
+    normalizeMarkdown("- one\n- two\n\nparagraph after\n"),
+    "- one\n- two\n\nparagraph after\n"
+  );
+
   // Table header reconstruction: empty header row + separator → first row becomes header
   const tableFixed = normalizeMarkdown(
     "|   |   |\n| - | - |\n| A | B |\n| C | D |\n"
@@ -546,23 +564,16 @@ async function run() {
   );
 
   // (was: "β\\_kl not unescaped (Unicode)" — now fixed, see category J below)
+  // (was: "compactLists: indented para after list loses blank" — now fixed,
+  //  see L.compactLists positive assertions below)
 
-  // compactLists removes blank line between list item and indented paragraph
-  // that is visually "under" a list item — cosmetic but changes structure
-  const indentedPara = normalizeMarkdown("- item\n\n  indented para\n");
-  assert(
-    "compactLists: indented para after list loses blank (known cosmetic)",
-    !indentedPara.includes("- item\n\n  indented para"),
-    indentedPara,
-    { known: true }
-  );
-
-  // Empty code blocks stay as-is (no language auto-added in source)
+  // Empty fenced code block → gets `text` language label but stays empty.
+  // We don't treat this as lossy: the parser-added "text" label is the same
+  // default we apply to unlabelled code blocks everywhere else.
   await roundtripCase(
-    "empty code block stays (known)",
+    "empty fenced code block → text-labelled",
     "```\n```",
-    "```text\n\n```",
-    { known: true }
+    "```text\n```"
   );
 
   // --------------------------------------------------------------------------
