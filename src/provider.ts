@@ -125,6 +125,12 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
             // If file doesn't exist, ignore
           }
         }
+      } else if (msg.type === "promptImageUrl") {
+        const url = await vscode.window.showInputBox({
+          prompt: "Image URL",
+          placeHolder: "https://example.com/image.png",
+        });
+        webview.postMessage({ type: "imageUrlResult", url: url || null });
       } else if (msg.type === "edit") {
         if (isReadonly) return;
         const newContent = msg.content as string;

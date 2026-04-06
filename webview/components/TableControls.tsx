@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import {
-  ArrowUpToLine,
-  ArrowDownToLine,
-  ArrowLeftToLine,
-  ArrowRightToLine,
-  Rows3,
-  Columns3,
+  PanelTopOpen,
+  PanelBottomOpen,
+  PanelLeftOpen,
+  PanelRightOpen,
+  TableRowsSplit,
+  TableColumnsSplit,
   Trash2,
 } from "lucide-react";
 
@@ -130,34 +130,34 @@ export function TableControls({ editor, containerRef }: TableControlsProps) {
     >
       {btn(
         "Add row above",
-        <ArrowUpToLine size={14} />,
+        <PanelTopOpen size={14} />,
         () => editor.chain().focus().addRowBefore().run(),
       )}
       {btn(
         "Add row below",
-        <ArrowDownToLine size={14} />,
+        <PanelBottomOpen size={14} />,
         () => editor.chain().focus().addRowAfter().run(),
       )}
       <span className="table-ctrl-sep" />
       {btn(
         "Add column left",
-        <ArrowLeftToLine size={14} />,
+        <PanelLeftOpen size={14} />,
         () => editor.chain().focus().addColumnBefore().run(),
       )}
       {btn(
         "Add column right",
-        <ArrowRightToLine size={14} />,
+        <PanelRightOpen size={14} />,
         () => editor.chain().focus().addColumnAfter().run(),
       )}
       <span className="table-ctrl-sep" />
       {btn(
         "Delete row",
-        <Rows3 size={14} />,
+        <TableRowsSplit size={14} />,
         () => editor.chain().focus().deleteRow().run(),
       )}
       {btn(
         "Delete column",
-        <Columns3 size={14} />,
+        <TableColumnsSplit size={14} />,
         () => editor.chain().focus().deleteColumn().run(),
       )}
       <span className="table-ctrl-sep" />

@@ -6,6 +6,7 @@ import {
   Heading1, Heading2, Heading3, Heading4, Heading5, Heading6,
   List, ListOrdered, CheckSquare, Code, Quote, Minus, Table, ImageIcon, Type,
 } from "lucide-react";
+import { vscodeApi } from "../vscode-api";
 
 interface SlashItem {
   title: string;
@@ -29,8 +30,14 @@ const ITEMS: SlashItem[] = [
   { title: "Horizontal Rule", icon: <Minus size={16} />, command: (e) => e.chain().focus().setHorizontalRule().run() },
   { title: "Table", icon: <Table size={16} />, command: (e) => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
   { title: "Image", icon: <ImageIcon size={16} />, command: (e) => {
-    const url = prompt("Image URL:");
-    if (url) e.chain().focus().setImage({ src: url }).run();
+    vscodeApi.postMessage({ type: "promptImageUrl" });
+    const handler = (ev: MessageEvent) => {
+      if (ev.data?.type === "imageUrlResult") {
+        window.removeEventListener("message", handler);
+        if (ev.data.url) e.chain().focus().setImage({ src: ev.data.url }).run();
+      }
+    };
+    window.addEventListener("message", handler);
   }},
 ];
 
@@ -106,6 +113,8 @@ export const SlashCommand = Extension.create({
             );
           };
 
+          let scrollHandler: (() => void) | null = null;
+
           return {
             onStart: (props: any) => {
               popup = document.createElement("div");
@@ -126,6 +135,11 @@ export const SlashCommand = Extension.create({
               const coords = view.coordsAtPos(props.range.from);
               popup.style.left = `${coords.left}px`;
               popup.style.top = `${coords.bottom + 4}px`;
+
+              // Close on scroll so menu doesn't float detached
+              scrollHandler = () => { props.editor.commands.focus(); };
+              const container = document.querySelector(".editor-container");
+              if (container) container.addEventListener("scroll", scrollHandler, { once: true });
             },
             onUpdate: (props: any) => {
               currentItems = props.items;
@@ -164,6 +178,11 @@ export const SlashCommand = Extension.create({
               return false;
             },
             onExit: () => {
+              if (scrollHandler) {
+                const container = document.querySelector(".editor-container");
+                if (container) container.removeEventListener("scroll", scrollHandler);
+                scrollHandler = null;
+              }
               if (root) root.unmount();
               if (popup) popup.remove();
               popup = null;
