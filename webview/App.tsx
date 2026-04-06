@@ -321,7 +321,21 @@ export function App() {
       <div className="editor-container" ref={editorContainerRef}>
         <SearchBar
           visible={searchVisible}
-          onClose={() => setSearchVisible(false)}
+          onClose={(activeRange) => {
+            setSearchVisible(false);
+            if (activeRange && editor) {
+              try {
+                const pos = editor.view.posAtDOM(
+                  activeRange.startContainer,
+                  activeRange.startOffset,
+                );
+                editor.commands.focus();
+                editor.commands.setTextSelection(pos);
+              } catch {
+                editor.commands.focus();
+              }
+            }
+          }}
         />
         {status && <div className="status-bar">{status}</div>}
         <div className="editor-toolbar">

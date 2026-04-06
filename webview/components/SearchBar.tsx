@@ -13,7 +13,7 @@ declare global {
 
 interface SearchBarProps {
   visible: boolean;
-  onClose: () => void;
+  onClose: (activeRange?: Range) => void;
 }
 
 const supportsHighlightAPI = typeof globalThis.Highlight !== "undefined" && !!(CSS as any).highlights;
@@ -27,16 +27,20 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const matchRanges = useRef<Range[]>([]);
 
+  // Track whether the search bar just reopened so doSearch can pick the
+  // match nearest to the cursor instead of always starting at match 1.
+  const justReopened = useRef(false);
+
   useEffect(() => {
     if (visible && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
+      // If query is still set from last session, re-run the search
+      if (query) justReopened.current = true;
     }
     if (!visible) {
       clearAllHighlights();
-      setQuery("");
-      setMatchCount(0);
-      setCurrentMatch(0);
+      // Keep query so reopening resumes where the user left off
     }
   }, [visible]);
 
@@ -44,7 +48,7 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
     clearAllHighlights();
     matchRanges.current = [];
 
-    if (!query) {
+    if (!visible || !query) {
       setMatchCount(0);
       setCurrentMatch(0);
       return;
@@ -82,12 +86,28 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
     matchRanges.current = ranges;
     setMatchCount(ranges.length);
     if (ranges.length > 0) {
-      setCurrentMatch(1);
-      applyHighlights(ranges, 0);
+      let startIdx = 0;
+      // When reopening with a preserved query, jump to the match nearest
+      // to the cursor (which was placed at the last active match on Esc).
+      if (justReopened.current) {
+        justReopened.current = false;
+        const sel = document.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const cursor = sel.getRangeAt(0);
+          for (let i = 0; i < ranges.length; i++) {
+            if (ranges[i].compareBoundaryPoints(Range.START_TO_START, cursor) >= 0) {
+              startIdx = i;
+              break;
+            }
+          }
+        }
+      }
+      setCurrentMatch(startIdx + 1);
+      applyHighlights(ranges, startIdx);
     } else {
       setCurrentMatch(0);
     }
-  }, [query, caseSensitive, useRegex]);
+  }, [visible, query, caseSensitive, useRegex]);
 
   useEffect(() => { doSearch(); }, [doSearch]);
 
@@ -100,9 +120,14 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
     applyHighlights(matchRanges.current, next - 1);
   }, [currentMatch, matchCount]);
 
+  const closeWithRange = () => {
+    const active = matchRanges.current[currentMatch - 1];
+    onClose(active);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation(); // prevent ProseMirror from capturing
-    if (e.key === "Escape") onClose();
+    if (e.key === "Escape") closeWithRange();
     else if (e.key === "Enter") { e.preventDefault(); navigateMatch(e.shiftKey ? -1 : 1); }
   };
 
@@ -140,7 +165,7 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
       <button className="search-nav" onClick={() => navigateMatch(1)} title="Next (Enter)">
         <ChevronDown size={14} />
       </button>
-      <button className="search-close" onClick={onClose} title="Close (Esc)">
+      <button className="search-close" onClick={closeWithRange} title="Close (Esc)">
         <X size={14} />
       </button>
     </div>

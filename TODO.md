@@ -33,6 +33,8 @@
 - [x] Fix task list checkbox alignment — use matching `1.6em` line-height units instead of hardcoded px offset
 - [x] Non-file URIs (git:, scm:) fall back to VS Code's native text editor instead of rich editor
 - [x] Extension diff defaults to rendered (rich) mode instead of source
+- [x] Strip `<https://...>` autolinks back to bare URLs; unescape `\=` before non-`=` content
+- [x] Ctrl+F → Esc places cursor at the active match; reopening Ctrl+F resumes with same query and position
 
 ## Remaining
 
