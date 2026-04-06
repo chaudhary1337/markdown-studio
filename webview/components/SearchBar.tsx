@@ -27,16 +27,18 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const matchRanges = useRef<Range[]>([]);
 
-  // Track whether the search bar just reopened so doSearch can pick the
-  // match nearest to the cursor instead of always starting at match 1.
-  const justReopened = useRef(false);
+  // Snapshot the editor cursor BEFORE focusing the input (which clears it).
+  const savedCursor = useRef<Range | null>(null);
 
   useEffect(() => {
     if (visible && inputRef.current) {
+      // Capture the DOM selection while it's still in the editor
+      const sel = document.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        savedCursor.current = sel.getRangeAt(0).cloneRange();
+      }
       inputRef.current.focus();
       inputRef.current.select();
-      // If query is still set from last session, re-run the search
-      if (query) justReopened.current = true;
     }
     if (!visible) {
       clearAllHighlights();
@@ -87,18 +89,18 @@ export function SearchBar({ visible, onClose }: SearchBarProps) {
     setMatchCount(ranges.length);
     if (ranges.length > 0) {
       let startIdx = 0;
-      // When reopening with a preserved query, jump to the match nearest
-      // to the cursor (which was placed at the last active match on Esc).
-      if (justReopened.current) {
-        justReopened.current = false;
-        const sel = document.getSelection();
-        if (sel && sel.rangeCount > 0) {
-          const cursor = sel.getRangeAt(0);
-          for (let i = 0; i < ranges.length; i++) {
+      // Jump to the match nearest to the saved cursor position
+      // (captured before the input stole focus).
+      const cursor = savedCursor.current;
+      if (cursor) {
+        for (let i = 0; i < ranges.length; i++) {
+          try {
             if (ranges[i].compareBoundaryPoints(Range.START_TO_START, cursor) >= 0) {
               startIdx = i;
               break;
             }
+          } catch {
+            // Ranges from different documents / detached nodes — skip
           }
         }
       }
