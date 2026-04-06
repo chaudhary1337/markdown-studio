@@ -106,9 +106,112 @@ html, body, #root {
   overflow-x: auto;
   font-family: var(--vscode-editor-fontFamily, monospace);
   font-size: 0.9em;
+  position: relative;
 }
 
-.tiptap-editor pre code { background: none; color: #d4d4d4; }
+.tiptap-editor .code-block-wrapper {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 0.75em 1em;
+  font-family: var(--vscode-editor-fontFamily, monospace);
+  font-size: 0.9em;
+  position: relative;
+  /* no overflow clipping — dropdown must escape the block */
+}
+
+.tiptap-editor .code-block-wrapper code {
+  display: block;
+  overflow-x: auto;
+}
+
+.tiptap-editor pre code,
+.tiptap-editor .code-block-wrapper code { background: none; color: #d4d4d4; }
+
+/* Notion-style language selector bar */
+.code-block-lang-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  position: relative;
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, sans-serif);
+}
+
+.code-block-lang-button {
+  background: none;
+  border: none;
+  color: var(--vscode-foreground, #ccc);
+  opacity: 0.5;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+  text-transform: lowercase;
+}
+
+.code-block-lang-button:hover {
+  opacity: 0.85;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Dropdown — portalled to document.body with fixed positioning */
+.code-block-lang-dropdown {
+  position: fixed;
+  z-index: 9999;
+  min-width: 180px;
+  max-height: 280px;
+  background: var(--vscode-dropdown-background, #252526);
+  border: 1px solid var(--vscode-dropdown-border, #454545);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.code-block-lang-search {
+  border: none;
+  border-bottom: 1px solid var(--vscode-dropdown-border, #454545);
+  background: transparent;
+  color: var(--vscode-foreground, #ccc);
+  padding: 8px 10px;
+  font-size: 12px;
+  outline: none;
+  font-family: inherit;
+}
+
+.code-block-lang-search::placeholder {
+  color: var(--vscode-foreground, #888);
+  opacity: 0.5;
+}
+
+.code-block-lang-list {
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.code-block-lang-option {
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--vscode-foreground, #ccc);
+  transition: background 0.1s;
+}
+
+.code-block-lang-option:hover {
+  background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.06));
+}
+
+.code-block-lang-option.active {
+  color: var(--vscode-button-background, #2383e2);
+}
+
+.code-block-lang-empty {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--vscode-foreground, #888);
+  opacity: 0.5;
+}
 
 /* Syntax highlighting (lowlight/highlight.js tokens) */
 .tiptap-editor .hljs-comment,
