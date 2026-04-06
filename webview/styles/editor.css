@@ -178,7 +178,7 @@ html, body, #root {
   font-weight: 600;
 }
 
-/* Task lists */
+/* Task lists — Notion-style checkboxes */
 .tiptap-editor ul[data-type="taskList"] {
   list-style: none;
   padding-left: 0;
@@ -187,13 +187,60 @@ html, body, #root {
 .tiptap-editor ul[data-type="taskList"] li {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
 }
 
 .tiptap-editor ul[data-type="taskList"] li > label {
   height: 1.6em;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* Hide native checkbox, replace with custom styled box */
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--vscode-foreground, #888);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"]:hover {
+  opacity: 0.8;
+}
+
+/* Checked state — filled accent box with checkmark */
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+  background: var(--vscode-button-background, #2383e2);
+  border-color: var(--vscode-button-background, #2383e2);
+  opacity: 0.85;
+}
+
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 3.5px;
+  top: 0.5px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Checked items get muted text with strikethrough */
+.tiptap-editor ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  opacity: 0.5;
 }
 
 .tiptap-editor ul[data-type="taskList"] li > div > p:first-child {
@@ -1030,16 +1077,39 @@ html, body, #root {
 .diff-rendered ul,
 .diff-rendered ol { padding-left: 1.5em; margin: 0.5em 0; }
 
-/* GFM task lists — remark-gfm emits <ul class="contains-task-list"> and
-   <li class="task-list-item"> with a real <input type="checkbox">. Hide
-   bullets and pull the checkbox inline with the text. */
+/* GFM task lists — Notion-style checkboxes in diff view */
 .diff-rendered ul.contains-task-list { padding-left: 0.5em; list-style: none; }
 .diff-rendered li.task-list-item { display: list-item; list-style: none; }
 .diff-rendered li.task-list-item > input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--vscode-foreground, #888);
+  border-radius: 3px;
+  background: transparent;
+  cursor: default;
+  position: relative;
   margin: 0 0.5em 0 0;
   vertical-align: middle;
-  cursor: default;
-  accent-color: var(--vscode-button-background, #0e639c);
+  transition: background 0.15s ease, border-color 0.15s ease;
+  opacity: 0.55;
+}
+.diff-rendered li.task-list-item > input[type="checkbox"]:checked {
+  background: var(--vscode-button-background, #2383e2);
+  border-color: var(--vscode-button-background, #2383e2);
+  opacity: 0.85;
+}
+.diff-rendered li.task-list-item > input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 3.5px;
+  top: 0.5px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 .diff-rendered code {
   background: var(--vscode-textCodeBlock-background, rgba(255,255,255,0.08));
