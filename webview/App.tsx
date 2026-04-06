@@ -17,6 +17,7 @@ import { TableOfContents } from "./components/TableOfContents";
 import { SearchBar } from "./components/SearchBar";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { DiffView } from "./components/DiffView";
+import { TableControls } from "./components/TableControls";
 import { DOMSerializer } from "@tiptap/pm/model";
 import { markdownToHtml, htmlToMarkdown, htmlToMarkdownSync } from "./hooks/useVSCodeSync";
 import {
@@ -53,6 +54,7 @@ export function App() {
     fileName: string;
   } | null>(null);
   const handleUpdateRef = useRef<() => void>(() => {});
+  const editorContainerRef = useRef<HTMLDivElement>(null);
 
   // Keep the ref in sync with state — the save pipeline runs on a
   // debounced timer and reads the ref so it always sees the latest value.
@@ -316,7 +318,7 @@ export function App() {
 
   return (
     <div className="editor-layout">
-      <div className="editor-container">
+      <div className="editor-container" ref={editorContainerRef}>
         <SearchBar
           visible={searchVisible}
           onClose={() => setSearchVisible(false)}
@@ -374,6 +376,7 @@ export function App() {
           Open in Default Editor
         </span>
         <EditorContent editor={editor} />
+        <TableControls editor={editor} containerRef={editorContainerRef} />
       </div>
       <div className="toc-wrapper">
         <TableOfContents />

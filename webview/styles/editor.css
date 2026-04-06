@@ -174,7 +174,13 @@ html, body, #root {
 }
 
 .tiptap-editor ul[data-type="taskList"] li > label {
-  margin-top: 3px;
+  height: 1.6em;
+  display: flex;
+  align-items: center;
+}
+
+.tiptap-editor ul[data-type="taskList"] li > div > p:first-child {
+  margin-top: 0;
 }
 
 /* Images */
@@ -516,6 +522,50 @@ html, body, #root {
 .search-mark-active {
   background-color: rgba(255, 140, 0, 0.6);
   color: inherit;
+}
+
+/* Floating toolbar for table row/column controls */
+.table-controls {
+  position: fixed;
+  z-index: 150;
+  transform: translateX(-100%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 4px;
+  background: var(--vscode-editorWidget-background, #252526);
+  border: 1px solid var(--vscode-widget-border, #454545);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.table-ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--vscode-descriptionForeground, #888);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.table-ctrl-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  border-color: var(--vscode-widget-border, #454545);
+}
+
+.table-ctrl-sep {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: var(--vscode-widget-border, #454545);
+  margin: 0 2px;
 }
 
 /* Slash command menu */

@@ -68,7 +68,7 @@ export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
   // user explicitly opts in via the settings panel.
   defaultCodeBlockLang: "",
   diffLayout: "side-by-side",
-  diffMode: "source",
+  diffMode: "rendered",
 };
 
 /**

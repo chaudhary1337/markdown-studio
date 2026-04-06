@@ -27,6 +27,13 @@
 - [x] Diff view has Source (line, diff2html) and Rendered (word-level, node-htmldiff) modes with green/red/blue highlighting and native GFM checkbox rendering
 - [x] Prev/Next hunk navigation in Rendered diff (↑/↓ buttons, j/k shortcuts)
 
+## Done (continued)
+
+- [x] Table row/column controls — floating toolbar (add/delete row/column) appears when cursor is inside a table
+- [x] Fix task list checkbox alignment — use matching `1.6em` line-height units instead of hardcoded px offset
+- [x] Non-file URIs (git:, scm:) fall back to VS Code's native text editor instead of rich editor
+- [x] Extension diff defaults to rendered (rich) mode instead of source
+
 ## Remaining
 
 (none currently tracked)
