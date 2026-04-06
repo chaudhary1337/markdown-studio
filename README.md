@@ -36,10 +36,10 @@ Notion-like WYSIWYG markdown editor for VS Code. Edit `.md` files with a rich ed
 
 ### Keyboard shortcuts
 
-| Shortcut | Action |
-|---|---|
+| Shortcut    | Action                      |
+| ----------- | --------------------------- |
 | Cmd+Shift+M | Toggle rich / source editor |
-| Cmd+F | Find in document |
+| Cmd+F       | Find in document            |
 
 ## Installation
 

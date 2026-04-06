@@ -6,9 +6,16 @@ interface StickyHeading {
   level: number;
 }
 
+// Hysteresis: a heading already in the stack needs to move this many extra
+// pixels below the threshold before it gets removed.  This prevents the
+// oscillation where adding a heading grows the bar → raises the threshold →
+// removes the heading → shrinks the bar → lowers the threshold → re-adds it.
+const HYSTERESIS = 28;
+
 export function StickyHeadings() {
   const [stickyStack, setStickyStack] = useState<StickyHeading[]>([]);
   const prevKeyRef = useRef("");
+  const prevIndicesRef = useRef<Set<number>>(new Set());
 
   const update = useCallback(() => {
     const container = document.querySelector(".editor-container");
@@ -22,9 +29,13 @@ export function StickyHeadings() {
     const stickyHeight = stickyEl ? stickyEl.getBoundingClientRect().height : 0;
     const threshold = containerRect.top + stickyHeight + 12;
 
+    const prevIn = prevIndicesRef.current;
     const aboveViewport: StickyHeading[] = [];
     headingEls.forEach((el, index) => {
-      if (el.getBoundingClientRect().bottom < threshold) {
+      const bottom = el.getBoundingClientRect().bottom;
+      // Headings already in the stack get a looser threshold (harder to remove)
+      const effectiveThreshold = prevIn.has(index) ? threshold + HYSTERESIS : threshold;
+      if (bottom < effectiveThreshold) {
         const text = el.textContent?.trim();
         if (text) {
           aboveViewport.push({ index, text, level: parseInt(el.tagName[1], 10) });
@@ -41,6 +52,7 @@ export function StickyHeadings() {
     const key = stack.map((h) => `${h.index}:${h.text}`).join("|");
     if (key !== prevKeyRef.current) {
       prevKeyRef.current = key;
+      prevIndicesRef.current = new Set(stack.map((h) => h.index));
       setStickyStack(stack);
     }
   }, []);

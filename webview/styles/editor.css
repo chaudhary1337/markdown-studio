@@ -72,7 +72,7 @@ html, body, #root {
 /* Tiptap editor base */
 .tiptap-editor {
   min-height: 100%;
-  padding: 1rem 2rem;
+  padding: 1rem 2rem 40vh;
   outline: none;
   font-size: 15px;
   line-height: 1.6;
@@ -449,6 +449,7 @@ html, body, #root {
 /* Table of Contents sidebar */
 .toc-sidebar {
   height: 100vh;
+  box-sizing: border-box;
   overflow-y: auto;
   padding: 12px 8px;
   border-left: 1px solid var(--vscode-widget-border, #333);
