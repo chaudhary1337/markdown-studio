@@ -38,7 +38,7 @@
 
 ## Remaining
 
-(none currently tracked)
+- [ ] TOC should highlight diffed headings (added/removed/changed) when diff view is active
 
 ## Known Limitations
 

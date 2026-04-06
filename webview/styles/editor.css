@@ -430,7 +430,8 @@ html, body, #root {
 
 .toc-collapse-btn {
   position: absolute;
-  top: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--vscode-descriptionForeground, #888);
   cursor: pointer;
   padding: 2px;
@@ -795,7 +796,7 @@ html, body, #root {
   cursor: pointer;
   padding: 4px 8px;
   font-size: 16px;
-  line-height: 1;
+  line-height: 16px;
   transition: background 0.1s, color 0.1s, border-color 0.1s;
 }
 
@@ -996,7 +997,7 @@ html, body, #root {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.3px;
-  line-height: 1;
+  line-height: 16px;
   transition: background 0.1s, color 0.1s, border-color 0.1s;
 }
 
