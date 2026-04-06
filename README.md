@@ -41,6 +41,17 @@ Notion-like WYSIWYG markdown editor for VS Code. Edit `.md` files with a rich ed
 | Cmd+Shift+M | Toggle rich / source editor |
 | Cmd+F       | Find in document            |
 
+## What makes it different
+
+Better Markdown is the first VS Code WYSIWYG markdown editor to ship:
+
+- **Integrated rich diff view** — no other WYSIWYG editor lets you diff rendered markdown against HEAD, with word-level highlights and hunk navigation, right inside the editor
+- **Sticky headings** — the current section heading pins to the top as you scroll, so you always know where you are in a long document
+- **Tested round-trip fidelity** — a 95+ case conversion test suite guarantees your markdown comes back clean; most editors silently reformat your source
+- **Search across content and table of contents** — Cmd+F with regex and case-sensitive modes, plus TOC filtering to jump to any heading instantly
+- **Custom serialization settings** — choose your bullet style, emphasis markers, horizontal rule character, and toggle normalizations like compact lists or ordered-list renumbering
+- **Git SCM integration** — open a rich diff from the source-control context menu, the diff-editor toolbar, or the command palette
+
 ## Installation
 
 Install from the `.vsix` file:

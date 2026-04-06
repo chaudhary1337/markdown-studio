@@ -39,6 +39,7 @@
 ## Remaining
 
 - [ ] TOC should highlight diffed headings (added/removed/changed) when diff view is active
+- [ ] Allow images to be dragged and dropped into the editor
 
 ## Known Limitations
 
