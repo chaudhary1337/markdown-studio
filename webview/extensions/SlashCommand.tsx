@@ -114,9 +114,21 @@ export const SlashCommand = Extension.create({
           };
 
           let scrollHandler: (() => void) | null = null;
+          let currentProps: any = null;
+
+          const reposition = () => {
+            if (!popup || !currentProps) return;
+            try {
+              const { view } = currentProps.editor;
+              const coords = view.coordsAtPos(currentProps.range.from);
+              popup.style.left = `${coords.left}px`;
+              popup.style.top = `${coords.bottom + 4}px`;
+            } catch { /* pos may be stale */ }
+          };
 
           return {
             onStart: (props: any) => {
+              currentProps = props;
               popup = document.createElement("div");
               popup.className = "slash-popup";
               root = createRoot(popup);
@@ -129,19 +141,15 @@ export const SlashCommand = Extension.create({
 
               render();
               document.body.appendChild(popup);
+              reposition();
 
-              // Position near the cursor
-              const { view } = props.editor;
-              const coords = view.coordsAtPos(props.range.from);
-              popup.style.left = `${coords.left}px`;
-              popup.style.top = `${coords.bottom + 4}px`;
-
-              // Close on scroll so menu doesn't float detached
-              scrollHandler = () => { props.editor.commands.focus(); };
+              // Reposition on scroll so menu follows the cursor
+              scrollHandler = () => reposition();
               const container = document.querySelector(".editor-container");
-              if (container) container.addEventListener("scroll", scrollHandler, { once: true });
+              if (container) container.addEventListener("scroll", scrollHandler, { passive: true });
             },
             onUpdate: (props: any) => {
+              currentProps = props;
               currentItems = props.items;
               selectedIndex = 0;
 
@@ -150,13 +158,7 @@ export const SlashCommand = Extension.create({
               };
 
               render();
-
-              if (popup) {
-                const { view } = props.editor;
-                const coords = view.coordsAtPos(props.range.from);
-                popup.style.left = `${coords.left}px`;
-                popup.style.top = `${coords.bottom + 4}px`;
-              }
+              reposition();
             },
             onKeyDown: ({ event }: { event: KeyboardEvent }) => {
               if (event.key === "ArrowDown") {
