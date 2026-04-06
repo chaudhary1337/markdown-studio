@@ -4,7 +4,7 @@
   "description": "Notion-like WYSIWYG markdown editor for VSCode",
   "version": "0.1.0",
   "publisher": "better-markdown",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "engines": {
     "vscode": "^1.80.0"
   },

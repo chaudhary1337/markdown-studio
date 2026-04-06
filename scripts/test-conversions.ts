@@ -346,6 +346,27 @@ async function run() {
     "use ~ for home\n"
   );
 
+  // Unescape \= before non-= content (e.g. => arrows)
+  eq(
+    "normalizeMarkdown: unescape \\=> arrow",
+    normalizeMarkdown("\\=> leads to something\n"),
+    "=> leads to something\n"
+  );
+
+  // Strip <autolinks> back to bare URLs
+  eq(
+    "normalizeMarkdown: strip <https://...> autolink",
+    normalizeMarkdown("see <https://arxiv.org/pdf/1602.04938>\n"),
+    "see https://arxiv.org/pdf/1602.04938\n"
+  );
+
+  // Autolinks inside code spans must NOT be stripped
+  eq(
+    "normalizeMarkdown: keep <url> inside code span",
+    normalizeMarkdown("use `<https://example.com>` in code\n"),
+    "use `<https://example.com>` in code\n"
+  );
+
   // --------------------------------------------------------------------------
   category("K. Metadata functions");
   // --------------------------------------------------------------------------

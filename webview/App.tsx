@@ -324,26 +324,27 @@ export function App() {
           onClose={() => setSearchVisible(false)}
         />
         {status && <div className="status-bar">{status}</div>}
-        {readonly && <div className="readonly-badge">Read-only</div>}
-        {!readonly && (
+        <div className="editor-toolbar">
+          {readonly && <div className="readonly-badge">Read-only</div>}
+          {!readonly && (
+            <button
+              className={"diff-button" + (diffVisible ? " active" : "")}
+              onClick={toggleDiff}
+              title="Diff against HEAD"
+              aria-label="Toggle git diff view"
+            >
+              Diff
+            </button>
+          )}
           <button
-            className={"diff-button" + (diffVisible ? " active" : "")}
-            onClick={toggleDiff}
-            title="Diff against HEAD"
-            aria-label="Toggle git diff view"
+            className="settings-button"
+            onClick={() => setSettingsVisible(true)}
+            title="Markdown settings"
+            aria-label="Open markdown settings"
           >
-            Diff
+            ⚙
           </button>
-        )}
-        <button
-          className="settings-button"
-          onClick={() => setSettingsVisible(true)}
-          title="Markdown settings"
-          aria-label="Open markdown settings"
-          style={readonly ? { right: 96 } : undefined}
-        >
-          ⚙
-        </button>
+        </div>
         <SettingsPanel
           visible={settingsVisible}
           settings={settings}

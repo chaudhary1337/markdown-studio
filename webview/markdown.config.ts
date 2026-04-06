@@ -67,6 +67,7 @@ export function normalizeMarkdown(
   if (settings.dedupImageAltText) {
     md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
   }
+  md = stripAutolinks(md);
   md = fixOrphanedListMarkers(md);
   if (settings.compactLists) {
     md = compactLists(md);
@@ -156,6 +157,9 @@ function unescapeText(text: string): string {
   text = text.replace(/([\p{L}\p{N}_])\\_([\p{L}\p{N}_])/gu, "$1_$2");
   // Remove backslash before [ when not part of a link (remark escapes all [)
   text = text.replace(/\\\[/g, "[");
+  // Remove backslash before = when followed by a non-= non-whitespace char
+  // (remark escapes = to prevent setext headings, but "=> text" is never one)
+  text = text.replace(/\\=(?=[^=\s])/g, "=");
   return text;
 }
 
@@ -339,6 +343,43 @@ function isEmptyRow(line: string): boolean {
 
 function isSeparatorRow(line: string): boolean {
   return /^\|\s*[-:]+[-|\s:]*$/.test(line);
+}
+
+/**
+ * Strip angle-bracket autolinks (<https://…>) back to bare URLs.
+ * GFM auto-links bare URLs identically, and users expect round-trip
+ * to preserve the bare form they wrote.
+ */
+function stripAutolinks(md: string): string {
+  const lines = md.split("\n");
+  let inCodeBlock = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^```/.test(lines[i])) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+    // Process outside inline code spans
+    let out = "";
+    let remaining = lines[i];
+    while (remaining.length > 0) {
+      const tick = remaining.indexOf("`");
+      if (tick === -1) {
+        out += remaining.replace(/<(https?:\/\/[^\s>]+)>/g, "$1");
+        break;
+      }
+      out += remaining.slice(0, tick).replace(/<(https?:\/\/[^\s>]+)>/g, "$1");
+      const end = remaining.indexOf("`", tick + 1);
+      if (end === -1) {
+        out += remaining.slice(tick);
+        break;
+      }
+      out += remaining.slice(tick, end + 1);
+      remaining = remaining.slice(end + 1);
+    }
+    lines[i] = out;
+  }
+  return lines.join("\n");
 }
 
 /**

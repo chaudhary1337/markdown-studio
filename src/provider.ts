@@ -55,17 +55,12 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
     webviewPanel: vscode.WebviewPanel,
     _token: vscode.CancellationToken
   ): Promise<void> {
-    // Non-file schemes (git:, conflictResolution:, vscode-scm:, ...) should
-    // open in VS Code's built-in text editor so native git diffs work
-    // normally. Dispose the custom-editor panel and reopen with the default
-    // text editor.
-    if (document.uri.scheme !== "file") {
-      webviewPanel.dispose();
-      vscode.commands.executeCommand("vscode.openWith", document.uri, "default");
-      return;
-    }
-
     const webview = webviewPanel.webview;
+
+    // Non-file schemes (git:, conflictResolution:, vscode-scm:, ...) are read-
+    // only. We still render them — e.g. git diff side panes get the rich
+    // Tiptap view — but we suppress edit sync so we never try to write back.
+    const isReadonly = document.uri.scheme !== "file";
 
     // Allow loading resources from the document's folder (for images)
     const docFolder = vscode.Uri.joinPath(document.uri, "..");
@@ -94,12 +89,16 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           content: document.getText(),
           baseUri,
           docFolderPath,
+          isReadonly,
           settings: this.loadSettings(),
         });
       } else if (msg.type === "saveSettings") {
         await this.saveSettings(msg.settings as Record<string, unknown>);
       } else if (msg.type === "requestGitDiff") {
-        const headContent = await this.getHeadContent(document.uri);
+        let headContent: string | null = null;
+        if (document.uri.scheme === "file") {
+          headContent = await this.getHeadContent(document.uri);
+        }
         webview.postMessage({
           type: "gitDiffResponse",
           headContent,
@@ -127,6 +126,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           }
         }
       } else if (msg.type === "edit") {
+        if (isReadonly) return;
         const newContent = msg.content as string;
         if (newContent === document.getText()) return;
         pendingWebviewEdits++;
