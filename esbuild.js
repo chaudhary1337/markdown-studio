@@ -40,7 +40,7 @@ const webviewBuild = esbuild.build({
   },
 });
 
-// 3. Copy CSS (editor + bundled diff2html styles)
+// 3. Copy CSS (editor + bundled diff2html + KaTeX styles) and KaTeX fonts
 function copyCSS() {
   const src = path.join(__dirname, "webview", "styles", "editor.css");
   const dest = path.join(__dirname, "dist", "editor.css");
@@ -52,10 +52,29 @@ function copyCSS() {
     "css",
     "diff2html.min.css"
   );
+  const katexCss = path.join(
+    __dirname,
+    "node_modules",
+    "katex",
+    "dist",
+    "katex.min.css"
+  );
   fs.mkdirSync(path.join(__dirname, "dist"), { recursive: true });
   const editor = fs.readFileSync(src, "utf-8");
   const d2h = fs.readFileSync(diff2htmlCss, "utf-8");
-  fs.writeFileSync(dest, editor + "\n\n/* diff2html */\n" + d2h);
+  const katex = fs.readFileSync(katexCss, "utf-8");
+  fs.writeFileSync(
+    dest,
+    editor + "\n\n/* diff2html */\n" + d2h + "\n\n/* katex */\n" + katex
+  );
+
+  // Copy KaTeX fonts so CSS relative paths (fonts/...) resolve correctly
+  const katexFontsDir = path.join(__dirname, "node_modules", "katex", "dist", "fonts");
+  const distFontsDir = path.join(__dirname, "dist", "fonts");
+  fs.mkdirSync(distFontsDir, { recursive: true });
+  for (const file of fs.readdirSync(katexFontsDir)) {
+    fs.copyFileSync(path.join(katexFontsDir, file), path.join(distFontsDir, file));
+  }
 }
 
 Promise.all([extensionBuild, webviewBuild])

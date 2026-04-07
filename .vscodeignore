@@ -1,6 +1,9 @@
 .vscode/**
 .claude/**
 CLAUDE.md
+TODO.md
+test.md
+test-ref.md
 src/**
 webview/**
 node_modules/**

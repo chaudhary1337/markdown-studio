@@ -9,8 +9,9 @@ A VSCode extension that replaces the default markdown editor with a Notion-like 
 ### Rich Block Editing (via Tiptap)
 
 - Block-based editing with drag handles to reorder
-- Slash menu (`/`) for inserting block types (headings, lists, code, etc.)
+- Slash menu (`/`) for inserting block types (headings, lists, code, math, etc.)
 - Inline formatting toolbar (bold, italic, code, links, colors)
+- Math support — inline (`$...$`) and block (`$$...$$`) rendered via KaTeX with click-to-edit LaTeX source
 - Markdown round-trip: file on disk is always valid `.md`
 
 ### Search
@@ -138,7 +139,7 @@ better-markdown/
 ├── scripts/
 │   ├── deploy.sh             # Build + package + optional publish
 │   ├── pipeline.ts           # Shared md↔md round-trip used by tests
-│   ├── test-conversions.ts   # 95+ targeted conversion assertions
+│   ├── test-conversions.ts   # 118+ targeted conversion assertions
 │   └── test-roundtrip.ts     # Full-file round-trip test
 ├── src/
 │   ├── extension.ts          # Activation, commands, keybindings
@@ -176,7 +177,7 @@ better-markdown/
 2. `extractMeta()` strips metadata comment from end of file
 3. `buildMeta()` scans for h4-h6 headings
 3. `protectTableCodePipes()` — replace `|` inside code spans in table rows with placeholder (remark's GFM table parser splits on `|` even inside backticks)
-4. `unified().use(remarkParse, remarkGfm, remarkRehype, rehypeStringify)` → HTML, then restore placeholders
+4. `unified().use(remarkParse, remarkGfm, remarkMath, remarkRehype, rehypeStringify)` → HTML, then restore placeholders. `remark-math` parses `$...$` / `$$...$$` into math AST nodes; custom `remark-rehype` handlers emit `<span data-type="mathInline">` / `<div data-type="mathBlock">` elements for Tiptap.
 5. DOMParser transforms: wrap bare `<li>` text in `<p>` (Tiptap needs block content), convert GFM task list HTML to Tiptap taskItem format, split multiple `<img>` in same `<p>` into separate blocks
 6. Trim code block trailing newlines, resolve relative image paths
 7. `editor.commands.setContent(html)` → Tiptap editor
@@ -184,7 +185,7 @@ better-markdown/
 ### Output (editor → markdown)
 
 1. `editor.getHTML()` → HTML
-2. DOMParser transforms: convert Tiptap taskItem back to GFM `<input type="checkbox">`, escape bare `|` in `<code>` within table cells (leaves `\|` alone via negative lookbehind)
+2. DOMParser transforms: convert Tiptap taskItem back to GFM `<input type="checkbox">`, convert math nodes to code/pre placeholders (protects LaTeX from remark-stringify escaping), escape bare `|` in `<code>` within table cells (leaves `\|` alone via negative lookbehind)
 3. Strip `<p>` from `<li>` (tight lists), wrap bare `<img>` in `<p>`
 4. `unified().use(rehypeParse, rehypeRemark, remarkGfm, remarkStringify)` → markdown
 5. `normalizeMarkdown()` post-processing:
@@ -197,7 +198,8 @@ better-markdown/
    - Image followed by duplicate alt-text line → dedup
    - Compact lists (remove blank lines between items)
    - Orphaned list marker merging
-6. `&#x20;` / `&amp;` HTML entity cleanup
+6. Restore math from code/pre placeholders back to `$...$` / `$$...$$`
+7. `&#x20;` / `&amp;` HTML entity cleanup
 7. `restoreHeadings()` converts `### ` back to `####`/`#####`/`######` using metadata
 8. `appendMeta()` adds metadata comment at end of file
 9. `prependFrontmatter()` restores YAML frontmatter at top of file
@@ -206,11 +208,7 @@ better-markdown/
 ## Known Limitations
 
 - **Escaped markdown characters** (`\*`, `\_`) lose backslash on round-trip (Tiptap stores rendered text)
-- **`β\_kl` not unescaped**: Unicode chars don't match `\w` in the unescape regex
 - Raw HTML blocks and footnotes may not round-trip perfectly
-- ~~YAML frontmatter not handled~~ → fixed: stripped before remark parse, restored on save
-- No git diff integration in rich editor
-- Webview bundle ~380KB compressed
 
 ## Testing
 

@@ -12,6 +12,8 @@ import { TaskItem } from "@tiptap/extension-task-item";
 import { common, createLowlight } from "lowlight";
 import { createCodeBlock } from "./extensions/CodeBlockView";
 import { SlashCommand } from "./extensions/SlashCommand";
+import { MathInline } from "./extensions/MathInline";
+import { MathBlock } from "./extensions/MathBlock";
 import { StickyHeadings } from "./components/StickyHeadings";
 import { TableOfContents } from "./components/TableOfContents";
 import { SearchBar } from "./components/SearchBar";
@@ -87,6 +89,8 @@ export function App() {
       TaskList,
       TaskItem.configure({ nested: true }),
       createCodeBlock(lowlight),
+      MathInline,
+      MathBlock,
       SlashCommand,
     ],
     editorProps: {

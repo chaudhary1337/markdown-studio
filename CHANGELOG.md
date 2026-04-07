@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 — Initial Release
+## 0.1.0
 
 ### Rich Editing
 
@@ -10,7 +10,8 @@
 - Task lists with Notion-style custom checkboxes
 - Ordered, unordered, and nested lists with correct round-trip formatting
 - Code blocks with syntax highlighting and language selector
-- Slash command menu — type `/` at the start of a line to insert blocks
+- **Math support** — inline (`$...$`) and block (`$$...$$`) with KaTeX rendering, slash commands, and click-to-edit LaTeX source
+- Slash command menu — type `/` at the start of a line to insert blocks (headings, lists, tables, code blocks, math, images)
 - Copy selection as markdown source (Cmd+C / Cmd+X)
 - Configurable serialization settings (bullet style, emphasis markers, HR character, normalizations)
 

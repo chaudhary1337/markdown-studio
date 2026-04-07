@@ -1321,3 +1321,96 @@ html, body, #root {
   min-width: 36px;
   text-align: center;
 }
+
+/* ================================================================ */
+/* Math nodes (inline + block)                                      */
+/* ================================================================ */
+
+.math-inline-wrapper {
+  display: inline;
+  cursor: pointer;
+}
+
+.math-inline-wrapper.editing {
+  display: inline;
+}
+
+.math-inline-rendered {
+  display: inline;
+  padding: 0 2px;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.math-inline-rendered:hover {
+  background: var(--vscode-editor-hoverHighlightBackground, rgba(255, 255, 255, 0.07));
+}
+
+.math-inline-wrapper.selected .math-inline-rendered {
+  background: var(--vscode-editor-selectionBackground, rgba(0, 122, 204, 0.3));
+}
+
+.math-inline-input {
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #ccc);
+  border: 1px solid var(--vscode-focusBorder, #007fd4);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 13px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  outline: none;
+}
+
+.math-block-wrapper {
+  margin: 0.75em 0;
+  cursor: pointer;
+}
+
+.math-block-rendered {
+  text-align: center;
+  padding: 12px 16px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.math-block-rendered:hover {
+  background: var(--vscode-editor-hoverHighlightBackground, rgba(255, 255, 255, 0.04));
+  border-color: var(--vscode-widget-border, #333);
+}
+
+.math-block-wrapper.selected .math-block-rendered {
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+.math-block-editor {
+  padding: 8px;
+  background: var(--vscode-editorWidget-background, #252526);
+  border: 1px solid var(--vscode-focusBorder, #007fd4);
+  border-radius: 4px;
+}
+
+.math-block-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #ccc);
+  border: 1px solid var(--vscode-input-border, #5a5a5a);
+  border-radius: 3px;
+  padding: 8px;
+  font-size: 13px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  resize: vertical;
+  outline: none;
+}
+
+.math-block-input:focus {
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+.math-error {
+  color: var(--vscode-errorForeground, #f48771);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.9em;
+}

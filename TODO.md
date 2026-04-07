@@ -32,13 +32,13 @@
 - [x] Extension diff defaults to rendered (rich) mode instead of source
 - [x] Strip `<https://...>` autolinks back to bare URLs; unescape `\=` before non-`=` content
 - [x] Ctrl+F → Esc places cursor at the active match; reopening Ctrl+F resumes with same query and position
+- [x] Math support — inline (`$...$`) and block (`$$...$$`) via KaTeX rendering, slash commands `/Math Block` and `/Inline Math`, click-to-edit LaTeX source
 
 ## Remaining
 
 - [ ] Auto-close Claude Code diff tabs for .md files — interceptor logs tab types to "Better Markdown" Output channel but closing doesn't work yet; check log output to identify the correct tab input type, then fix the `onDidChangeTabs` handler in `src/extension.ts`
 - [ ] TOC should highlight diffed headings (added/removed/changed) when diff view is active
 - [ ] Allow images to be dragged and dropped into the editor
-- [ ] Add math abilities inline and in block
 - [ ] Add mermaid diagrams
 - [ ] Add buttons as "editors" generally do, to let people click buttons etc. and insert checkboxes etc.
 

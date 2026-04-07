@@ -5,7 +5,7 @@
 Always, in this order:
 
 1. **Run tests**: `npm test`
-   - Runs `scripts/test-conversions.ts` (95+ targeted cases: headings, lists, tables, code blocks, task lists, images, escaping, metadata, normalizeMarkdown unit tests, settings-driven behavior) and then `scripts/test-roundtrip.ts` (full-file round-trip on `test.md`).
+   - Runs `scripts/test-conversions.ts` (118+ targeted cases: headings, lists, tables, code blocks, task lists, math, images, escaping, metadata, normalizeMarkdown unit tests, settings-driven behavior) and then `scripts/test-roundtrip.ts` (full-file round-trip on `test.md`).
    - Expect: all named tests pass, 0 known-failing.
 1. **Build the extension**: `npm run build`
    - Esbuild must succeed for both `src/extension.ts` (node) and `webview/index.tsx` (browser). Type errors in either halt the build.
@@ -24,7 +24,7 @@ If you skip either step, ship breakage. Don't.
 - `webview/metadata.ts` — h4-h6 preservation via trailing HTML comment.
 - `scripts/pipeline.ts` — regex-based mirror of the production pipeline used by test scripts (no DOMParser in Node).
 
-When you touch any of these, add/update a test case in `scripts/test-conversions.ts` in the matching category (A-M).
+When you touch any of these, add/update a test case in `scripts/test-conversions.ts` in the matching category (A-O).
 
 ## Adding a new conversion test
 
@@ -43,3 +43,11 @@ In `scripts/test-conversions.ts`:
 2. We do NOT manually escape `|` inside `<td>/<th> <code>` before rehype-remark — remark-gfm handles table-cell pipe escaping natively. Adding our own escape there caused the `\\|` double-escape.
 
 If you're touching either step, run category E tests and keep both invariants aligned between `useVSCodeSync.ts` and `scripts/pipeline.ts`.
+
+## Math round-trip pipeline
+
+`$...$` (inline) and `$$...$$` (block) are parsed by `remark-math` and converted to `<span data-type="mathInline">` / `<div data-type="mathBlock">` via custom `remark-rehype` handlers (defined as `mathHandlers` in both `useVSCodeSync.ts` and `scripts/pipeline.ts`).
+
+On the way back (HTML → markdown), `preprocessTiptapHtml` converts math nodes to code placeholders (`<code>BTRMK_MATH:latex</code>` for inline, `<pre><code class="language-btrmk-math-block">` for block). This protects LaTeX content from remark-stringify escaping. `postprocessMarkdown` restores them to `$...$` / `$$...$$`.
+
+Keep the handlers and placeholder logic in sync between `useVSCodeSync.ts` (production, DOMParser) and `scripts/pipeline.ts` (tests, regex). Run category O tests when touching math.

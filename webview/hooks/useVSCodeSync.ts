@@ -1,6 +1,7 @@
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
 import remarkStringify from "remark-stringify";
@@ -9,6 +10,26 @@ import rehypeRemark from "rehype-remark";
 
 import { buildMarkdownConfig, normalizeMarkdown } from "../markdown.config";
 import { DEFAULT_SETTINGS, type BetterMarkdownSettings } from "../settings";
+
+/** Custom remark-rehype handlers that convert remark-math AST nodes to HTML. */
+const mathHandlers = {
+  inlineMath(_state: any, node: any) {
+    return {
+      type: "element",
+      tagName: "span",
+      properties: { dataType: "mathInline", dataLatex: node.value },
+      children: [{ type: "text", value: node.value }],
+    };
+  },
+  math(_state: any, node: any) {
+    return {
+      type: "element",
+      tagName: "div",
+      properties: { dataType: "mathBlock", dataLatex: node.value },
+      children: [{ type: "text", value: node.value }],
+    };
+  },
+};
 
 /**
  * Convert markdown to HTML for Tiptap editor.
@@ -29,7 +50,8 @@ export async function markdownToDisplayHtml(md: string): Promise<string> {
   const result = await unified()
     .use(remarkParse)
     .use(remarkGfm)
-    .use(remarkRehype)
+    .use(remarkMath)
+    .use(remarkRehype, { handlers: mathHandlers })
     .use(rehypeStringify)
     .process(md);
   let html = String(result).replace(new RegExp(PIPE_PH, "g"), "|");
@@ -50,7 +72,8 @@ export async function markdownToHtml(
   const result = await unified()
     .use(remarkParse)
     .use(remarkGfm)
-    .use(remarkRehype)
+    .use(remarkMath)
+    .use(remarkRehype, { handlers: mathHandlers })
     .use(rehypeStringify)
     .process(md);
 
@@ -146,6 +169,25 @@ function preprocessTiptapHtml(html: string): string {
   // Convert Tiptap task list HTML to standard GFM format for rehype-remark
   {
     const doc = new DOMParser().parseFromString(html, "text/html");
+
+    // Convert math nodes to code/pre placeholders that protect LaTeX content
+    // from remark-stringify escaping. Restored in postprocessMarkdown.
+    doc.querySelectorAll('[data-type="mathInline"]').forEach((el) => {
+      const latex = el.getAttribute("data-latex") || el.textContent || "";
+      const code = doc.createElement("code");
+      code.textContent = `BTRMK_MATH:${latex}`;
+      el.replaceWith(code);
+    });
+    doc.querySelectorAll('[data-type="mathBlock"]').forEach((el) => {
+      const latex = el.getAttribute("data-latex") || el.textContent || "";
+      const pre = doc.createElement("pre");
+      const code = doc.createElement("code");
+      code.className = "language-btrmk-math-block";
+      code.textContent = latex;
+      pre.appendChild(code);
+      el.replaceWith(pre);
+    });
+
     doc.querySelectorAll('li[data-type="taskItem"]').forEach((li) => {
       const checked = li.getAttribute("data-checked") === "true";
       const label = li.querySelector("label");
@@ -199,6 +241,9 @@ function postprocessMarkdown(
   docFolderPath?: string
 ): string {
   md = normalizeMarkdown(md, settings);
+  // Restore math from code/pre placeholders (after normalizeMarkdown to avoid interference)
+  md = md.replace(/`BTRMK_MATH:(.*?)`/g, (_m, latex) => `$${latex}$`);
+  md = md.replace(/```btrmk-math-block\n([\s\S]*?)\n```/g, (_m, latex) => `$$\n${latex}\n$$`);
   // Replace HTML entities that leak through
   md = md.replace(/&#x20;/g, " ");
   md = md.replace(/&amp;/g, "&");

@@ -11,7 +11,8 @@ Notion-like WYSIWYG markdown editor for VS Code. Edit `.md` files with a rich ed
 - **Task lists** with native checkboxes
 - **Ordered, unordered, and nested lists** with correct round-trip formatting
 - **Code blocks** with syntax highlighting
-- **Slash command menu** — type `/` at the start of a line to insert headings, lists, tables, code blocks, images, and more
+- **Math** — inline (`$E=mc^2$`) and block (`$$...$$`) with KaTeX rendering, click-to-edit LaTeX source
+- **Slash command menu** — type `/` at the start of a line to insert headings, lists, tables, code blocks, math, images, and more
 - **Copy as markdown** — Cmd+C / Cmd+X copies the selection as `.md` source
 
 ### Navigation

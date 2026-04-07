@@ -23,12 +23,33 @@
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
 import rehypeParse from "rehype-parse";
 import rehypeRemark from "rehype-remark";
 import remarkStringify from "remark-stringify";
 import { MARKDOWN_CONFIG, normalizeMarkdown } from "../webview/markdown.config";
+
+/** Custom remark-rehype handlers for math nodes (mirrors useVSCodeSync.ts). */
+const mathHandlers = {
+  inlineMath(_state: any, node: any) {
+    return {
+      type: "element",
+      tagName: "span",
+      properties: { dataType: "mathInline", dataLatex: node.value },
+      children: [{ type: "text", value: node.value }],
+    };
+  },
+  math(_state: any, node: any) {
+    return {
+      type: "element",
+      tagName: "div",
+      properties: { dataType: "mathBlock", dataLatex: node.value },
+      children: [{ type: "text", value: node.value }],
+    };
+  },
+};
 import {
   extractMeta,
   buildMeta,
@@ -107,7 +128,8 @@ export async function roundTrip(
   const htmlResult = await unified()
     .use(remarkParse)
     .use(remarkGfm)
-    .use(remarkRehype)
+    .use(remarkMath)
+    .use(remarkRehype, { handlers: mathHandlers })
     .use(rehypeStringify)
     .process(protectedMd);
   let html = String(htmlResult).replace(new RegExp(PIPE_PH, "g"), "|");
@@ -118,6 +140,16 @@ export async function roundTrip(
   html = html.replace(
     /(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
     (_m, open, c, close) => open + c.replace(/\n$/, "") + close
+  );
+
+  // Convert math HTML to code placeholders (mirrors preprocessTiptapHtml)
+  html = html.replace(
+    /<span data-type="mathInline" data-latex="[^"]*">([^<]*)<\/span>/g,
+    "<code>BTRMK_MATH:$1</code>"
+  );
+  html = html.replace(
+    /<div data-type="mathBlock" data-latex="[^"]*">([^<]*)<\/div>/g,
+    '<pre><code class="language-btrmk-math-block">$1</code></pre>'
   );
 
   // 5. Strip <p> from <li> again (after re-entering pipeline)
@@ -131,6 +163,10 @@ export async function roundTrip(
     .use(remarkStringify, MARKDOWN_CONFIG)
     .process(html);
   let output = normalizeMarkdown(String(mdResult));
+
+  // 6b. Restore math from placeholders
+  output = output.replace(/`BTRMK_MATH:(.*?)`/g, (_m, latex) => `$${latex}$`);
+  output = output.replace(/```btrmk-math-block\n([\s\S]*?)\n```/g, (_m, latex) => `$$\n${latex}\n$$`);
 
   // 7. HTML entity cleanup
   output = output.replace(/&#x20;/g, " ");
@@ -156,7 +192,8 @@ export async function mdToHtml(md: string): Promise<string> {
   const htmlResult = await unified()
     .use(remarkParse)
     .use(remarkGfm)
-    .use(remarkRehype)
+    .use(remarkMath)
+    .use(remarkRehype, { handlers: mathHandlers })
     .use(rehypeStringify)
     .process(protectedMd);
   let html = String(htmlResult).replace(new RegExp(PIPE_PH, "g"), "|");

@@ -644,6 +644,49 @@ async function run() {
   await roundtripCase("empty fenced code block stays bare", "```\n```");
 
   // --------------------------------------------------------------------------
+  category("O. Math (inline and block)");
+  // --------------------------------------------------------------------------
+
+  await roundtripCase("inline math simple", "Einstein wrote $E=mc^2$ in 1905.");
+  await roundtripCase("inline math with subscript", "The variable $x_1$ is defined.");
+  await roundtripCase("inline math with braces", "We have $\\frac{a}{b}$ here.");
+  await roundtripCase("block math simple", "$$\na^2 + b^2 = c^2\n$$");
+  await roundtripCase(
+    "block math multiline",
+    "$$\n\\sum_{i=1}^{n} x_i = x_1 + x_2 + \\cdots + x_n\n$$"
+  );
+  await roundtripCase(
+    "inline math in paragraph",
+    "The formula $a + b = c$ is basic arithmetic."
+  );
+  await roundtripCase(
+    "multiple inline math in one line",
+    "Both $\\alpha$ and $\\beta$ are Greek."
+  );
+  await roundtripCase(
+    "block math surrounded by text",
+    "Before math:\n\n$$\nf(x) = x^2\n$$\n\nAfter math."
+  );
+
+  // Verify md→html produces correct data attributes
+  {
+    const html = await mdToHtml("$E=mc^2$");
+    assert(
+      "md→html: inline math produces data-type='mathInline'",
+      html.includes('data-type="mathInline"') && html.includes('data-latex="E=mc^2"'),
+      html
+    );
+  }
+  {
+    const html = await mdToHtml("$$\na^2 + b^2 = c^2\n$$");
+    assert(
+      "md→html: block math produces data-type='mathBlock'",
+      html.includes('data-type="mathBlock"'),
+      html
+    );
+  }
+
+  // --------------------------------------------------------------------------
   category("N. Settings-driven behavior");
   // --------------------------------------------------------------------------
 

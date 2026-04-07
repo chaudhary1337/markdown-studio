@@ -5,6 +5,7 @@ import { Suggestion } from "@tiptap/suggestion";
 import {
   Heading1, Heading2, Heading3, Heading4, Heading5, Heading6,
   List, ListOrdered, CheckSquare, Code, Quote, Minus, Table, ImageIcon, Type,
+  Sigma,
 } from "lucide-react";
 import { vscodeApi } from "../vscode-api";
 
@@ -29,6 +30,8 @@ const ITEMS: SlashItem[] = [
   { title: "Blockquote", icon: <Quote size={16} />, command: (e) => e.chain().focus().toggleBlockquote().run() },
   { title: "Horizontal Rule", icon: <Minus size={16} />, command: (e) => e.chain().focus().setHorizontalRule().run() },
   { title: "Table", icon: <Table size={16} />, command: (e) => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
+  { title: "Math Block", icon: <Sigma size={16} />, command: (e) => e.chain().focus().insertContent({ type: "mathBlock", attrs: { latex: "" } }).run() },
+  { title: "Inline Math", icon: <Sigma size={16} />, command: (e) => e.chain().focus().insertContent({ type: "mathInline", attrs: { latex: "" } }).run() },
   { title: "Image", icon: <ImageIcon size={16} />, command: (e) => {
     vscodeApi.postMessage({ type: "promptImageUrl" });
     const handler = (ev: MessageEvent) => {
