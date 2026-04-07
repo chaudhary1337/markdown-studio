@@ -1,0 +1,358 @@
+#!/usr/bin/env npx tsx
+/**
+ * Standalone dev server for Better Markdown.
+ *
+ * Usage:  npx tsx server/index.ts [file.md]
+ *    or:  npm run serve -- [file.md]
+ *
+ * Supports multiple files via browser tabs:
+ *   http://localhost:3333/edit?file=/absolute/path/to/file.md
+ *
+ * Each tab gets its own WebSocket, file watcher, and live save.
+ * The CLI arg is optional — if given, auto-opens that file.
+ */
+
+import * as http from "node:http";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { WebSocketServer, WebSocket } from "ws";
+
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+
+const PORT = parseInt(process.env.PORT || "3333", 10);
+const DIST = path.resolve(__dirname, "..", "dist");
+const SETTINGS_FILE = path.join(
+  process.env.HOME || process.env.USERPROFILE || ".",
+  ".better-markdown-settings.json"
+);
+
+// ---------------------------------------------------------------------------
+// Settings persistence (simple JSON file)
+// ---------------------------------------------------------------------------
+
+function loadSettings(): Record<string, unknown> {
+  try {
+    return JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+function saveSettings(settings: Record<string, unknown>) {
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+}
+
+// ---------------------------------------------------------------------------
+// Per-file state: tracks clients, watcher, and last-written content
+// ---------------------------------------------------------------------------
+
+interface FileState {
+  filePath: string;
+  dirPath: string;
+  lastWrittenContent: string;
+  clients: Set<WebSocket>;
+  watcher: fs.FSWatcher | null;
+  watchDebounce: ReturnType<typeof setTimeout> | null;
+}
+
+const openFiles = new Map<string, FileState>();
+
+function getOrCreateFileState(filePath: string): FileState {
+  let state = openFiles.get(filePath);
+  if (state) return state;
+
+  const dirPath = path.dirname(filePath);
+  state = {
+    filePath,
+    dirPath,
+    lastWrittenContent: "",
+    clients: new Set(),
+    watcher: null,
+    watchDebounce: null,
+  };
+
+  // Start watching the file for external changes
+  try {
+    state.watcher = fs.watch(filePath, () => {
+      if (state!.watchDebounce) clearTimeout(state!.watchDebounce);
+      state!.watchDebounce = setTimeout(() => {
+        try {
+          const content = fs.readFileSync(filePath, "utf-8");
+          if (content !== state!.lastWrittenContent) {
+            state!.lastWrittenContent = content;
+            const msg = JSON.stringify({ type: "update", content });
+            for (const ws of state!.clients) {
+              if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+            }
+          }
+        } catch { /* file may have been deleted */ }
+      }, 200);
+    });
+  } catch { /* watch may fail on some systems */ }
+
+  openFiles.set(filePath, state);
+  return state;
+}
+
+function removeClient(state: FileState, ws: WebSocket) {
+  state.clients.delete(ws);
+  // Clean up when no clients remain for this file
+  if (state.clients.size === 0) {
+    if (state.watcher) state.watcher.close();
+    if (state.watchDebounce) clearTimeout(state.watchDebounce);
+    openFiles.delete(state.filePath);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Encode/decode directory paths for image-serving routes
+// ---------------------------------------------------------------------------
+
+function encodeDir(dir: string): string {
+  return Buffer.from(dir).toString("base64url");
+}
+
+function decodeDir(encoded: string): string {
+  return Buffer.from(encoded, "base64url").toString();
+}
+
+// ---------------------------------------------------------------------------
+// HTML shell
+// ---------------------------------------------------------------------------
+
+function buildHtml(filePath: string): string {
+  const name = path.basename(filePath);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="/editor.css" rel="stylesheet">
+  <title>${name} — Better Markdown</title>
+</head>
+<body>
+  <div id="root"></div>
+  <script>window.__BTRMK_FILE__ = ${JSON.stringify(filePath)};</script>
+  <script type="module" src="/webview.js"></script>
+</body>
+</html>`;
+}
+
+// ---------------------------------------------------------------------------
+// MIME types
+// ---------------------------------------------------------------------------
+
+const MIME: Record<string, string> = {
+  ".html": "text/html", ".js": "application/javascript",
+  ".css": "text/css", ".json": "application/json",
+  ".woff": "font/woff", ".woff2": "font/woff2", ".ttf": "font/ttf",
+  ".svg": "image/svg+xml", ".png": "image/png",
+  ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+  ".gif": "image/gif", ".webp": "image/webp",
+};
+
+function serveStatic(filePath: string, res: http.ServerResponse): boolean {
+  try {
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      const ext = path.extname(filePath).toLowerCase();
+      res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+      fs.createReadStream(filePath).pipe(res);
+      return true;
+    }
+  } catch { /* fall through */ }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// HTTP server
+// ---------------------------------------------------------------------------
+
+const server = http.createServer((req, res) => {
+  const url = new URL(req.url || "/", `http://localhost:${PORT}`);
+  const pathname = decodeURIComponent(url.pathname);
+
+  // /edit/<absolute-path> → editor for that file
+  if (pathname.startsWith("/edit/")) {
+    const file = "/" + pathname.slice("/edit/".length);
+    if (!fs.existsSync(file)) {
+      res.writeHead(404);
+      res.end("File not found: " + file);
+      return;
+    }
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(buildHtml(path.resolve(file)));
+    return;
+  }
+
+  // / → redirect to /edit/<path> if CLI arg given, else show help
+  if (pathname === "/") {
+    const initialFile = process.argv[2];
+    if (initialFile) {
+      const abs = path.resolve(initialFile);
+      res.writeHead(302, { Location: `/edit${abs}` });
+      res.end();
+    } else {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("Better Markdown server running. Open /edit/<path-to-file.md> to edit a file.");
+    }
+    return;
+  }
+
+  // /doc/<base64dir>/<filename> → serve image from document folder
+  const docMatch = pathname.match(/^\/doc\/([^/]+)\/(.+)$/);
+  if (docMatch) {
+    const dir = decodeDir(docMatch[1]);
+    const file = docMatch[2];
+    if (serveStatic(path.join(dir, file), res)) return;
+    res.writeHead(404); res.end("Not found");
+    return;
+  }
+
+  // Static files from dist/
+  if (serveStatic(path.join(DIST, pathname), res)) return;
+
+  res.writeHead(404);
+  res.end("Not found");
+});
+
+// ---------------------------------------------------------------------------
+// WebSocket — /ws?file=<path>
+// ---------------------------------------------------------------------------
+
+const wss = new WebSocketServer({ noServer: true });
+
+// Upgrade handler: accept /ws/<absolute-path>
+server.on("upgrade", (req, socket, head) => {
+  const url = new URL(req.url || "/", `http://localhost:${PORT}`);
+  if (url.pathname.startsWith("/ws/")) {
+    wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
+  } else {
+    socket.destroy();
+  }
+});
+
+wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
+  const url = new URL(req.url || "/", `http://localhost:${PORT}`);
+  const filePath = "/" + decodeURIComponent(url.pathname.slice("/ws/".length));
+
+  if (!filePath || !fs.existsSync(filePath)) {
+    ws.close(1008, "Invalid file path");
+    return;
+  }
+
+  const state = getOrCreateFileState(filePath);
+  state.clients.add(ws);
+
+  ws.on("message", (raw) => {
+    let msg: any;
+    try { msg = JSON.parse(raw.toString()); } catch { return; }
+
+    switch (msg.type) {
+      case "ready": {
+        const content = fs.readFileSync(filePath, "utf-8");
+        state.lastWrittenContent = content;
+        const encodedDir = encodeDir(state.dirPath);
+        ws.send(JSON.stringify({
+          type: "init",
+          content,
+          baseUri: `http://localhost:${PORT}/doc/${encodedDir}`,
+          docFolderPath: state.dirPath,
+          filePath,
+          isReadonly: false,
+          settings: loadSettings(),
+        }));
+        break;
+      }
+      case "edit": {
+        if (msg.content !== state.lastWrittenContent) {
+          state.lastWrittenContent = msg.content;
+          fs.writeFileSync(filePath, msg.content);
+        }
+        break;
+      }
+      case "saveSettings": {
+        saveSettings(msg.settings);
+        // Broadcast to all clients across all files
+        for (const [, s] of openFiles) {
+          for (const other of s.clients) {
+            if (other !== ws && other.readyState === WebSocket.OPEN) {
+              other.send(JSON.stringify({ type: "settingsUpdated", settings: msg.settings }));
+            }
+          }
+        }
+        break;
+      }
+      case "openLink": {
+        const href = msg.href as string;
+        if (href) {
+          import("node:child_process").then(({ exec }) => {
+            const cmd =
+              process.platform === "darwin" ? `open "${href}"` :
+              process.platform === "win32" ? `start "${href}"` :
+              `xdg-open "${href}"`;
+            exec(cmd);
+          });
+        }
+        break;
+      }
+      case "promptImageUrl": {
+        ws.send(JSON.stringify({ type: "imageUrlResult", url: null }));
+        break;
+      }
+      case "requestGitDiff": {
+        import("node:child_process").then(({ execSync }) => {
+          try {
+            const headContent = execSync(
+              `git show HEAD:"${path.relative(process.cwd(), filePath)}"`,
+              { encoding: "utf-8", cwd: state.dirPath }
+            );
+            ws.send(JSON.stringify({
+              type: "gitDiffResponse", headContent,
+              fileName: path.basename(filePath),
+            }));
+          } catch {
+            ws.send(JSON.stringify({
+              type: "gitDiffResponse", headContent: null,
+              fileName: path.basename(filePath),
+            }));
+          }
+        });
+        break;
+      }
+      case "toggleEditor": {
+        // Open in VS Code
+        import("node:child_process").then(({ exec }) => {
+          exec(`code "${filePath}"`);
+        });
+        break;
+      }
+    }
+  });
+
+  ws.on("close", () => removeClient(state, ws));
+});
+
+// ---------------------------------------------------------------------------
+// Start
+// ---------------------------------------------------------------------------
+
+server.listen(PORT, () => {
+  const initialFile = process.argv[2];
+  console.log(`\n  Better Markdown server`);
+  console.log(`  http://localhost:${PORT}`);
+  if (initialFile) {
+    const abs = path.resolve(initialFile);
+    const url = `http://localhost:${PORT}/edit${abs}`;
+    console.log(`  Opening: ${path.basename(abs)}`);
+    console.log();
+    const cmd =
+      process.platform === "darwin" ? `open "${url}"` :
+      process.platform === "win32" ? `start "${url}"` :
+      `xdg-open "${url}"`;
+    import("node:child_process").then(({ exec }) => exec(cmd));
+  } else {
+    console.log(`  Open /edit?file=<path> to edit a file.\n`);
+  }
+});

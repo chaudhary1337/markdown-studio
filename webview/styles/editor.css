@@ -53,15 +53,19 @@ html, body, #root {
   pointer-events: none;
 }
 
-/* Toggle source link */
+/* Toggle source / open-in-browser links */
+.toggle-source-row {
+  display: flex;
+  gap: 16px;
+  margin: 0 2rem;
+}
+
 .toggle-source {
-  display: block;
   font-size: 11px;
   color: var(--vscode-descriptionForeground, #888);
   cursor: pointer;
   user-select: none;
   padding: 4px 0;
-  margin: 0 2rem;
   transition: color 0.15s;
 }
 

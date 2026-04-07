@@ -125,6 +125,11 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
             // If file doesn't exist, ignore
           }
         }
+      } else if (msg.type === "openInBrowser") {
+        vscode.commands.executeCommand(
+          "betterMarkdown.openInBrowser",
+          document.uri
+        );
       } else if (msg.type === "promptImageUrl") {
         const url = await vscode.window.showInputBox({
           prompt: "Image URL",

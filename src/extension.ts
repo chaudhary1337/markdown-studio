@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as path from "path";
+import { spawn, ChildProcess } from "child_process";
 import { BetterMarkdownProvider } from "./provider";
 import { BetterMarkdownDiffPanel } from "./diffPanel";
 
@@ -73,6 +74,59 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
+  // Open in Browser — spawns a single long-lived server, then opens
+  // the file-specific URL. The server handles multiple files.
+  let serverProcess: ChildProcess | null = null;
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "betterMarkdown.openInBrowser",
+      async (uri?: vscode.Uri) => {
+        const fileUri =
+          uri ||
+          vscode.window.activeTextEditor?.document.uri;
+        if (!fileUri || fileUri.scheme !== "file") {
+          vscode.window.showWarningMessage(
+            "Better Markdown: no markdown file to open in browser."
+          );
+          return;
+        }
+        const filePath = fileUri.fsPath;
+
+        // Start server if not running
+        if (!serverProcess) {
+          const serverScript = path.join(
+            context.extensionPath,
+            "server",
+            "index.ts"
+          );
+          serverProcess = spawn("npx", ["tsx", serverScript], {
+            cwd: context.extensionPath,
+            stdio: "ignore",
+            detached: false,
+          });
+          serverProcess.on("exit", () => { serverProcess = null; });
+          // Give it a moment to start
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+
+        vscode.env.openExternal(
+          vscode.Uri.parse(`http://localhost:3333/edit${filePath}`)
+        );
+      }
+    )
+  );
+
+  // Clean up server on deactivation
+  context.subscriptions.push({
+    dispose() {
+      if (serverProcess) {
+        serverProcess.kill();
+        serverProcess = null;
+      }
+    },
+  });
+
   // Debug: log opened tab types to Output channel so we can see what
   // Claude Code actually creates, then close unwanted markdown diff tabs.
   const log = vscode.window.createOutputChannel("Better Markdown");
@@ -127,6 +181,10 @@ class RichEditorCodeLensProvider implements vscode.CodeLensProvider {
       new vscode.CodeLens(range, {
         title: "Open in Rich Editor",
         command: "betterMarkdown.toggleEditor",
+      }),
+      new vscode.CodeLens(range, {
+        title: "Open in Browser",
+        command: "betterMarkdown.openInBrowser",
       }),
     ];
   }

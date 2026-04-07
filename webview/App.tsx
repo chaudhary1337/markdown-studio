@@ -32,7 +32,7 @@ import {
 } from "./metadata";
 import { extractFrontmatter, prependFrontmatter } from "./frontmatter";
 import { DEFAULT_SETTINGS, mergeSettings, type BetterMarkdownSettings } from "./settings";
-import { vscodeApi } from "./vscode-api";
+import { vscodeApi, isBrowserMode } from "./vscode-api";
 
 const lowlight = createLowlight(common);
 
@@ -40,6 +40,7 @@ export function App() {
   const initialized = useRef(false);
   const baseUri = useRef("");
   const docFolderPath = useRef("");
+  const filePath = useRef("");
   const metaRef = useRef<Metadata>({ h: [] });
   const frontmatterRef = useRef("");
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -114,6 +115,7 @@ export function App() {
         initialized.current = true;
         if (msg.baseUri) baseUri.current = msg.baseUri;
         if (msg.docFolderPath) docFolderPath.current = msg.docFolderPath;
+        if (msg.filePath) filePath.current = msg.filePath;
         if (msg.settings) {
           const merged = mergeSettings(msg.settings);
           settingsRef.current = merged;
@@ -297,6 +299,10 @@ export function App() {
     vscodeApi.postMessage({ type: "toggleEditor" });
   };
 
+  const openInBrowser = () => {
+    vscodeApi.postMessage({ type: "openInBrowser" });
+  };
+
   const toggleDiff = () => {
     if (diffVisible) {
       setDiffVisible(false);
@@ -393,14 +399,26 @@ export function App() {
           />
         )}
         <StickyHeadings />
-        <span
-          className="toggle-source"
-          onClick={switchToSource}
-          role="button"
-          tabIndex={0}
-        >
-          Open in Default Editor
-        </span>
+        <div className="toggle-source-row">
+          <span
+            className="toggle-source"
+            onClick={switchToSource}
+            role="button"
+            tabIndex={0}
+          >
+            {isBrowserMode ? "Open in VS Code" : "Open in Default Editor"}
+          </span>
+          {!isBrowserMode && (
+            <span
+              className="toggle-source"
+              onClick={openInBrowser}
+              role="button"
+              tabIndex={0}
+            >
+              Open in Browser
+            </span>
+          )}
+        </div>
         <EditorContent editor={editor} />
         <TableControls editor={editor} containerRef={editorContainerRef} />
       </div>
