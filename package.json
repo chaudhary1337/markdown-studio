@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "publisher": "better-markdown",
   "license": "UNLICENSED",
+  "icon": "logo.png",
   "engines": {
     "vscode": "^1.80.0"
   },

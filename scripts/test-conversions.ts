@@ -14,6 +14,7 @@
  *   J. Special characters / escaping
  *   K. Metadata functions
  *   L. normalizeMarkdown unit tests
+ *   L2. Frontmatter preservation
  *   M. Known-failing cases (documented, expected to fail)
  *
  * Usage: npx tsx scripts/test-conversions.ts
@@ -30,6 +31,7 @@ import {
   mergeMetadata,
   type Metadata,
 } from "../webview/metadata";
+import { extractFrontmatter, prependFrontmatter } from "../webview/frontmatter";
 
 // ============================================================================
 // Mini test harness
@@ -568,6 +570,54 @@ async function run() {
   await roundtripCase(
     "bold containing italic",
     "**outer _inner_ text**"
+  );
+
+  // --------------------------------------------------------------------------
+  category("L2. Frontmatter preservation");
+  // --------------------------------------------------------------------------
+
+  // extractFrontmatter unit tests
+  {
+    const { content, frontmatter } = extractFrontmatter(
+      "---\nname: test\ndescription: hello\n---\n\n# Heading\n\nBody text.\n"
+    );
+    eq("extractFrontmatter: strips frontmatter", content, "\n# Heading\n\nBody text.\n");
+    eq("extractFrontmatter: captures raw block", frontmatter, "---\nname: test\ndescription: hello\n---\n");
+  }
+
+  {
+    const { content, frontmatter } = extractFrontmatter("# No frontmatter\n\nJust content.\n");
+    eq("extractFrontmatter: no frontmatter returns content unchanged", content, "# No frontmatter\n\nJust content.\n");
+    eq("extractFrontmatter: no frontmatter returns empty string", frontmatter, "");
+  }
+
+  eq(
+    "prependFrontmatter: restores block with blank line",
+    prependFrontmatter("# Heading\n", "---\nfoo: bar\n---\n"),
+    "---\nfoo: bar\n---\n\n# Heading\n"
+  );
+
+  eq(
+    "prependFrontmatter: noop when empty",
+    prependFrontmatter("# Heading\n", ""),
+    "# Heading\n"
+  );
+
+  // Full round-trip with frontmatter
+  await roundtripCase(
+    "YAML frontmatter preserved through round-trip",
+    "---\nname: games-vm\ndescription: SSH into the games VM\nallowed-tools: Bash\n---\n\n## Games VM\n\nSome content here.\n"
+  );
+
+  await roundtripCase(
+    "frontmatter with special chars preserved",
+    "---\ntitle: My <Project>\ntags: [a, b, c]\n---\n\n# Title\n\nParagraph.\n"
+  );
+
+  // Exact reproduction of the reported bug: angle-bracket value + multi-line YAML
+  await roundtripCase(
+    "frontmatter with angle-bracket value (reported issue)",
+    "---\nname: games-vm\ndescription: SSH into the games VM (A100 GPU) on GCP to run commands, check training runs, or manage experiments\nargument-hint: <command-to-run>\nallowed-tools: Bash\n---\n\n## Games VM\n\nSome content here.\n"
   );
 
   // --------------------------------------------------------------------------

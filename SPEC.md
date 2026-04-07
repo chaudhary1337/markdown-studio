@@ -151,6 +151,7 @@ better-markdown/
 │   ├── DiffApp.tsx           # Standalone diff panel entry
 │   ├── settings.ts           # User settings schema + defaults
 │   ├── utils.ts              # Shared helpers (getHeadingLevel, scrollToBlock)
+│   ├── frontmatter.ts        # YAML frontmatter strip/restore
 │   ├── metadata.ts           # h4-h6 preservation via HTML comments
 │   ├── markdown.config.ts    # buildMarkdownConfig + normalizeMarkdown
 │   ├── hooks/
@@ -171,8 +172,9 @@ better-markdown/
 
 ### Input (markdown → editor)
 
-1. `extractMeta()` strips metadata comment from end of file
-2. `buildMeta()` scans for h4-h6 headings
+1. `extractFrontmatter()` strips YAML frontmatter (`---` block) from top of file
+2. `extractMeta()` strips metadata comment from end of file
+3. `buildMeta()` scans for h4-h6 headings
 3. `protectTableCodePipes()` — replace `|` inside code spans in table rows with placeholder (remark's GFM table parser splits on `|` even inside backticks)
 4. `unified().use(remarkParse, remarkGfm, remarkRehype, rehypeStringify)` → HTML, then restore placeholders
 5. DOMParser transforms: wrap bare `<li>` text in `<p>` (Tiptap needs block content), convert GFM task list HTML to Tiptap taskItem format, split multiple `<img>` in same `<p>` into separate blocks
@@ -198,14 +200,15 @@ better-markdown/
 6. `&#x20;` / `&amp;` HTML entity cleanup
 7. `restoreHeadings()` converts `### ` back to `####`/`#####`/`######` using metadata
 8. `appendMeta()` adds metadata comment at end of file
-9. Strip webview URI prefixes to restore relative image paths
+9. `prependFrontmatter()` restores YAML frontmatter at top of file
+10. Strip webview URI prefixes to restore relative image paths
 
 ## Known Limitations
 
 - **Escaped markdown characters** (`\*`, `\_`) lose backslash on round-trip (Tiptap stores rendered text)
 - **`β\_kl` not unescaped**: Unicode chars don't match `\w` in the unescape regex
 - Raw HTML blocks and footnotes may not round-trip perfectly
-- YAML frontmatter not handled
+- ~~YAML frontmatter not handled~~ → fixed: stripped before remark parse, restored on save
 - No git diff integration in rich editor
 - Webview bundle ~380KB compressed
 

@@ -28,6 +28,7 @@ import {
   mergeMetadata,
   type Metadata,
 } from "./metadata";
+import { extractFrontmatter, prependFrontmatter } from "./frontmatter";
 import { DEFAULT_SETTINGS, mergeSettings, type BetterMarkdownSettings } from "./settings";
 import { vscodeApi } from "./vscode-api";
 
@@ -38,6 +39,7 @@ export function App() {
   const baseUri = useRef("");
   const docFolderPath = useRef("");
   const metaRef = useRef<Metadata>({ h: [] });
+  const frontmatterRef = useRef("");
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isReadonly = useRef(false);
   const settingsRef = useRef<BetterMarkdownSettings>(DEFAULT_SETTINGS);
@@ -121,7 +123,9 @@ export function App() {
         if (rawMd.trim()) {
           setStatus("Parsing markdown...");
           try {
-            const { content, meta: existingMeta } = extractMeta(rawMd);
+            const { content: noFm, frontmatter } = extractFrontmatter(rawMd);
+            frontmatterRef.current = frontmatter;
+            const { content, meta: existingMeta } = extractMeta(noFm);
             const scannedMeta = buildMeta(content);
             metaRef.current = mergeMetadata(scannedMeta, existingMeta);
             const html = await markdownToHtml(content, baseUri.current);
@@ -133,7 +137,9 @@ export function App() {
         setStatus(null);
       } else if (msg.type === "update" && initialized.current) {
         try {
-          const { content, meta: existingMeta } = extractMeta(msg.content);
+          const { content: noFm, frontmatter } = extractFrontmatter(msg.content);
+          frontmatterRef.current = frontmatter;
+          const { content, meta: existingMeta } = extractMeta(noFm);
           const scannedMeta = buildMeta(content);
           metaRef.current = mergeMetadata(scannedMeta, existingMeta);
           const html = await markdownToHtml(content, baseUri.current);
@@ -264,6 +270,7 @@ export function App() {
         );
         markdown = restoreHeadings(markdown, metaRef.current);
         markdown = appendMeta(markdown, metaRef.current);
+        markdown = prependFrontmatter(markdown, frontmatterRef.current);
         vscodeApi.postMessage({ type: "edit", content: markdown });
         setStatus(null);
       } catch (err: any) {

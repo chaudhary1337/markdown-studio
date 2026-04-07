@@ -62,8 +62,12 @@ code --install-extension better-markdown-0.1.0.vsix
 
 Or open VS Code, go to Extensions > `...` menu > "Install from VSIX..." and select the file.
 
+## Privacy
+
+Better Markdown collects no telemetry, analytics, or usage data. Everything runs locally in your VS Code instance.
+
 ## Known limitations
 
 - Escaped markdown characters (`\*`, `\_`) lose the backslash on round-trip
-- YAML frontmatter is not handled
+- YAML frontmatter is preserved but not displayed or editable in the rich editor
 - Brief flash on first load while the editor initializes

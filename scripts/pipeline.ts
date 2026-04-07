@@ -36,6 +36,7 @@ import {
   appendMeta,
   mergeMetadata,
 } from "../webview/metadata";
+import { extractFrontmatter, prependFrontmatter } from "../webview/frontmatter";
 
 const PIPE_PH = "%%BTRMK_PIPE%%";
 
@@ -88,11 +89,12 @@ export async function roundTrip(
   md: string,
   opts: RoundTripOptions = {}
 ): Promise<string> {
-  // 1. Extract metadata
-  let content = md;
+  // 1. Extract frontmatter and metadata
+  const { content: noFm, frontmatter } = extractFrontmatter(md);
+  let content = noFm;
   let meta = { h: [] as { t: string; l: number }[] };
   if (!opts.skipMeta) {
-    const extracted = extractMeta(md);
+    const extracted = extractMeta(content);
     const scanned = buildMeta(extracted.content);
     content = extracted.content;
     meta = mergeMetadata(scanned, extracted.meta);
@@ -139,6 +141,9 @@ export async function roundTrip(
     output = restoreHeadings(output, meta);
     output = appendMeta(output, meta);
   }
+
+  // 9. Restore frontmatter
+  output = prependFrontmatter(output, frontmatter);
 
   return output;
 }
