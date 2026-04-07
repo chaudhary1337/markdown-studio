@@ -54,13 +54,7 @@ Better Markdown is the first VS Code WYSIWYG markdown editor to ship:
 
 ## Installation
 
-Install from the `.vsix` file:
-
-```
-code --install-extension better-markdown-0.1.0.vsix
-```
-
-Or open VS Code, go to Extensions > `...` menu > "Install from VSIX..." and select the file.
+Hit the **Install** button on this page — that's it. No extra setup or permissions required.
 
 ## Privacy
 

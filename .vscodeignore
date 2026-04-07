@@ -1,5 +1,6 @@
 .vscode/**
 .claude/**
+CLAUDE.md
 src/**
 webview/**
 node_modules/**
