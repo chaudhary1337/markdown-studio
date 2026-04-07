@@ -177,7 +177,9 @@ export function App() {
   // Ctrl+F / Cmd+F: open search bar. Escape: close settings.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault(); // prevent browser "Save HTML" dialog
+      } else if ((e.metaKey || e.ctrlKey) && e.key === "f") {
         e.preventDefault();
         setSearchVisible(true);
       } else if (e.key === "Escape") {

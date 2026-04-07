@@ -1,21 +1,20 @@
 # Better Markdown — Claude workflow notes
 
-## Before finishing ANY change to conversion logic
+## Before finishing ANY change
 
-Always, in this order:
+Run all four steps, in this order, every time. No exceptions.
 
 1. **Run tests**: `npm test`
    - Runs `scripts/test-conversions.ts` (118+ targeted cases: headings, lists, tables, code blocks, task lists, math, images, escaping, metadata, normalizeMarkdown unit tests, settings-driven behavior) and then `scripts/test-roundtrip.ts` (full-file round-trip on `test.md`).
    - Expect: all named tests pass, 0 known-failing.
-1. **Build the extension**: `npm run build`
+2. **Build**: `npm run build`
    - Esbuild must succeed for both `src/extension.ts` (node) and `webview/index.tsx` (browser). Type errors in either halt the build.
-
-If you skip either step, ship breakage. Don't.
-
-1. **Package the extension**: `npm run package`
+3. **Package**: `npm run package`
    - Produces a `.vsix` file via `vsce package` for local install / distribution.
-1. **Force install**: `code --install-extension better-markdown-0.1.0.vsix --force`
+4. **Force install**: `code --install-extension better-markdown-0.1.0.vsix --force`
    - Installs/updates the extension in VS Code. Reload the window afterwards.
+
+If you skip any step, the user won't see the change. Always do all four.
 
 ## Conversion pipeline files (where bugs live)
 

@@ -140,6 +140,32 @@ function buildHtml(filePath: string): string {
 </html>`;
 }
 
+function buildErrorHtml(title: string, filePath: string, detail?: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Better Markdown</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #1e1e1e; color: #d4d4d4; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .box { max-width: 520px; text-align: center; }
+    h1 { font-size: 20px; color: #f48771; margin-bottom: 8px; }
+    .path { font-family: monospace; font-size: 13px; color: #888; word-break: break-all; margin: 12px 0; }
+    p { font-size: 14px; line-height: 1.6; color: #aaa; }
+    code { background: rgba(255,255,255,0.08); padding: 2px 5px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>${title}</h1>
+    <div class="path">${filePath}</div>
+    <p>${detail || 'Better Markdown only supports <code>.md</code> (Markdown) files.'}</p>
+  </div>
+</body>
+</html>`;
+}
+
 // ---------------------------------------------------------------------------
 // MIME types
 // ---------------------------------------------------------------------------
@@ -177,8 +203,26 @@ const server = http.createServer((req, res) => {
   if (pathname.startsWith("/edit/")) {
     const file = "/" + pathname.slice("/edit/".length);
     if (!fs.existsSync(file)) {
-      res.writeHead(404);
-      res.end("File not found: " + file);
+      res.writeHead(404, { "Content-Type": "text/html" });
+      res.end(buildErrorHtml("File not found", file, "Check the path and try again."));
+      return;
+    }
+    if (fs.statSync(file).isDirectory()) {
+      res.writeHead(400, { "Content-Type": "text/html" });
+      res.end(buildErrorHtml(
+        "This is a directory, not a file",
+        file,
+        "Better Markdown only supports <code>.md</code> files. Open a specific markdown file instead."
+      ));
+      return;
+    }
+    if (!file.toLowerCase().endsWith(".md")) {
+      res.writeHead(400, { "Content-Type": "text/html" });
+      res.end(buildErrorHtml(
+        "Unsupported file type",
+        file,
+        "Better Markdown only supports <code>.md</code> (Markdown) files."
+      ));
       return;
     }
     res.writeHead(200, { "Content-Type": "text/html" });
