@@ -18,7 +18,7 @@
 - [x] Task list checkbox round-trip (GFM ↔ Tiptap taskItem conversion)
 - [x] Image separation (each image in its own `<p>` block)
 - [x] Fix `\|` double-escape in code spans within table cells (use negative lookbehind)
-- [x] Unescape `\_` around Unicode word chars (β_kl, 日_本) — use `\p{L}` instead of `\w`
+- [x] Unescape `\_` around Unicode word chars (&#x3B2;_&#x6B;l, &#x65E5;_&#x672C;) — use `\p{L}` instead of `\w`
 - [x] `compactLists` preserves blank lines around indented paragraphs (verified via test coverage)
 - [x] Git diffs work — non-file URIs render read-only in Tiptap with a badge
 - [x] Copy as markdown source — selection serialised to .md on Cmd+C / Cmd+X
@@ -40,6 +40,8 @@
 
 - [ ] TOC should highlight diffed headings (added/removed/changed) when diff view is active
 - [ ] Allow images to be dragged and dropped into the editor
+- [ ] Add math abilities inline and in block
+- [ ] Add mermaid diagrams
 
 ## Known Limitations
 
