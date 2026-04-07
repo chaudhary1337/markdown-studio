@@ -92,7 +92,7 @@ def hello():
     print("world")
 ```
 
-```text
+```
 plain code block
 no language
 ```

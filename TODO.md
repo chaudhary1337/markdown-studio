@@ -42,6 +42,6 @@
 - [ ] Add mermaid diagrams
 - [ ] Add buttons as "editors" generally do, to let people click buttons etc. and insert checkboxes etc.
 
-## Known Limitations (WONTFIX)
+## Known Limitations
 
 - Escaped markdown characters (`\*`, `\_`) lose backslash on round-trip (Tiptap stores rendered text, not source).
