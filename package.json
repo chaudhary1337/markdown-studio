@@ -9,7 +9,19 @@
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Other"
+    "Formatters",
+    "Visualization"
+  ],
+  "keywords": [
+    "markdown",
+    "wysiwyg",
+    "editor",
+    "notion",
+    "rich text",
+    "rich diff",
+    "diff",
+    "md",
+    "rich editor"
   ],
   "activationEvents": [
     "onLanguage:markdown"
