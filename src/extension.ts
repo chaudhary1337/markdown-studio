@@ -73,6 +73,44 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
+  // Debug: log opened tab types to Output channel so we can see what
+  // Claude Code actually creates, then close unwanted markdown diff tabs.
+  const log = vscode.window.createOutputChannel("Better Markdown");
+  context.subscriptions.push(
+    vscode.window.tabGroups.onDidChangeTabs(async (e) => {
+      for (const tab of e.opened) {
+        const input = tab.input as any;
+        log.appendLine(
+          `[tab opened] label=${JSON.stringify(tab.label)} ` +
+          `constructorName=${input?.constructor?.name} ` +
+          `viewType=${input?.viewType} ` +
+          `scheme=${input?.uri?.scheme ?? input?.modified?.scheme} ` +
+          `path=${input?.uri?.path ?? input?.modified?.path}`
+        );
+
+        // Text diff tabs for .md files
+        if (input?.modified && input?.original) {
+          const filePath: string = input.modified.fsPath || input.modified.path || "";
+          if (filePath.toLowerCase().endsWith(".md")) {
+            log.appendLine("  → closing text diff tab");
+            await vscode.window.tabGroups.close(tab);
+            continue;
+          }
+        }
+
+        // Custom editor tabs for non-file schemes (git:, etc.)
+        if (
+          input?.viewType === CUSTOM_EDITOR_VIEW_TYPE &&
+          input?.uri?.scheme &&
+          input.uri.scheme !== "file"
+        ) {
+          log.appendLine("  → closing non-file custom editor tab");
+          await vscode.window.tabGroups.close(tab);
+        }
+      }
+    })
+  );
+
   // CodeLens: "Open in Rich Editor" above line 1 in source mode
   context.subscriptions.push(
     vscode.languages.registerCodeLensProvider(

@@ -26,9 +26,6 @@
 - [x] Rich diff view — inline toggle (vs HEAD) + standalone panel via `betterMarkdown.openDiff`, wired into SCM context menu, diff-editor toolbar, and command palette
 - [x] Diff view has Source (line, diff2html) and Rendered (word-level, node-htmldiff) modes with green/red/blue highlighting and native GFM checkbox rendering
 - [x] Prev/Next hunk navigation in Rendered diff (↑/↓ buttons, j/k shortcuts)
-
-## Done (continued)
-
 - [x] Table row/column controls — floating toolbar (add/delete row/column) appears when cursor is inside a table
 - [x] Fix task list checkbox alignment — use matching `1.6em` line-height units instead of hardcoded px offset
 - [x] Non-file URIs (git:, scm:) fall back to VS Code's native text editor instead of rich editor
@@ -38,10 +35,12 @@
 
 ## Remaining
 
+- [ ] Auto-close Claude Code diff tabs for .md files — interceptor logs tab types to "Better Markdown" Output channel but closing doesn't work yet; check log output to identify the correct tab input type, then fix the `onDidChangeTabs` handler in `src/extension.ts`
 - [ ] TOC should highlight diffed headings (added/removed/changed) when diff view is active
 - [ ] Allow images to be dragged and dropped into the editor
 - [ ] Add math abilities inline and in block
 - [ ] Add mermaid diagrams
+- [ ] Add buttons as "editors" generally do, to let people click buttons etc. and insert checkboxes etc.
 
 ## Known Limitations
 
