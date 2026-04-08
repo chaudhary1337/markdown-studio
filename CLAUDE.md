@@ -11,7 +11,7 @@ Run all four steps, in this order, every time. No exceptions.
    - Esbuild must succeed for both `src/extension.ts` (node) and `webview/index.tsx` (browser). Type errors in either halt the build.
 3. **Package**: `npm run package`
    - Produces a `.vsix` file via `vsce package` for local install / distribution.
-4. **Force install**: `code --install-extension better-markdown-0.1.0.vsix --force`
+4. **Force install**: `code --install-extension better-markdown-1.0.0.vsix --force`
    - Installs/updates the extension in VS Code. Reload the window afterwards.
 
 If you skip any step, the user won't see the change. Always do all four.

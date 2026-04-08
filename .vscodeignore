@@ -16,7 +16,7 @@ esbuild.js
 tsconfig.json
 .gitignore
 *.vsix
-*.map
+**/*.map
 *.ts
 *.tsx
 logo.png
