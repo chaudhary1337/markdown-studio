@@ -122,7 +122,7 @@ Everything runs locally in your VS Code instance.
 
 ### Bugs/Feature Requests
 
-If you encounter any bugs or have any feature requests, please drop an email at `{firstname}{lastname}511@gmail.com`.
+If you encounter any bugs or have any feature requests, please [open an issue](https://github.com/chaudhary1337/better-markdown-issues/issues).
 
 I am actively using it myself, so expect frequent updates.
 

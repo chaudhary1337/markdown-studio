@@ -5,6 +5,10 @@
   "version": "1.0.0",
   "publisher": "tanishq-chaudhary",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chaudhary1337/better-markdown-issues"
+  },
   "icon": "logo7.png",
   "engines": {
     "vscode": "^1.80.0"
