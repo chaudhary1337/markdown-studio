@@ -97,10 +97,10 @@ export function activate(context: vscode.ExtensionContext) {
         if (!serverProcess) {
           const serverScript = path.join(
             context.extensionPath,
-            "server",
-            "index.ts"
+            "dist",
+            "server.js"
           );
-          serverProcess = spawn("npx", ["tsx", serverScript], {
+          serverProcess = spawn("node", [serverScript], {
             cwd: context.extensionPath,
             stdio: "ignore",
             detached: false,

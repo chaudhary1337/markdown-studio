@@ -21,7 +21,16 @@ const extensionBuild = esbuild.build({
   external: ["vscode"],
 });
 
-// 2. Webview build (browser, ESM so dynamic imports from blocknote are bundled)
+// 2. Server build (Node/CJS, bundled so it ships in the VSIX without tsx)
+const serverBuild = esbuild.build({
+  ...commonOptions,
+  entryPoints: ["server/index.ts"],
+  outfile: "dist/server.js",
+  platform: "node",
+  format: "cjs",
+});
+
+// 3. Webview build (browser, ESM so dynamic imports from blocknote are bundled)
 const webviewBuild = esbuild.build({
   ...commonOptions,
   entryPoints: ["webview/index.tsx"],
@@ -77,7 +86,7 @@ function copyCSS() {
   }
 }
 
-Promise.all([extensionBuild, webviewBuild])
+Promise.all([extensionBuild, serverBuild, webviewBuild])
   .then(() => {
     copyCSS();
     console.log("Build complete.");
@@ -92,6 +101,13 @@ Promise.all([extensionBuild, webviewBuild])
           platform: "node",
           format: "cjs",
           external: ["vscode"],
+        }).then((ctx) => ctx.watch()),
+        esbuild.context({
+          ...commonOptions,
+          entryPoints: ["server/index.ts"],
+          outfile: "dist/server.js",
+          platform: "node",
+          format: "cjs",
         }).then((ctx) => ctx.watch()),
         esbuild.context({
           ...commonOptions,
