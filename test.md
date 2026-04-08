@@ -140,5 +140,3 @@ Escaped characters: * \_ \` \[ ]
 ## Long heading for TOC truncation test
 
 ### This is a very long heading that should be truncated in the table of contents because it exceeds one hundred and twenty-eight characters which is the configured maximum length for display
-
-<!-- better-markdown-meta {"h":[{"t":"Heading 4","l":4},{"t":"Heading 5","l":5},{"t":"Heading 6","l":6}]} -->

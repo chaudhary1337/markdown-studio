@@ -1,7 +1,7 @@
 /**
  * Round-trip test: markdown → HTML → markdown (on a whole file).
  *
- * Exercises the full pipeline (remark/rehype + normalizeMarkdown + metadata)
+ * Exercises the full pipeline (remark/rehype + normalizeMarkdown)
  * without needing a browser. Catches most formatting regressions.
  *
  * Usage: npx tsx scripts/test-roundtrip.ts [file.md]

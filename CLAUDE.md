@@ -5,7 +5,7 @@
 Run all four steps, in this order, every time. No exceptions.
 
 1. **Run tests**: `npm test`
-   - Runs `scripts/test-conversions.ts` (118+ targeted cases: headings, lists, tables, code blocks, task lists, math, images, escaping, metadata, normalizeMarkdown unit tests, settings-driven behavior) and then `scripts/test-roundtrip.ts` (full-file round-trip on `test.md`).
+   - Runs `scripts/test-conversions.ts` (107+ targeted cases: headings, lists, tables, code blocks, task lists, math, images, escaping, normalizeMarkdown unit tests, settings-driven behavior) and then `scripts/test-roundtrip.ts` (full-file round-trip on `test.md`).
    - Expect: all named tests pass, 0 known-failing.
 2. **Build**: `npm run build`
    - Esbuild must succeed for both `src/extension.ts` (node) and `webview/index.tsx` (browser). Type errors in either halt the build.
@@ -20,7 +20,6 @@ If you skip any step, the user won't see the change. Always do all four.
 
 - `webview/hooks/useVSCodeSync.ts` — `markdownToHtml` / `htmlToMarkdown`, production DOM-based transforms (DOMParser-backed).
 - `webview/markdown.config.ts` — `normalizeMarkdown` post-processing (task lists, table headers, unescaping, list compaction, etc.).
-- `webview/metadata.ts` — h4-h6 preservation via trailing HTML comment.
 - `scripts/pipeline.ts` — regex-based mirror of the production pipeline used by test scripts (no DOMParser in Node).
 
 When you touch any of these, add/update a test case in `scripts/test-conversions.ts` in the matching category (A-O).

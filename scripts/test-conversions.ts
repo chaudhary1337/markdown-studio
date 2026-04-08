@@ -2,7 +2,7 @@
  * Extensive conversion tests: markdown ↔ HTML round-trips + unit tests.
  *
  * Test categories:
- *   A. Headings (incl. h4-h6 metadata preservation)
+ *   A. Headings (h1-h6)
  *   B. Inline formatting (bold, italic, code, strike)
  *   C. Lists (unordered, ordered, nested, mixed)
  *   D. Task lists (GFM ↔ Tiptap conversion)
@@ -12,7 +12,7 @@
  *   H. Blockquotes
  *   I. Horizontal rules
  *   J. Special characters / escaping
- *   K. Metadata functions
+ *   K. (removed — metadata no longer needed)
  *   L. normalizeMarkdown unit tests
  *   L2. Frontmatter preservation
  *   M. Known-failing cases (documented, expected to fail)
@@ -23,14 +23,6 @@
 import { roundTrip, mdToHtml, htmlToMd } from "./pipeline";
 import { normalizeMarkdown, buildMarkdownConfig } from "../webview/markdown.config";
 import { DEFAULT_SETTINGS, mergeSettings } from "../webview/settings";
-import {
-  extractMeta,
-  buildMeta,
-  restoreHeadings,
-  appendMeta,
-  mergeMetadata,
-  type Metadata,
-} from "../webview/metadata";
 import { extractFrontmatter, prependFrontmatter } from "../webview/frontmatter";
 
 // ============================================================================
@@ -114,30 +106,14 @@ async function run() {
   await roundtripCase("h2 round-trip", "## Hello");
   await roundtripCase("h3 round-trip", "### Hello");
 
-  // h4-h6 require metadata preservation
-  await roundtripCase(
-    "h4 preserved via metadata",
-    "#### Heading 4\n\n<!-- better-markdown-meta {\"h\":[{\"t\":\"Heading 4\",\"l\":4}]} -->\n"
-  );
-  await roundtripCase(
-    "h5 preserved via metadata",
-    "##### Heading 5\n\n<!-- better-markdown-meta {\"h\":[{\"t\":\"Heading 5\",\"l\":5}]} -->\n"
-  );
-  await roundtripCase(
-    "h6 preserved via metadata",
-    "###### Heading 6\n\n<!-- better-markdown-meta {\"h\":[{\"t\":\"Heading 6\",\"l\":6}]} -->\n"
-  );
+  // h4-h6 round-trip natively (Tiptap supports all 6 levels)
+  await roundtripCase("h4 round-trip", "#### Heading 4");
+  await roundtripCase("h5 round-trip", "##### Heading 5");
+  await roundtripCase("h6 round-trip", "###### Heading 6");
   await roundtripCase(
     "mixed h1-h6 preserved",
-    "# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6\n\n<!-- better-markdown-meta {\"h\":[{\"t\":\"H4\",\"l\":4},{\"t\":\"H5\",\"l\":5},{\"t\":\"H6\",\"l\":6}]} -->\n"
+    "# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6"
   );
-
-  // Without metadata scanning (skipMeta), h4-h6 get downgraded to h3
-  {
-    const { roundTrip } = await import("./pipeline");
-    const got = await roundTrip("#### Heading 4", { skipMeta: true });
-    eq("h4 downgrades to h3 when metadata is skipped", got, "### Heading 4");
-  }
 
   // --------------------------------------------------------------------------
   category("B. Inline formatting");
@@ -370,97 +346,8 @@ async function run() {
   );
 
   // --------------------------------------------------------------------------
-  category("K. Metadata functions");
+  // K. (removed — metadata system no longer needed, Tiptap supports h4-h6)
   // --------------------------------------------------------------------------
-
-  // buildMeta scans h4-h6
-  const meta1 = buildMeta("# H1\n\n#### H4\n\n##### H5\n\n###### H6\n");
-  assert(
-    "buildMeta: scans h4-h6",
-    meta1.h.length === 3 &&
-      meta1.h[0].t === "H4" &&
-      meta1.h[0].l === 4 &&
-      meta1.h[1].l === 5 &&
-      meta1.h[2].l === 6,
-    JSON.stringify(meta1)
-  );
-
-  assert(
-    "buildMeta: ignores h1-h3",
-    buildMeta("# a\n## b\n### c").h.length === 0
-  );
-
-  // extractMeta
-  const ex1 = extractMeta(
-    'content\n\n<!-- better-markdown-meta {"h":[{"t":"X","l":4}]} -->\n'
-  );
-  assert(
-    "extractMeta: strips meta block",
-    ex1.content.trim() === "content" && ex1.meta.h[0].t === "X",
-    JSON.stringify(ex1)
-  );
-
-  const ex2 = extractMeta("plain content\n");
-  assert(
-    "extractMeta: returns empty meta when absent",
-    ex2.content === "plain content\n" && ex2.meta.h.length === 0
-  );
-
-  // appendMeta
-  const app1 = appendMeta("# hi\n", { h: [{ t: "hi", l: 4 }] });
-  assert(
-    "appendMeta: appends meta comment",
-    app1.includes("better-markdown-meta") && app1.includes('"t":"hi"'),
-    app1
-  );
-
-  const app2 = appendMeta("# hi\n", { h: [] });
-  assert(
-    "appendMeta: no-op with empty meta",
-    !app2.includes("better-markdown-meta"),
-    app2
-  );
-
-  // appendMeta strips existing meta first
-  const app3 = appendMeta(
-    '# hi\n\n<!-- better-markdown-meta {"h":[]} -->\n',
-    { h: [{ t: "hi", l: 4 }] }
-  );
-  const metaCount = (app3.match(/better-markdown-meta/g) || []).length;
-  assert(
-    "appendMeta: replaces existing meta (no dup)",
-    metaCount === 1,
-    `found ${metaCount} meta blocks`
-  );
-
-  // restoreHeadings
-  const restored = restoreHeadings("### Hello\n\n### Other", {
-    h: [{ t: "Hello", l: 4 }],
-  });
-  assert(
-    "restoreHeadings: applies metadata to matching heading",
-    restored.includes("#### Hello") && restored.includes("### Other"),
-    restored
-  );
-
-  // restoreHeadings: no-op with empty meta
-  assert(
-    "restoreHeadings: no-op with empty meta",
-    restoreHeadings("### hi", { h: [] }) === "### hi"
-  );
-
-  // mergeMetadata — scanned takes priority
-  const merged = mergeMetadata(
-    { h: [{ t: "A", l: 4 }] },
-    { h: [{ t: "A", l: 5 }, { t: "B", l: 6 }] }
-  );
-  assert(
-    "mergeMetadata: scanned takes priority, fills in missing",
-    merged.h.length === 2 &&
-      merged.h.find((h) => h.t === "A")?.l === 4 &&
-      merged.h.find((h) => h.t === "B")?.l === 6,
-    JSON.stringify(merged)
-  );
 
   // --------------------------------------------------------------------------
   category("L. normalizeMarkdown unit tests");

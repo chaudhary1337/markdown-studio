@@ -23,14 +23,6 @@ import { TableControls } from "./components/TableControls";
 import { ImageInsertDialog } from "./components/ImageInsertDialog";
 import { DOMSerializer } from "@tiptap/pm/model";
 import { markdownToHtml, htmlToMarkdown, htmlToMarkdownSync } from "./hooks/useVSCodeSync";
-import {
-  extractMeta,
-  buildMeta,
-  appendMeta,
-  restoreHeadings,
-  mergeMetadata,
-  type Metadata,
-} from "./metadata";
 import { extractFrontmatter, prependFrontmatter } from "./frontmatter";
 import { DEFAULT_SETTINGS, mergeSettings, type BetterMarkdownSettings } from "./settings";
 import { vscodeApi, isBrowserMode } from "./vscode-api";
@@ -65,7 +57,6 @@ export function App() {
   const baseUri = useRef("");
   const docFolderPath = useRef("");
   const filePath = useRef("");
-  const metaRef = useRef<Metadata>({ h: [] });
   const frontmatterRef = useRef("");
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isReadonly = useRef(false);
@@ -190,10 +181,7 @@ export function App() {
           try {
             const { content: noFm, frontmatter } = extractFrontmatter(rawMd);
             frontmatterRef.current = frontmatter;
-            const { content, meta: existingMeta } = extractMeta(noFm);
-            const scannedMeta = buildMeta(content);
-            metaRef.current = mergeMetadata(scannedMeta, existingMeta);
-            const html = await markdownToHtml(content, baseUri.current);
+            const html = await markdownToHtml(noFm, baseUri.current);
             editor.commands.setContent(html);
           } catch (err: any) {
             setStatus(`Parse error: ${err?.message || err}`);
@@ -204,10 +192,7 @@ export function App() {
         try {
           const { content: noFm, frontmatter } = extractFrontmatter(msg.content);
           frontmatterRef.current = frontmatter;
-          const { content, meta: existingMeta } = extractMeta(noFm);
-          const scannedMeta = buildMeta(content);
-          metaRef.current = mergeMetadata(scannedMeta, existingMeta);
-          const html = await markdownToHtml(content, baseUri.current);
+          const html = await markdownToHtml(noFm, baseUri.current);
           editor.commands.setContent(html);
         } catch {
           // Ignore parse failures on external updates
@@ -424,8 +409,6 @@ export function App() {
           docFolderPath.current,
           settingsRef.current,
         );
-        markdown = restoreHeadings(markdown, metaRef.current);
-        markdown = appendMeta(markdown, metaRef.current);
         markdown = prependFrontmatter(markdown, frontmatterRef.current);
         vscodeApi.postMessage({ type: "edit", content: markdown });
         setStatus(null);

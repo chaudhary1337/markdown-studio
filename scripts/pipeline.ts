@@ -5,7 +5,6 @@
  * based transforms (DOMParser isn't available in Node). This exercises:
  *   - remark/rehype pipelines (the real conversion engines)
  *   - normalizeMarkdown post-processing
- *   - metadata extract/restore/append
  *
  * Intentionally OMITTED (Tiptap-only structural transforms — rehype-remark
  * already emits correct markdown without them):
@@ -50,13 +49,6 @@ const mathHandlers = {
     };
   },
 };
-import {
-  extractMeta,
-  buildMeta,
-  restoreHeadings,
-  appendMeta,
-  mergeMetadata,
-} from "../webview/metadata";
 import { extractFrontmatter, prependFrontmatter } from "../webview/frontmatter";
 
 const PIPE_PH = "%%BTRMK_PIPE%%";
@@ -99,9 +91,7 @@ function protectTableCodePipes(md: string): string {
     .join("\n");
 }
 
-export interface RoundTripOptions {
-  skipMeta?: boolean;
-}
+export interface RoundTripOptions {}
 
 /**
  * Full round-trip: markdown → HTML → markdown.
@@ -110,16 +100,9 @@ export async function roundTrip(
   md: string,
   opts: RoundTripOptions = {}
 ): Promise<string> {
-  // 1. Extract frontmatter and metadata
+  // 1. Extract frontmatter
   const { content: noFm, frontmatter } = extractFrontmatter(md);
-  let content = noFm;
-  let meta = { h: [] as { t: string; l: number }[] };
-  if (!opts.skipMeta) {
-    const extracted = extractMeta(content);
-    const scanned = buildMeta(extracted.content);
-    content = extracted.content;
-    meta = mergeMetadata(scanned, extracted.meta);
-  }
+  const content = noFm;
 
   // 2. Protect | inside code spans in table rows
   const protectedMd = protectTableCodePipes(content);
@@ -135,7 +118,6 @@ export async function roundTrip(
   let html = String(htmlResult).replace(new RegExp(PIPE_PH, "g"), "|");
 
   // 4. Apply Tiptap-mirror transforms (same as test-roundtrip.ts)
-  html = html.replace(/<(\/?)h[456](\s|>)/g, "<$1h3$2"); // h4-h6 → h3
   html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
   html = html.replace(
     /(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
@@ -172,13 +154,7 @@ export async function roundTrip(
   output = output.replace(/&#x20;/g, " ");
   output = output.replace(/&amp;/g, "&");
 
-  // 8. Restore h4-h6 and append metadata
-  if (!opts.skipMeta) {
-    output = restoreHeadings(output, meta);
-    output = appendMeta(output, meta);
-  }
-
-  // 9. Restore frontmatter
+  // 8. Restore frontmatter
   output = prependFrontmatter(output, frontmatter);
 
   return output;
