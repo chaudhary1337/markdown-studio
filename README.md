@@ -1,12 +1,24 @@
 # Better Markdown
 
-Notion-like WYSIWYG markdown editor for VS Code. Edit `.md` files with a rich editor that round-trips cleanly back to GFM source.
+I read as much markdown as all other languages combined.
 
-## Unique Features
+AI agents generated reports, my own notes.
+
+I find it easier to read Notion-like markdown rather than raw markdown.
+
+Its simply more readable.
+
+That's why Better Markdown exists.
+
+## The Cool Stuff
 
 ### Rich git Diffs
 
-We have had rich editing, but this is the first editor to have rich diffs.
+Rich editing, yes, of course.
+
+But no one has made rich diffs.
+
+Till now.
 
 ![](diff.gif)
 
@@ -34,7 +46,7 @@ Clicky here, go there.
 
 ![nagivate](navigate.gif)
 
-## More Details about the Cool Stuff
+## Loaded With Features
 
 ### Modes
 
@@ -54,42 +66,55 @@ Rich editor allows to go back to default editor mode directly. Also allows openi
 
 #### Browser
 
-Browser mode let's you go back to the VS Code window with one click.
+Browser mode lets you open the rich editor as a Chrome/Firefox tab, so you can take it with you everywhere your browser goes.
 
-Did I mention its very fast?
+Drag and drop images, gifs, etc.
+
+Its like Notion, but you own the data.
 
 ![browser-mode-overview](Screenshot%202026-04-08%20at%2012.06.39.png)
 
 ### Rich editing
 
-- **WYSIWYG editor** — headings (h1-h6), bold, italic, code, links, images, blockquotes, horizontal rules
-- **Tables** with floating toolbar to add/delete rows and columns
-- **Task lists** with native checkboxes
-- **Ordered, unordered, and nested lists** with correct round-trip formatting
-- **Code blocks** with syntax highlighting
-- **Math** — inline (`$E=mc^2$`) and block (`$$...$$`) with KaTeX rendering, click-to-edit LaTeX source
-- **Slash command menu** — type `/` at the start of a line to insert headings, lists, tables, code blocks, math, images, and more
-- **Copy as markdown** — Cmd+C / Cmd+X copies the selection as `.md` source
+#### Slash Commands
 
-### Navigation
+The beloved `/` works out of the box. Its like you never left your favourite editor.
 
-- **Table of contents** sidebar with filtering, drag-to-resize, and truncation at 128 chars
-- **Sticky headings** — current section heading pins to the top while scrolling
-- **Find in document** (Cmd+F / Ctrl+F) with regex and case-sensitive modes
+![slash-command-working](Screenshot%202026-04-08%20at%2018.40.28.png)
 
-### Diff
+####
 
-- **Rich diff view** — compare working copy against HEAD, inline or in a standalone panel
-- **Rendered mode** (default) — word-level diffing with green/red highlights and prev/next hunk navigation (j/k shortcuts)
-- **Source mode** — line-level diff, unified or side-by-side layout
-- Available from the editor toolbar, SCM context menu, diff-editor toolbar, and command palette
-- VS Code's built-in git diff uses the native text editor for seamless source-level diffing
+#### Checkboxes, Tables, Math, Quotes, Code Blocks, and your standard stuff.
 
-### Settings
+Tables have options to:
 
-- **Configurable serialization** — bullet style (`-` `*` `+`), emphasis markers, horizontal rule character, list indent style
-- **Toggleable normalizations** — compact lists, unescape special chars, renumber ordered lists, fix table headers, dedup image alt text, code block language defaults
-- All settings persisted via VS Code globalState and synced across open panels
+- add row above
+- add row below
+- add column to the left
+- add columns to the right
+- remove rows
+- remove columns
+- drop the entire table
+
+You can write math using$\KaTeX$ in both inline and block modes.
+
+![checkboxes-table-inline-math](Screenshot%202026-04-08%20at%2018.37.33.png)
+
+![](<Screenshot 2026-04-08 at 18.39.23-1.png>)
+
+## Known "limitations"
+
+"Its not a bug, its a feature."
+
+- Conversion from markdown to rich text and back to markdown is not one-to-one exact map. The markdown after is normalized. You can control this via the settings icon in the rich editor mode.
+
+---
+
+## Meta Thingies
+
+### Installation
+
+Hit the Install button on this page. No login, setup or permissions required. It works out of the box.
 
 ### Keyboard shortcuts
 
@@ -98,20 +123,20 @@ Did I mention its very fast?
 | Cmd+Shift+M | Toggle rich / source editor |
 | Cmd+F       | Find in document            |
 
-## Installation
+### Privacy
 
-Hit the Install button on this page. No login, setup or permissions required. It works out of the box.
+I do not collect telemetry, analytics, or usage data.
 
-## Privacy
-
-I do not collect telemetry, analytics, or usage data. I am too lazy to implement that.
+I am too lazy to implement that.
 
 Everything runs locally in your VS Code instance.
 
-## Known "limitations"
+### Bugs
 
-"Its not a bug, its a feature."
+If you encounter any bugs, please drop an email.
 
-- Conversion from markdown to rich text and back to markdown is not one-to-one exact map. The markdown after is normalized. You can control this via the settings icon in the rich editor mode.
+### Support
 
-<!-- better-markdown-meta {"h":[{"t":"Default Editor","l":4},{"t":"Rich Editor","l":4},{"t":"Browser","l":4}]} -->
+???
+
+<!-- better-markdown-meta {"h":[{"t":"Default Editor","l":4},{"t":"Rich Editor","l":4},{"t":"Browser","l":4},{"t":"Slash Commands","l":4},{"t":"Checkboxes, Tables, Math, Quotes, Code Blocks, and your standard stuff.","l":4},{"t":"Math","l":4},{"t":"Tables, Code Blocks, Checkboxes","l":4}]} -->
