@@ -39,6 +39,11 @@ const mathHandlers = {
 // corrupting cells like `||value||`. We replace before parse, restore after.
 const PIPE_PH = "%%BTRMK_PIPE%%";
 
+// Placeholder for currency $ signs (e.g. $14B, $1.4B).
+// remarkMath pairs unrelated currency $s as inline math delimiters,
+// eating bold markers and other formatting in between.
+const DOLLAR_PH = "%%BTRMK_DOLLAR%%";
+
 /**
  * Render markdown to plain HTML suitable for display (NOT for Tiptap
  * ingestion). Keeps native GFM output: real `<input type="checkbox">`
@@ -47,6 +52,7 @@ const PIPE_PH = "%%BTRMK_PIPE%%";
  */
 export async function markdownToDisplayHtml(md: string): Promise<string> {
   md = protectTableCodePipes(md);
+  md = protectCurrencyDollars(md);
   const result = await unified()
     .use(remarkParse)
     .use(remarkGfm)
@@ -55,6 +61,7 @@ export async function markdownToDisplayHtml(md: string): Promise<string> {
     .use(rehypeStringify)
     .process(md);
   let html = String(result).replace(new RegExp(PIPE_PH, "g"), "|");
+  html = html.replace(new RegExp(DOLLAR_PH, "g"), "$");
   html = html.replace(
     /(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
     (_m, open, c, close) => open + c.replace(/\n$/, "") + close
@@ -68,6 +75,8 @@ export async function markdownToHtml(
 ): Promise<string> {
   // Protect | inside code spans within table rows
   md = protectTableCodePipes(md);
+  // Protect currency $ from remarkMath pairing
+  md = protectCurrencyDollars(md);
 
   const result = await unified()
     .use(remarkParse)
@@ -77,8 +86,9 @@ export async function markdownToHtml(
     .use(rehypeStringify)
     .process(md);
 
-  // Restore pipes
+  // Restore placeholders
   let html = String(result).replace(new RegExp(PIPE_PH, "g"), "|");
+  html = html.replace(new RegExp(DOLLAR_PH, "g"), "$");
 
   // Trim trailing newlines inside <code> blocks
   html = html.replace(
@@ -329,6 +339,17 @@ function restoreRelativePaths(
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Protect currency $ signs from being parsed as math delimiters.
+ * remarkMath pairs unrelated $14B ... $1.4B as inline math, eating
+ * everything in between (including bold markers). Replace $ followed
+ * by a digit with a placeholder before parsing; restore after HTML.
+ */
+function protectCurrencyDollars(md: string): string {
+  // Match $ followed by a digit, but not $$ (block math)
+  return md.replace(/(?<!\$)\$(?=\d)(?!\$)/g, DOLLAR_PH);
 }
 
 /**

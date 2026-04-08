@@ -291,6 +291,33 @@ async function run() {
     "Asterisks in text: 2 * 3 = 6."
   );
 
+  // Currency $ must not be paired as math by remarkMath
+  await roundtripCase(
+    "bold with currency $ preserved",
+    "**$14B**, $1.4B raised"
+  );
+  await roundtripCase(
+    "multiple currency amounts in paragraph",
+    "costs $100 or $200"
+  );
+  await roundtripCase(
+    "bold currency in table cell",
+    "| Company | Valuation |\n| --- | --- |\n| **Skild AI** | **$14B**, $1.4B raised |",
+    "| Company      | Valuation              |\n| ------------ | ---------------------- |\n| **Skild AI** | **$14B**, $1.4B raised |\n"
+  );
+
+  // Unescape escaped bold markers (\*\* → **) — safety-net normalizeMarkdown rule
+  eq(
+    "normalizeMarkdown: unescape \\*\\* bold opener before $",
+    normalizeMarkdown("\\*\\*$14B**, $1.4B raised\n"),
+    "**$14B**, $1.4B raised\n"
+  );
+  eq(
+    "normalizeMarkdown: unescape \\*\\* bold with $ inside",
+    normalizeMarkdown("\\*\\*LeCun's $1B bet.**\n"),
+    "**LeCun's $1B bet.**\n"
+  );
+
   // Unescape \_ in words (ASCII)
   eq(
     "normalizeMarkdown: unescape \\_ in words",
@@ -433,6 +460,15 @@ async function run() {
     tableFixed.includes("| A | B |") &&
       !tableFixed.match(/^\|\s+\|\s+\|\s*$/m),
     tableFixed
+  );
+
+  // Table separator widths match unescaped content (not pre-unescape widths)
+  eq(
+    "fixTableHeaders: separator width matches after unescape",
+    normalizeMarkdown(
+      "|   |   |\n| - | - |\n| Company | \\*\\*$14B** |\n"
+    ),
+    "| Company | **$14B** |\n| ------- | -------- |\n"
   );
 
   // HTML entity cleanup

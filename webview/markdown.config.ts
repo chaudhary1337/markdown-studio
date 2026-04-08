@@ -58,11 +58,11 @@ export function normalizeMarkdown(
   if (settings.renumberOrderedLists) {
     md = renumberOrderedLists(md);
   }
-  if (settings.fixTableHeaders) {
-    md = fixTableHeaders(md);
-  }
   if (settings.unescapeSpecialChars) {
     md = unescapeSpecialChars(md);
+  }
+  if (settings.fixTableHeaders) {
+    md = fixTableHeaders(md);
   }
   if (settings.dedupImageAltText) {
     md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
@@ -147,6 +147,12 @@ function unescapeSpecialChars(md: string): string {
 function unescapeText(text: string): string {
   // Remove backslash before ~ (remark-gfm escapes tildes)
   text = text.replace(/\\~/g, "~");
+  // Unescape escaped bold/strong markers (\*\* → **).
+  // remark-stringify escapes opening ** when followed by $ (remark-math
+  // declares $ as unsafe). Match \*\* acting as an opener (followed by
+  // non-whitespace) or closer (preceded by non-whitespace).
+  text = text.replace(/\\\*\\\*(?=\S)/g, "**");
+  text = text.replace(/(?<=\S)\\\*\\\*/g, "**");
   // Remove backslash before * that isn't part of bold/emphasis markup
   // Only unescape standalone \* (e.g. "2 \* 3") not emphasis markers
   text = text.replace(/(?<=\s|^)\\\*(?=\s|$)/g, "*");

@@ -52,6 +52,16 @@ const mathHandlers = {
 import { extractFrontmatter, prependFrontmatter } from "../webview/frontmatter";
 
 const PIPE_PH = "%%BTRMK_PIPE%%";
+const DOLLAR_PH = "%%BTRMK_DOLLAR%%";
+
+/**
+ * Protect currency $ signs from being parsed as math delimiters.
+ * remarkMath pairs unrelated $14B ... $1.4B as inline math, eating
+ * everything in between (including bold markers).
+ */
+function protectCurrencyDollars(md: string): string {
+  return md.replace(/(?<!\$)\$(?=\d)(?!\$)/g, DOLLAR_PH);
+}
 
 /**
  * Protect `|` inside backtick code spans within table rows so remark-gfm
@@ -104,8 +114,9 @@ export async function roundTrip(
   const { content: noFm, frontmatter } = extractFrontmatter(md);
   const content = noFm;
 
-  // 2. Protect | inside code spans in table rows
-  const protectedMd = protectTableCodePipes(content);
+  // 2. Protect | inside code spans in table rows + currency $
+  let protectedMd = protectTableCodePipes(content);
+  protectedMd = protectCurrencyDollars(protectedMd);
 
   // 3. md → HTML
   const htmlResult = await unified()
@@ -116,6 +127,7 @@ export async function roundTrip(
     .use(rehypeStringify)
     .process(protectedMd);
   let html = String(htmlResult).replace(new RegExp(PIPE_PH, "g"), "|");
+  html = html.replace(new RegExp(DOLLAR_PH, "g"), "$");
 
   // 4. Apply Tiptap-mirror transforms (same as test-roundtrip.ts)
   html = html.replace(/<li([^>]*)>\s*<p>([\s\S]*?)<\/p>/g, "<li$1>$2");
@@ -164,7 +176,8 @@ export async function roundTrip(
  * md → HTML only (core remark/rehype pipeline).
  */
 export async function mdToHtml(md: string): Promise<string> {
-  const protectedMd = protectTableCodePipes(md);
+  let protectedMd = protectTableCodePipes(md);
+  protectedMd = protectCurrencyDollars(protectedMd);
   const htmlResult = await unified()
     .use(remarkParse)
     .use(remarkGfm)
@@ -173,6 +186,7 @@ export async function mdToHtml(md: string): Promise<string> {
     .use(rehypeStringify)
     .process(protectedMd);
   let html = String(htmlResult).replace(new RegExp(PIPE_PH, "g"), "|");
+  html = html.replace(new RegExp(DOLLAR_PH, "g"), "$");
   html = html.replace(
     /(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
     (_m, open, c, close) => open + c.replace(/\n$/, "") + close
