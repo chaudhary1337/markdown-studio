@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 — 2026-04-08
+
+- Updated repository URL to `markdown-studio-issues`
+
 ## 1.0.0 — 2026-04-08
 
 ### Rich Editing

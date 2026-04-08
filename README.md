@@ -18,7 +18,7 @@ But no one has made rich diffs.
 
 Till now.
 
-![diff](https://raw.githubusercontent.com/chaudhary1337/better-markdown-issues/master/assets/diff.gif)
+![diff](https://raw.githubusercontent.com/chaudhary1337/markdown-studio-issues/master/assets/diff.gif)
 
 ### Seamless Sync.
 
@@ -30,7 +30,7 @@ Open in the Browser.
 
 It just works.
 
-![seamless-sync](https://raw.githubusercontent.com/chaudhary1337/better-markdown-issues/master/assets/seamless-sync.gif)
+![seamless-sync](https://raw.githubusercontent.com/chaudhary1337/markdown-studio-issues/master/assets/seamless-sync.gif)
 
 ### Navigate without hassle.
 
@@ -40,7 +40,7 @@ Table of contents so you know where you are.
 
 Clicky here, go there.
 
-![navigate](https://raw.githubusercontent.com/chaudhary1337/better-markdown-issues/master/assets/navigate.gif)
+![navigate](https://raw.githubusercontent.com/chaudhary1337/markdown-studio-issues/master/assets/navigate.gif)
 
 ## Loaded With Features
 
@@ -52,13 +52,13 @@ Default editor supports opening in Rich Editor and Browser modes.
 
 Enjoy it because this will be the last time you open the vanilla view.
 
-![default-editor-overview](https://raw.githubusercontent.com/chaudhary1337/better-markdown-issues/master/assets/default-editor-overview.png)
+![default-editor-overview](https://raw.githubusercontent.com/chaudhary1337/markdown-studio-issues/master/assets/default-editor-overview.png)
 
 #### Rich Editor
 
 Rich editor allows to go back to default editor mode directly. Also allows opening in the browser. All information is automatically and instantly synced.
 
-![rich-editor-overview](https://raw.githubusercontent.com/chaudhary1337/better-markdown-issues/master/assets/rich-editor-overview.png)
+![rich-editor-overview](https://raw.githubusercontent.com/chaudhary1337/markdown-studio-issues/master/assets/rich-editor-overview.png)
 
 #### Browser
 
@@ -68,7 +68,7 @@ Drag and drop images, gifs, etc.
 
 It's like Notion, but you own the data.
 
-![browser-mode-overview](https://raw.githubusercontent.com/chaudhary1337/better-markdown-issues/master/assets/browser-mode-overview.png)
+![browser-mode-overview](https://raw.githubusercontent.com/chaudhary1337/markdown-studio-issues/master/assets/browser-mode-overview.png)
 
 ### Rich editing
 
@@ -76,7 +76,7 @@ It's like Notion, but you own the data.
 
 The beloved `/` works out of the box. It's like you never left your favourite editor.
 
-![slash-command-working](https://raw.githubusercontent.com/chaudhary1337/better-markdown-issues/master/assets/slash-command-working.png)
+![slash-command-working](https://raw.githubusercontent.com/chaudhary1337/markdown-studio-issues/master/assets/slash-command-working.png)
 
 #### Checkboxes, Tables, Math, Quotes, Code Blocks, and your standard stuff.
 
@@ -89,9 +89,9 @@ Tables have options to:
 
 You can write math using $\KaTeX$ in both inline and block modes.
 
-![checkboxes-table-inline-math](https://raw.githubusercontent.com/chaudhary1337/better-markdown-issues/master/assets/checkboxes-table-inline-math.png)
+![checkboxes-table-inline-math](https://raw.githubusercontent.com/chaudhary1337/markdown-studio-issues/master/assets/checkboxes-table-inline-math.png)
 
-![math-block](https://raw.githubusercontent.com/chaudhary1337/better-markdown-issues/master/assets/math-block.png)
+![math-block](https://raw.githubusercontent.com/chaudhary1337/markdown-studio-issues/master/assets/math-block.png)
 
 ## Known Limitations
 
@@ -122,12 +122,10 @@ Everything runs locally in your VS Code instance.
 
 ### Bugs/Feature Requests
 
-If you encounter any bugs or have any feature requests, please [open an issue](https://github.com/chaudhary1337/better-markdown-issues/issues).
+If you encounter any bugs or have any feature requests, please [open an issue](https://github.com/chaudhary1337/markdown-studio-issues/issues).
 
 I am actively using it myself, so expect frequent updates.
 
 ### Disclaimer
 
 This software is provided as-is, without warranty of any kind. Use at your own risk.
-
-<!-- better-markdown-meta {"h":[{"t":"Default Editor","l":4},{"t":"Rich Editor","l":4},{"t":"Browser","l":4},{"t":"Slash Commands","l":4},{"t":"Checkboxes, Tables, Math, Quotes, Code Blocks, and your standard stuff.","l":4},{"t":"Math","l":4},{"t":"Tables, Code Blocks, Checkboxes","l":4}]} -->
