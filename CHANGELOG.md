@@ -1,8 +1,9 @@
 # Changelog
 
-## 1.0.1 — 2026-04-08
+## 1.0.x — 2026-04-08
 
 - Updated repository URL to `markdown-studio-issues`
+- Updated README copy and branding to Markdown Studio
 
 ## 1.0.0 — 2026-04-08
 

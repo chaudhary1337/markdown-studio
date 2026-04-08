@@ -11,10 +11,14 @@ Run all four steps, in this order, every time. No exceptions.
    - Esbuild must succeed for both `src/extension.ts` (node) and `webview/index.tsx` (browser). Type errors in either halt the build.
 1. **Package**: `npm run package`
    - Produces a `.vsix` file via `vsce package` for local install / distribution.
-1. **Force install**: `code --install-extension its-markdown-studio-1.0.1.vsix --force`
+1. **Force install**: `code --install-extension its-markdown-studio-1.0.2.vsix --force`
    - Installs/updates the extension in VS Code. Reload the window afterwards.
 
 If you skip any step, the user won't see the change. Always do all four.
+
+## Versioning
+
+Always bump the patch version by 0.1 (e.g. 1.0.1 → 1.0.2) unless the user explicitly states the change is a feature or improvement, in which case bump minor (e.g. 1.0.x → 1.1.0). Update the vsix filename in the force-install step above to match.
 
 ## Conversion pipeline files (where bugs live)
 

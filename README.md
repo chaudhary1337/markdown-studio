@@ -1,18 +1,18 @@
-# Better Markdown
+# Markdown Studio
 
-I read as much `.md` as all other languages combined.
+I read as much `.md` as all other programming languages combined.
 
-My own notes, AI agents generated reports.
+My own notes, AI agents generated reports, random READMEs.
 
 I find it easier to read Notion-like markdown rather than raw markdown.
 
-That's why Better Markdown exists.
+That's why Markdown Studio exists.
 
 ## The Cool Stuff
 
 ### Rich git Diffs
 
-Rich editing, yes, of course.
+Rich editing, yes, of course. WYSIWYG for faster reading.
 
 But no one has made rich diffs.
 
@@ -129,3 +129,7 @@ I am actively using it myself, so expect frequent updates.
 ### Disclaimer
 
 This software is provided as-is, without warranty of any kind. Use at your own risk.
+
+---
+
+PS: It is called "Mardown Studio" but In various places you'll see "Better Markdown", which was what I intended to call it originally.
