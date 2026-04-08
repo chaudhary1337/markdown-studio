@@ -20,6 +20,8 @@ If you skip any step, the user won't see the change. Always do all four.
 
 Always bump the patch version by 0.1 (e.g. 1.0.1 → 1.0.2) unless the user explicitly states the change is a feature or improvement, in which case bump minor (e.g. 1.0.x → 1.1.0). Update the vsix filename in the force-install step above to match.
 
+Always update `CHANGELOG.md` with every version bump. Patch-level changes within the same minor version are grouped under a single `x.y.x` heading (e.g. `## 1.0.x`).
+
 ## Conversion pipeline files (where bugs live)
 
 - `webview/hooks/useVSCodeSync.ts` — `markdownToHtml` / `htmlToMarkdown`, production DOM-based transforms (DOMParser-backed).
