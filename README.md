@@ -12,11 +12,9 @@ We have had rich editing, but this is the first editor to have rich diffs.
 
 ### Seamless Sync. Open in Default Editor, Open in Rich Editor, Open in Browser.
 
-![seamless-sync](bait.gif)
+![seamless-sync](bait-test.gif)
 
-### Search like you know.
-
-pass
+###
 
 ### Navigate without hassle.
 
@@ -38,7 +36,7 @@ Enjoy it because this will be the last time you open the vanilla view.
 
 Rich editor allows to go back to default editor mode directly. Also allows opening in the browser. All information is automatically and instantly synced.
 
-![rich-editor-overview](<Screenshot 2026-04-08 at 12.03.00-1.png>)
+![rich-editor-overview](Screenshot%202026-04-08%20at%2012.03.00-1.png)
 
 #### Browser
 
@@ -46,7 +44,7 @@ Browser mode let's you go back to the VS Code window with one click.
 
 Did I mention its very fast?
 
-![browser-mode-overview](<Screenshot 2026-04-08 at 12.06.39.png>)
+![browser-mode-overview](Screenshot%202026-04-08%20at%2012.06.39.png)
 
 ### Rich editing
 
