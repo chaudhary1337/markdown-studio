@@ -189,8 +189,7 @@ async function run() {
 
   await roundtripCase(
     "simple 3-col table",
-    "| Header 1 | Header 2 | Header 3 |\n| -------- | -------- | -------- |\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |",
-    "| Header 1 | Header 2 | Header 3 |\n| --- | --- | --- |\n| Cell 1 | Cell 2 | Cell 3 |\n| Cell 4 | Cell 5 | Cell 6 |\n"
+    "| Header 1 | Header 2 | Header 3 |\n| -------- | -------- | -------- |\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |"
   );
 
   // `|` inside code span in table cell — the critical protectTableCodePipes test.
@@ -198,21 +197,21 @@ async function run() {
   await roundtripCase(
     "table with | in code span → escapes to \\|",
     "| Syntax | Example |\n| ------ | ------- |\n| pipe   | `a|b`   |",
-    "| Syntax | Example |\n| --- | --- |\n| pipe | `a\\|b` |\n"
+    "| Syntax | Example |\n| ------ | ------- |\n| pipe   | `a\\|b`  |\n"
   );
 
   // `\|` already escaped — must stay `\|`, NOT become `\\|`
   await roundtripCase(
     "table with escaped \\| in code span (no double-escape)",
     "| Syntax | Example |\n| ------ | ------- |\n| escape | `a\\|b`  |",
-    "| Syntax | Example |\n| --- | --- |\n| escape | `a\\|b` |\n"
+    "| Syntax | Example |\n| ------ | ------- |\n| escape | `a\\|b`  |\n"
   );
 
   // Multiple pipes in single code span
   await roundtripCase(
     "table cell with multiple | in code span",
     "| col     |\n| ------- |\n| `a|b|c` |",
-    "| col |\n| --- |\n| `a\\|b\\|c` |\n"
+    "| col       |\n| --------- |\n| `a\\|b\\|c` |\n"
   );
 
   // --------------------------------------------------------------------------
@@ -305,7 +304,7 @@ async function run() {
   await roundtripCase(
     "bold currency in table cell",
     "| Company | Valuation |\n| --- | --- |\n| **Skild AI** | **$14B**, $1.4B raised |",
-    "| Company | Valuation |\n| --- | --- |\n| **Skild AI** | **$14B**, $1.4B raised |\n"
+    "| Company      | Valuation              |\n| ------------ | ---------------------- |\n| **Skild AI** | **$14B**, $1.4B raised |\n"
   );
 
   // Unescape escaped bold markers (\*\* → **) — safety-net normalizeMarkdown rule
@@ -459,7 +458,7 @@ async function run() {
   );
   assert(
     "fixTableHeaders: empty header row reconstructed from first data row",
-    tableFixed.includes("| A | B |") &&
+    /\| A\s+\| B\s+\|/.test(tableFixed) &&
       !tableFixed.match(/^\|\s+\|\s+\|\s*$/m),
     tableFixed
   );
@@ -470,7 +469,7 @@ async function run() {
     normalizeMarkdown(
       "|   |   |\n| - | - |\n| Company | \\*\\*$14B** |\n"
     ),
-    "| Company | **$14B** |\n| --- | --- |\n"
+    "| Company | **$14B** |\n| ------- | -------- |\n"
   );
 
   // HTML entity cleanup

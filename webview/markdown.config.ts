@@ -64,7 +64,7 @@ export function normalizeMarkdown(
   if (settings.fixTableHeaders) {
     md = fixTableHeaders(md);
   }
-  md = compactTables(md);
+  md = padTables(md);
   if (settings.dedupImageAltText) {
     md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
   }
@@ -305,34 +305,50 @@ function fixTableHeaders(md: string): string {
 }
 
 /**
- * Strip trailing whitespace padding from table cells and use minimal
- * separators (---). remark-stringify pads cells to uniform column widths,
- * which causes cosmetic diffs on the first round-trip. Compacting makes
- * tables stable from the first pass.
+ * Pad all table cells to uniform column widths with aligned separators.
+ * This normalizes tables to expanded format so remark-stringify's own
+ * padding doesn't cause cosmetic diffs on the first round-trip.
  */
-function compactTables(md: string): string {
+function padTables(md: string): string {
   const lines = md.split("\n");
   const result: string[] = [];
   let i = 0;
 
   while (i < lines.length) {
     if (/^\|.+\|/.test(lines[i])) {
-      // Collect contiguous table lines
       const tableLines: string[] = [];
       while (i < lines.length && /^\|.+\|/.test(lines[i])) {
         tableLines.push(lines[i]);
         i++;
       }
+
+      // Compute column widths across all data rows
+      const colWidths: number[] = [];
+      for (const tl of tableLines) {
+        if (isSeparatorRow(tl)) continue;
+        const cells = splitTableRow(tl);
+        cells.forEach((c, idx) => {
+          colWidths[idx] = Math.max(colWidths[idx] || 3, c.trim().length);
+        });
+      }
+
       for (const tl of tableLines) {
         if (isSeparatorRow(tl)) {
-          // Minimal separator: count columns from the row, emit | --- per col
-          const cols = splitTableRow(tl).length;
-          result.push("|" + " --- |".repeat(cols));
+          result.push(
+            "|" +
+              colWidths
+                .map((w) => " " + "-".repeat(Math.max(w, 3)) + " ")
+                .join("|") +
+              "|"
+          );
         } else {
-          // Strip trailing whitespace from each cell
           const cells = splitTableRow(tl);
           result.push(
-            "| " + cells.map((c) => c.trim()).join(" | ") + " |"
+            "| " +
+              cells
+                .map((c, idx) => c.trim().padEnd(colWidths[idx] || 3))
+                .join(" | ") +
+              " |"
           );
         }
       }
