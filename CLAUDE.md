@@ -7,11 +7,11 @@ Run all four steps, in this order, every time. No exceptions.
 1. **Run tests**: `npm test`
    - Runs `scripts/test-conversions.ts` (107+ targeted cases: headings, lists, tables, code blocks, task lists, math, images, escaping, normalizeMarkdown unit tests, settings-driven behavior) and then `scripts/test-roundtrip.ts` (full-file round-trip on `test.md`).
    - Expect: all named tests pass, 0 known-failing.
-2. **Build**: `npm run build`
+1. **Build**: `npm run build`
    - Esbuild must succeed for both `src/extension.ts` (node) and `webview/index.tsx` (browser). Type errors in either halt the build.
-3. **Package**: `npm run package`
+1. **Package**: `npm run package`
    - Produces a `.vsix` file via `vsce package` for local install / distribution.
-4. **Force install**: `code --install-extension better-markdown-1.0.0.vsix --force`
+1. **Force install**: `code --install-extension its-markdown-studio-1.0.0.vsix --force`
    - Installs/updates the extension in VS Code. Reload the window afterwards.
 
 If you skip any step, the user won't see the change. Always do all four.
