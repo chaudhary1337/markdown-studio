@@ -10,7 +10,15 @@ We have had rich editing, but this is the first editor to have rich diffs.
 
 ![](diff.gif)
 
-### Seamless Sync. Open in Default Editor, Open in Rich Editor, Open in Browser.
+### Seamless Sync.
+
+Open in the Default Editor.
+
+Open in the Rich Editor.
+
+Open in the Browser.
+
+It just works.
 
 ![seamless-sync](bait-test.gif)
 
@@ -18,9 +26,15 @@ We have had rich editing, but this is the first editor to have rich diffs.
 
 ### Navigate without hassle.
 
+Sticky headings so you can navigate long documents with ease.
+
+Table of contents so you know where you are.
+
+Clicky here, go there.
+
 ![nagivate](navigate.gif)
 
-## Cool Stuff
+## More Details about the Cool Stuff
 
 ### Modes
 
