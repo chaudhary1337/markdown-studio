@@ -2,7 +2,42 @@
 
 Notion-like WYSIWYG markdown editor for VS Code. Edit `.md` files with a rich editor that round-trips cleanly back to GFM source.
 
+## Unique Features
+
+We have had rich editing, but this is the first editor to have rich diffs.
+
+Better Markdown is the first VS Code WYSIWYG markdown editor to ship:
+
+- **Integrated rich diff view** — no other WYSIWYG editor lets you diff rendered markdown against HEAD, with word-level highlights and hunk navigation, right inside the editor
+- **Sticky headings** — the current section heading pins to the top as you scroll, so you always know where you are in a long document
+- **Clean round-trip fidelity** — your markdown comes back clean; most editors silently reformat your source
+- **Search across content and table of contents** — Cmd+F with regex and case-sensitive modes, plus TOC filtering to jump to any heading instantly
+- **Custom serialization settings** — choose your bullet style, emphasis markers, horizontal rule character, and toggle normalizations like compact lists or ordered-list renumbering
+- **Git SCM integration** — open a rich diff from the source-control context menu, the diff-editor toolbar, or the command palette
+
 ## Features
+
+### Modes
+
+#### Default Editor
+
+Default editor supports opening in Rich Editor and Browser modes.
+
+Enjoy it because this will be the last time you open the vanilla view.
+
+![default-editor-overview](Screenshot%202026-04-08%20at%2011.56.29.png)
+
+#### Rich Editor
+
+Rich editor allows to go back to default editor mode directly. Also allows opening in the browser. All information is automatically and instantly synced.
+
+![rich-editor-overview](<Screenshot 2026-04-08 at 12.03.00-1.png>)
+
+#### Browser
+
+Browser mode let's you go back to the VS Code window with one click.
+
+![browser-mode-overview](<Screenshot 2026-04-08 at 12.06.39.png>)
 
 ### Rich editing
 
@@ -42,27 +77,20 @@ Notion-like WYSIWYG markdown editor for VS Code. Edit `.md` files with a rich ed
 | Cmd+Shift+M | Toggle rich / source editor |
 | Cmd+F       | Find in document            |
 
-## What makes it different
-
-Better Markdown is the first VS Code WYSIWYG markdown editor to ship:
-
-- **Integrated rich diff view** — no other WYSIWYG editor lets you diff rendered markdown against HEAD, with word-level highlights and hunk navigation, right inside the editor
-- **Sticky headings** — the current section heading pins to the top as you scroll, so you always know where you are in a long document
-- **Clean round-trip fidelity** — your markdown comes back clean; most editors silently reformat your source
-- **Search across content and table of contents** — Cmd+F with regex and case-sensitive modes, plus TOC filtering to jump to any heading instantly
-- **Custom serialization settings** — choose your bullet style, emphasis markers, horizontal rule character, and toggle normalizations like compact lists or ordered-list renumbering
-- **Git SCM integration** — open a rich diff from the source-control context menu, the diff-editor toolbar, or the command palette
-
 ## Installation
 
-Hit the **Install** button on this page — that's it. No extra setup or permissions required.
+Hit the Install button on this page. No login, setup or permissions required. It works out of the box.
 
 ## Privacy
 
-Better Markdown collects no telemetry, analytics, or usage data. Everything runs locally in your VS Code instance.
+I do not collect telemetry, analytics, or usage data. I am too lazy to implement that.
 
-## Known limitations
+Everything runs locally in your VS Code instance.
 
-- Escaped markdown characters (`\*`, `\_`) lose the backslash on round-trip
-- YAML frontmatter is preserved but not displayed or editable in the rich editor
-- Brief flash on first load while the editor initializes
+## Known "limitations"
+
+"Its not a bug, its a feature."
+
+- Conversion from markdown to rich text and back to markdown is not one-to-one exact map. The markdown after is normalized. You can control this via the settings icon in the rich editor mode.
+
+<!-- better-markdown-meta {"h":[{"t":"Default Editor","l":4},{"t":"Rich Editor","l":4},{"t":"Browser","l":4}]} -->
