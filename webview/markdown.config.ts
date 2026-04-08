@@ -64,6 +64,7 @@ export function normalizeMarkdown(
   if (settings.fixTableHeaders) {
     md = fixTableHeaders(md);
   }
+  md = compactTables(md);
   if (settings.dedupImageAltText) {
     md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
   }
@@ -294,6 +295,46 @@ function fixTableHeaders(md: string): string {
         result.push(...tableLines.slice(2));
       } else {
         result.push(...tableLines);
+      }
+    } else {
+      result.push(lines[i]);
+      i++;
+    }
+  }
+  return result.join("\n");
+}
+
+/**
+ * Strip trailing whitespace padding from table cells and use minimal
+ * separators (---). remark-stringify pads cells to uniform column widths,
+ * which causes cosmetic diffs on the first round-trip. Compacting makes
+ * tables stable from the first pass.
+ */
+function compactTables(md: string): string {
+  const lines = md.split("\n");
+  const result: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    if (/^\|.+\|/.test(lines[i])) {
+      // Collect contiguous table lines
+      const tableLines: string[] = [];
+      while (i < lines.length && /^\|.+\|/.test(lines[i])) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+      for (const tl of tableLines) {
+        if (isSeparatorRow(tl)) {
+          // Minimal separator: count columns from the row, emit | --- per col
+          const cols = splitTableRow(tl).length;
+          result.push("|" + " --- |".repeat(cols));
+        } else {
+          // Strip trailing whitespace from each cell
+          const cells = splitTableRow(tl);
+          result.push(
+            "| " + cells.map((c) => c.trim()).join(" | ") + " |"
+          );
+        }
       }
     } else {
       result.push(lines[i]);
