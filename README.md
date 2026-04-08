@@ -6,6 +6,8 @@ Notion-like WYSIWYG markdown editor for VS Code. Edit `.md` files with a rich ed
 
 We have had rich editing, but this is the first editor to have rich diffs.
 
+![](diff.gif)
+
 Better Markdown is the first VS Code WYSIWYG markdown editor to ship:
 
 - **Integrated rich diff view** — no other WYSIWYG editor lets you diff rendered markdown against HEAD, with word-level highlights and hunk navigation, right inside the editor
