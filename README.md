@@ -20,7 +20,7 @@ pass
 
 ### Navigate without hassle.
 
-pass
+![nagivate](navigate.gif)
 
 ## Cool Stuff
 
