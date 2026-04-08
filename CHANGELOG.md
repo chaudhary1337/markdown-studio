@@ -1,16 +1,16 @@
 # Changelog
 
-## 0.1.0
+## 1.0.0
 
 ### Rich Editing
 
 - WYSIWYG markdown editor with full GFM support
-- Headings (h1–h6), bold, italic, code, links, images, blockquotes, horizontal rules
+- Headings (h1-h6), bold, italic, code, links, images, blockquotes, horizontal rules
 - Tables with floating toolbar to add/delete rows and columns
 - Task lists with Notion-style custom checkboxes
 - Ordered, unordered, and nested lists with correct round-trip formatting
 - Code blocks with syntax highlighting and language selector
-- **Math support** — inline (`$...$`) and block (`$$...$$`) with KaTeX rendering, slash commands, and click-to-edit LaTeX source
+- Math support — inline (`$...$`) and block (`$$...$$`) with KaTeX rendering, slash commands, and click-to-edit LaTeX source
 - Slash command menu — type `/` at the start of a line to insert blocks (headings, lists, tables, code blocks, math, images)
 - Copy selection as markdown source (Cmd+C / Cmd+X)
 - Configurable serialization settings (bullet style, emphasis markers, HR character, normalizations)
@@ -30,6 +30,6 @@
 
 ### Round-trip Fidelity
 
-- h4–h6 preserved via trailing HTML comment metadata
+- h4-h6 preserved via trailing HTML comment metadata
 - Table cell code-span pipes handled without double-escaping
 - Unicode-aware underscore unescaping

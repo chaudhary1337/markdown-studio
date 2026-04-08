@@ -32,8 +32,6 @@ It just works.
 
 ![seamless-sync](bait-test.gif)
 
-###
-
 ### Navigate without hassle.
 
 Sticky headings so you can navigate long documents with ease.
@@ -68,7 +66,7 @@ Browser mode lets you open the rich editor as a Chrome/Firefox tab, so you can t
 
 Drag and drop images, gifs, etc.
 
-Its like Notion, but you own the data.
+It's like Notion, but you own the data.
 
 ![browser-mode-overview](Screenshot%202026-04-08%20at%2012.06.39.png)
 
@@ -76,11 +74,9 @@ Its like Notion, but you own the data.
 
 #### Slash Commands
 
-The beloved `/` works out of the box. Its like you never left your favourite editor.
+The beloved `/` works out of the box. It's like you never left your favourite editor.
 
 ![slash-command-working](Screenshot%202026-04-08%20at%2018.40.28.png)
-
-####
 
 #### Checkboxes, Tables, Math, Quotes, Code Blocks, and your standard stuff.
 
@@ -95,11 +91,9 @@ You can write math using $\KaTeX$ in both inline and block modes.
 
 ![checkboxes-table-inline-math](Screenshot%202026-04-08%20at%2018.37.33.png)
 
-![](<Screenshot 2026-04-08 at 18.39.23-1.png>)
+![](Screenshot%202026-04-08%20at%2018.39.23-1.png)
 
-## Known "limitations"
-
-"Its not a bug, its a feature."
+## Known Limitations
 
 - Conversion from markdown to rich text and back to markdown is not one-to-one exact map. The markdown after is normalized. You can control this via the settings icon in the rich editor mode.
 
@@ -126,12 +120,10 @@ I am too lazy to implement that.
 
 Everything runs locally in your VS Code instance.
 
-### Bugs
+### Bugs/Feature Requests
 
-If you encounter any bugs, please drop an email.
+If you encounter any bugs or have any feature requests, please drop an email at `{firstname}{lastname}511@gmail.com`.
 
-### Support
-
-???
+I am actively using it myself, so expect frequent updates.
 
 <!-- better-markdown-meta {"h":[{"t":"Default Editor","l":4},{"t":"Rich Editor","l":4},{"t":"Browser","l":4},{"t":"Slash Commands","l":4},{"t":"Checkboxes, Tables, Math, Quotes, Code Blocks, and your standard stuff.","l":4},{"t":"Math","l":4},{"t":"Tables, Code Blocks, Checkboxes","l":4}]} -->
