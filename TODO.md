@@ -41,6 +41,7 @@
 - [ ] Allow images to be dragged and dropped into the editor
 - [ ] Add mermaid diagrams
 - [ ] Add buttons as "editors" generally do, to let people click buttons etc. and insert checkboxes etc.
+- [ ] Claude Code integration — live diff in the rich editor when Claude edits a .md file; show accept (tick) / reject (cross) icons inline so the user can review and apply suggestions directly without leaving the rich editor
 
 ## Known Limitations
 

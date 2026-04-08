@@ -126,4 +126,8 @@ If you encounter any bugs or have any feature requests, please drop an email at 
 
 I am actively using it myself, so expect frequent updates.
 
+### Disclaimer
+
+This software is provided as-is, without warranty of any kind. Use at your own risk.
+
 <!-- better-markdown-meta {"h":[{"t":"Default Editor","l":4},{"t":"Rich Editor","l":4},{"t":"Browser","l":4},{"t":"Slash Commands","l":4},{"t":"Checkboxes, Tables, Math, Quotes, Code Blocks, and your standard stuff.","l":4},{"t":"Math","l":4},{"t":"Tables, Code Blocks, Checkboxes","l":4}]} -->
