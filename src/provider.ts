@@ -136,6 +136,34 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           placeHolder: "https://example.com/image.png",
         });
         webview.postMessage({ type: "imageUrlResult", url: url || null });
+      } else if (msg.type === "uploadImage") {
+        try {
+          const data = Buffer.from(msg.data as string, "base64");
+          const requested = path.basename(msg.filename as string);
+          // Find unique filename
+          let finalName = requested;
+          let counter = 1;
+          while (true) {
+            const dest = vscode.Uri.file(path.join(docFolderPath, finalName));
+            try {
+              await vscode.workspace.fs.stat(dest);
+              const ext = path.extname(requested);
+              const base = path.basename(requested, ext);
+              finalName = `${base}-${counter}${ext}`;
+              counter++;
+            } catch {
+              break; // doesn't exist, use this name
+            }
+          }
+          const destUri = vscode.Uri.file(path.join(docFolderPath, finalName));
+          await vscode.workspace.fs.writeFile(destUri, data);
+          webview.postMessage({
+            type: "imageUploaded",
+            src: `${baseUri}/${finalName}`,
+          });
+        } catch (err: any) {
+          webview.postMessage({ type: "imageUploaded", src: null });
+        }
       } else if (msg.type === "edit") {
         if (isReadonly) return;
         const newContent = msg.content as string;

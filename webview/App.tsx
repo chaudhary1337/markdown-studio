@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import { Link } from "@tiptap/extension-link";
-import { Image } from "@tiptap/extension-image";
+import { ImageBlock } from "./extensions/ImageView";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
@@ -20,6 +20,7 @@ import { SearchBar } from "./components/SearchBar";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { DiffView } from "./components/DiffView";
 import { TableControls } from "./components/TableControls";
+import { ImageInsertDialog } from "./components/ImageInsertDialog";
 import { DOMSerializer } from "@tiptap/pm/model";
 import { markdownToHtml, htmlToMarkdown, htmlToMarkdownSync } from "./hooks/useVSCodeSync";
 import {
@@ -35,6 +36,29 @@ import { DEFAULT_SETTINGS, mergeSettings, type BetterMarkdownSettings } from "./
 import { vscodeApi, isBrowserMode } from "./vscode-api";
 
 const lowlight = createLowlight(common);
+
+function mimeToExt(mime: string): string {
+  const map: Record<string, string> = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/svg+xml": ".svg",
+  };
+  return map[mime] || ".png";
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(",")[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export function App() {
   const initialized = useRef(false);
@@ -58,6 +82,8 @@ export function App() {
     headContent: string;
     fileName: string;
   } | null>(null);
+  const [imageDialogVisible, setImageDialogVisible] = React.useState(false);
+  const [dragOver, setDragOver] = React.useState(false);
   const handleUpdateRef = useRef<() => void>(() => {});
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
@@ -75,6 +101,39 @@ export function App() {
     handleUpdateRef.current();
   }, []);
 
+  // Upload an image file and return the full src URL for the editor
+  const uploadImage = useCallback(async (file: File): Promise<string> => {
+    const name =
+      file.name && file.name !== "image.png" && file.name !== "blob"
+        ? file.name
+        : `pasted-${Date.now()}${mimeToExt(file.type)}`;
+
+    if (isBrowserMode) {
+      const match = baseUri.current.match(/\/doc\/([^/]+)$/);
+      if (!match) throw new Error("Cannot determine upload target");
+      const resp = await fetch(
+        `/upload/${match[1]}/${encodeURIComponent(name)}`,
+        { method: "POST", body: file },
+      );
+      if (!resp.ok) throw new Error("Upload failed");
+      const data = await resp.json();
+      return `${baseUri.current}/${data.filename}`;
+    }
+    // VS Code mode: send base64 via postMessage
+    const base64 = await fileToBase64(file);
+    return new Promise<string>((resolve, reject) => {
+      const handler = (ev: MessageEvent) => {
+        if (ev.data?.type === "imageUploaded") {
+          window.removeEventListener("message", handler);
+          if (ev.data.src) resolve(ev.data.src as string);
+          else reject(new Error("Upload failed"));
+        }
+      };
+      window.addEventListener("message", handler);
+      vscodeApi.postMessage({ type: "uploadImage", data: base64, filename: name });
+    });
+  }, []);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -82,7 +141,7 @@ export function App() {
         heading: { levels: [1, 2, 3, 4, 5, 6] },
       }),
       Link.configure({ openOnClick: false }),
-      Image,
+      ImageBlock,
       Table.configure({ resizable: false }),
       TableRow,
       TableCell,
@@ -262,6 +321,95 @@ export function App() {
     };
   }, []);
 
+  // Slash command "Image" opens the dialog
+  useEffect(() => {
+    const handler = () => setImageDialogVisible(true);
+    window.addEventListener("btrmk:showImageDialog", handler);
+    return () => window.removeEventListener("btrmk:showImageDialog", handler);
+  }, []);
+
+  // Drag-and-drop images into editor
+  useEffect(() => {
+    const container = editorContainerRef.current;
+    if (!editor || !container) return;
+
+    const dragEnter = (e: DragEvent) => {
+      if (e.dataTransfer?.types?.includes("Files")) {
+        e.preventDefault();
+        setDragOver(true);
+      }
+    };
+    const dragOver = (e: DragEvent) => {
+      if (e.dataTransfer?.types?.includes("Files")) e.preventDefault();
+    };
+    const dragLeave = (e: DragEvent) => {
+      // Only reset when leaving the container (not entering a child)
+      if (!container.contains(e.relatedTarget as Node)) setDragOver(false);
+    };
+    const drop = (e: DragEvent) => {
+      setDragOver(false);
+      const files = Array.from(e.dataTransfer?.files || []).filter((f) =>
+        f.type.startsWith("image/"),
+      );
+      if (!files.length) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const coords = editor.view.posAtCoords({
+        left: e.clientX,
+        top: e.clientY,
+      });
+
+      files.forEach(async (file) => {
+        try {
+          const src = await uploadImage(file);
+          const pos = coords?.pos ?? editor.state.selection.from;
+          editor.chain().insertContentAt(pos, { type: "image", attrs: { src } }).run();
+        } catch (err) {
+          console.error("[better-markdown] image drop failed:", err);
+        }
+      });
+    };
+
+    container.addEventListener("dragenter", dragEnter);
+    container.addEventListener("dragover", dragOver);
+    container.addEventListener("dragleave", dragLeave);
+    container.addEventListener("drop", drop);
+    return () => {
+      container.removeEventListener("dragenter", dragEnter);
+      container.removeEventListener("dragover", dragOver);
+      container.removeEventListener("dragleave", dragLeave);
+      container.removeEventListener("drop", drop);
+    };
+  }, [editor, uploadImage]);
+
+  // Paste images from clipboard
+  useEffect(() => {
+    if (!editor) return;
+    const dom = editor.view.dom as HTMLElement;
+
+    const pasteHandler = (e: ClipboardEvent) => {
+      const items = Array.from(e.clipboardData?.items || []);
+      const imageItems = items.filter((i) => i.type.startsWith("image/"));
+      if (!imageItems.length) return;
+
+      e.preventDefault();
+      imageItems.forEach(async (item) => {
+        const file = item.getAsFile();
+        if (!file) return;
+        try {
+          const src = await uploadImage(file);
+          editor.chain().focus().setImage({ src }).run();
+        } catch (err) {
+          console.error("[better-markdown] image paste failed:", err);
+        }
+      });
+    };
+
+    dom.addEventListener("paste", pasteHandler);
+    return () => dom.removeEventListener("paste", pasteHandler);
+  }, [editor, uploadImage]);
+
   // Sync: editor changes → extension host
   const handleUpdate = useCallback(() => {
     if (!initialized.current || !editor) return;
@@ -337,7 +485,7 @@ export function App() {
 
   return (
     <div className="editor-layout">
-      <div className="editor-container" ref={editorContainerRef}>
+      <div className={"editor-container" + (dragOver ? " drag-over" : "")} ref={editorContainerRef}>
         <SearchBar
           visible={searchVisible}
           onClose={(activeRange) => {
@@ -427,6 +575,15 @@ export function App() {
       <div className="toc-wrapper">
         <TableOfContents />
       </div>
+      <ImageInsertDialog
+        visible={imageDialogVisible}
+        onClose={() => setImageDialogVisible(false)}
+        onUploadFile={uploadImage}
+        onInsert={(src) => {
+          setImageDialogVisible(false);
+          editor?.chain().focus().setImage({ src }).run();
+        }}
+      />
     </div>
   );
 }

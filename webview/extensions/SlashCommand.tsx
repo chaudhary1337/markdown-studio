@@ -7,7 +7,6 @@ import {
   List, ListOrdered, CheckSquare, Code, Quote, Minus, Table, ImageIcon, Type,
   Sigma,
 } from "lucide-react";
-import { vscodeApi } from "../vscode-api";
 
 interface SlashItem {
   title: string;
@@ -32,15 +31,8 @@ const ITEMS: SlashItem[] = [
   { title: "Table", icon: <Table size={16} />, command: (e) => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
   { title: "Math Block", icon: <Sigma size={16} />, command: (e) => e.chain().focus().insertContent({ type: "mathBlock", attrs: { latex: "" } }).run() },
   { title: "Inline Math", icon: <Sigma size={16} />, command: (e) => e.chain().focus().insertContent({ type: "mathInline", attrs: { latex: "" } }).run() },
-  { title: "Image", icon: <ImageIcon size={16} />, command: (e) => {
-    vscodeApi.postMessage({ type: "promptImageUrl" });
-    const handler = (ev: MessageEvent) => {
-      if (ev.data?.type === "imageUrlResult") {
-        window.removeEventListener("message", handler);
-        if (ev.data.url) e.chain().focus().setImage({ src: ev.data.url }).run();
-      }
-    };
-    window.addEventListener("message", handler);
+  { title: "Image", icon: <ImageIcon size={16} />, command: () => {
+    window.dispatchEvent(new CustomEvent("btrmk:showImageDialog"));
   }},
 ];
 

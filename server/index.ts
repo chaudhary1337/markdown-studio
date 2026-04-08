@@ -244,6 +244,40 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Image upload: POST /upload/<base64dir>/<filename>
+  if (req.method === "POST" && pathname.startsWith("/upload/")) {
+    const uploadMatch = pathname.match(/^\/upload\/([^/]+)\/(.+)$/);
+    if (!uploadMatch) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Invalid upload path" }));
+      return;
+    }
+    const dir = decodeDir(uploadMatch[1]);
+    const safeName = path.basename(decodeURIComponent(uploadMatch[2]));
+    // Generate unique filename if conflict
+    let finalName = safeName;
+    let counter = 1;
+    while (fs.existsSync(path.join(dir, finalName))) {
+      const ext = path.extname(safeName);
+      const base = path.basename(safeName, ext);
+      finalName = `${base}-${counter}${ext}`;
+      counter++;
+    }
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.on("end", () => {
+      try {
+        fs.writeFileSync(path.join(dir, finalName), Buffer.concat(chunks));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, filename: finalName }));
+      } catch (err: any) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
   // /doc/<base64dir>/<filename> → serve image from document folder
   const docMatch = pathname.match(/^\/doc\/([^/]+)\/(.+)$/);
   if (docMatch) {

@@ -354,8 +354,95 @@ html, body, #root {
   margin-top: 0;
 }
 
-/* Images */
-.tiptap-editor img {
+/* Images — custom NodeView block */
+.image-block {
+  margin: 12px 0;
+}
+
+.image-block figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.image-block img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: block;
+  min-height: 24px;
+}
+
+.image-block.selected figure {
+  outline: 2px solid var(--vscode-focusBorder, #007fd4);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.image-block figcaption {
+  width: 100%;
+  text-align: center;
+  margin-top: 6px;
+}
+
+.image-caption-text {
+  font-size: 13px;
+  color: var(--vscode-descriptionForeground, #888);
+  cursor: text;
+  display: inline-block;
+  padding: 2px 4px;
+  border-radius: 3px;
+  min-width: 120px;
+}
+.image-caption-text:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.image-caption-input {
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  font-size: 13px;
+  padding: 4px 8px;
+  background: var(--vscode-input-background, #2a2a2a);
+  border: 1px solid var(--vscode-input-border, #444);
+  border-radius: 4px;
+  color: var(--vscode-input-foreground, #d4d4d4);
+  outline: none;
+}
+.image-caption-input:focus {
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+.image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--vscode-widget-border, #444);
+  border-radius: 4px;
+  color: var(--vscode-descriptionForeground, #888);
+  font-size: 13px;
+  gap: 4px;
+}
+
+.image-placeholder-icon {
+  font-size: 28px;
+  opacity: 0.6;
+}
+
+.image-placeholder-path {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* Diff view images */
+.diff-rendered img {
   max-width: 100%;
   height: auto;
   border-radius: 4px;
@@ -370,6 +457,7 @@ html, body, #root {
 
 /* Editor container */
 .editor-container {
+  position: relative;
   flex: 1;
   height: 100vh;
   overflow-y: auto;
@@ -1372,7 +1460,8 @@ html, body, #root {
 
 .math-block-rendered {
   text-align: center;
-  padding: 12px 16px;
+  padding: 16px 20px;
+  font-size: 1.2em;
   border-radius: 4px;
   border: 1px solid transparent;
   transition: background 0.15s, border-color 0.15s;
@@ -1417,4 +1506,174 @@ html, body, #root {
   color: var(--vscode-errorForeground, #f48771);
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 0.9em;
+}
+
+/* ── Drag-and-drop overlay ────────────────────────────────────── */
+
+.editor-container.drag-over::after {
+  content: "Drop image here";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 122, 204, 0.08);
+  border: 2px dashed rgba(0, 122, 204, 0.5);
+  border-radius: 6px;
+  font-size: 16px;
+  color: rgba(0, 122, 204, 0.8);
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* ── Image Insert Dialog ──────────────────────────────────────── */
+
+.image-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.image-dialog {
+  background: var(--vscode-editor-background, #1e1e1e);
+  border: 1px solid var(--vscode-widget-border, #444);
+  border-radius: 8px;
+  width: 420px;
+  max-width: 90vw;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.image-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--vscode-editor-foreground, #d4d4d4);
+}
+
+.image-dialog-close {
+  background: none;
+  border: none;
+  color: var(--vscode-editor-foreground, #888);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.image-dialog-close:hover {
+  color: var(--vscode-editor-foreground, #d4d4d4);
+}
+
+.image-dialog-label {
+  display: block;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground, #888);
+  margin-bottom: 6px;
+}
+
+.image-dialog-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  background: var(--vscode-input-background, #2a2a2a);
+  border: 1px solid var(--vscode-input-border, #444);
+  border-radius: 4px;
+  color: var(--vscode-input-foreground, #d4d4d4);
+  font-size: 13px;
+  outline: none;
+}
+.image-dialog-input:focus {
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+.image-dialog-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground, #666);
+}
+.image-dialog-divider::before,
+.image-dialog-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--vscode-widget-border, #333);
+}
+
+.image-dialog-file-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--vscode-button-secondaryBackground, #333);
+  border: 1px solid var(--vscode-input-border, #444);
+  border-radius: 4px;
+  color: var(--vscode-button-secondaryForeground, #d4d4d4);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+.image-dialog-file-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground, #444);
+}
+
+.image-dialog-preview {
+  margin-top: 12px;
+  border-radius: 4px;
+  overflow: hidden;
+  max-height: 180px;
+  display: flex;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+}
+.image-dialog-preview img {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+}
+
+.image-dialog-error {
+  margin-top: 8px;
+  color: var(--vscode-errorForeground, #f48771);
+  font-size: 12px;
+}
+
+.image-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.image-dialog-btn {
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+}
+.image-dialog-btn.cancel {
+  background: var(--vscode-button-secondaryBackground, #333);
+  color: var(--vscode-button-secondaryForeground, #d4d4d4);
+}
+.image-dialog-btn.cancel:hover {
+  background: var(--vscode-button-secondaryHoverBackground, #444);
+}
+.image-dialog-btn.insert {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #fff);
+}
+.image-dialog-btn.insert:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb);
+}
+.image-dialog-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

@@ -1,11 +1,11 @@
 {
   "name": "better-markdown",
   "displayName": "Better Markdown",
-  "description": "Notion-like WYSIWYG markdown editor for VSCode",
-  "version": "0.1.0",
+  "description": "Notion-like WYSIWYG markdown editor with rich diffs, tables, images, math, and more.",
+  "version": "1.0.0",
   "publisher": "tanishq-chaudhary",
   "license": "UNLICENSED",
-  "icon": "logo.png",
+  "icon": "logo7.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/chaudhary1337/better-markdown"
