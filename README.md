@@ -1,12 +1,10 @@
 # Better Markdown
 
-I read as much markdown as all other languages combined.
+I read as much `.md` as all other languages combined.
 
-AI agents generated reports, my own notes.
+My own notes, AI agents generated reports.
 
 I find it easier to read Notion-like markdown rather than raw markdown.
-
-Its simply more readable.
 
 That's why Better Markdown exists.
 
@@ -88,15 +86,12 @@ The beloved `/` works out of the box. Its like you never left your favourite edi
 
 Tables have options to:
 
-- add row above
-- add row below
-- add column to the left
-- add columns to the right
-- remove rows
-- remove columns
+- add row above, add row below
+- add column to the left, add columns to the right
+- remove rows, remove columns
 - drop the entire table
 
-You can write math using$\KaTeX$ in both inline and block modes.
+You can write math using $\KaTeX$ in both inline and block modes.
 
 ![checkboxes-table-inline-math](Screenshot%202026-04-08%20at%2018.37.33.png)
 
