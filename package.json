@@ -1,6 +1,6 @@
 {
-  "name": "its-better-markdown",
-  "displayName": "Better Markdown",
+  "name": "its-markdown-studio",
+  "displayName": "Markdown Studio",
   "description": "Notion-like WYSIWYG markdown editor with rich diffs, tables, images, math, and more.",
   "version": "1.0.0",
   "publisher": "tanishq-chaudhary",
