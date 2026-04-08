@@ -4,20 +4,25 @@ Notion-like WYSIWYG markdown editor for VS Code. Edit `.md` files with a rich ed
 
 ## Unique Features
 
+### Rich git Diffs
+
 We have had rich editing, but this is the first editor to have rich diffs.
 
 ![](diff.gif)
 
-Better Markdown is the first VS Code WYSIWYG markdown editor to ship:
+### Seamless Sync. Open in Default Editor, Open in Rich Editor, Open in Browser.
 
-- **Integrated rich diff view** — no other WYSIWYG editor lets you diff rendered markdown against HEAD, with word-level highlights and hunk navigation, right inside the editor
-- **Sticky headings** — the current section heading pins to the top as you scroll, so you always know where you are in a long document
-- **Clean round-trip fidelity** — your markdown comes back clean; most editors silently reformat your source
-- **Search across content and table of contents** — Cmd+F with regex and case-sensitive modes, plus TOC filtering to jump to any heading instantly
-- **Custom serialization settings** — choose your bullet style, emphasis markers, horizontal rule character, and toggle normalizations like compact lists or ordered-list renumbering
-- **Git SCM integration** — open a rich diff from the source-control context menu, the diff-editor toolbar, or the command palette
+![seamless-sync](bait.gif)
 
-## Features
+### Search like you know.
+
+pass
+
+### Navigate without hassle.
+
+pass
+
+## Cool Stuff
 
 ### Modes
 
@@ -38,6 +43,8 @@ Rich editor allows to go back to default editor mode directly. Also allows openi
 #### Browser
 
 Browser mode let's you go back to the VS Code window with one click.
+
+Did I mention its very fast?
 
 ![browser-mode-overview](<Screenshot 2026-04-08 at 12.06.39.png>)
 
