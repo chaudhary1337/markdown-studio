@@ -30,7 +30,7 @@ Open in the Browser.
 
 It just works.
 
-![seamless-sync](bait-test.gif)
+![seamless-sync](seamless-sync.gif)
 
 ### Navigate without hassle.
 
@@ -52,13 +52,13 @@ Default editor supports opening in Rich Editor and Browser modes.
 
 Enjoy it because this will be the last time you open the vanilla view.
 
-![default-editor-overview](Screenshot%202026-04-08%20at%2011.56.29.png)
+![default-editor-overview](default-editor-overview.png)
 
 #### Rich Editor
 
 Rich editor allows to go back to default editor mode directly. Also allows opening in the browser. All information is automatically and instantly synced.
 
-![rich-editor-overview](Screenshot%202026-04-08%20at%2012.03.00-1.png)
+![rich-editor-overview](rich-editor-overview.png)
 
 #### Browser
 
@@ -68,7 +68,7 @@ Drag and drop images, gifs, etc.
 
 It's like Notion, but you own the data.
 
-![browser-mode-overview](Screenshot%202026-04-08%20at%2012.06.39.png)
+![browser-mode-overview](browser-mode-overview.png)
 
 ### Rich editing
 
@@ -76,7 +76,7 @@ It's like Notion, but you own the data.
 
 The beloved `/` works out of the box. It's like you never left your favourite editor.
 
-![slash-command-working](Screenshot%202026-04-08%20at%2018.40.28.png)
+![slash-command-working](slash-command-working.png)
 
 #### Checkboxes, Tables, Math, Quotes, Code Blocks, and your standard stuff.
 
@@ -89,9 +89,9 @@ Tables have options to:
 
 You can write math using $\KaTeX$ in both inline and block modes.
 
-![checkboxes-table-inline-math](Screenshot%202026-04-08%20at%2018.37.33.png)
+![checkboxes-table-inline-math](checkboxes-table-inline-math.png)
 
-![](Screenshot%202026-04-08%20at%2018.39.23-1.png)
+![math-block](math-block.png)
 
 ## Known Limitations
 
