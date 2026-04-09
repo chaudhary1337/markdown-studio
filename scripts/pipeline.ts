@@ -29,77 +29,14 @@ import rehypeParse from "rehype-parse";
 import rehypeRemark from "rehype-remark";
 import remarkStringify from "remark-stringify";
 import { MARKDOWN_CONFIG, normalizeMarkdown } from "../webview/markdown.config";
-
-/** Custom remark-rehype handlers for math nodes (mirrors useVSCodeSync.ts). */
-const mathHandlers = {
-  inlineMath(_state: any, node: any) {
-    return {
-      type: "element",
-      tagName: "span",
-      properties: { dataType: "mathInline", dataLatex: node.value },
-      children: [{ type: "text", value: node.value }],
-    };
-  },
-  math(_state: any, node: any) {
-    return {
-      type: "element",
-      tagName: "div",
-      properties: { dataType: "mathBlock", dataLatex: node.value },
-      children: [{ type: "text", value: node.value }],
-    };
-  },
-};
+import {
+  mathHandlers,
+  PIPE_PH,
+  DOLLAR_PH,
+  protectCurrencyDollars,
+  protectTableCodePipes,
+} from "../webview/conversion-utils";
 import { extractFrontmatter, prependFrontmatter } from "../webview/frontmatter";
-
-const PIPE_PH = "%%BTRMK_PIPE%%";
-const DOLLAR_PH = "%%BTRMK_DOLLAR%%";
-
-/**
- * Protect currency $ signs from being parsed as math delimiters.
- * remarkMath pairs unrelated $14B ... $1.4B as inline math, eating
- * everything in between (including bold markers).
- */
-function protectCurrencyDollars(md: string): string {
-  return md.replace(/(?<!\$)\$(?=\d)(?!\$)/g, DOLLAR_PH);
-}
-
-/**
- * Protect `|` inside backtick code spans within table rows so remark-gfm
- * doesn't split on them. Mirrors protectTableCodePipes in useVSCodeSync.ts.
- */
-function protectTableCodePipes(md: string): string {
-  const lines = md.split("\n");
-  let inTable = false;
-  return lines
-    .map((line) => {
-      if (/^\|/.test(line.trim())) {
-        inTable = true;
-      } else if (inTable && line.trim() !== "") {
-        inTable = false;
-      }
-      if (!inTable) return line;
-      let result = "";
-      let inCode = false;
-      for (let i = 0; i < line.length; i++) {
-        if (line[i] === "`") {
-          inCode = !inCode;
-          result += "`";
-        } else if (inCode && line[i] === "\\" && line[i + 1] === "|") {
-          // \\| inside code → pipe placeholder (strip the backslash too,
-          // otherwise it leaks into the HTML as a literal backslash and
-          // remark-stringify double-escapes on output)
-          result += PIPE_PH;
-          i++;
-        } else if (line[i] === "|" && inCode) {
-          result += PIPE_PH;
-        } else {
-          result += line[i];
-        }
-      }
-      return result;
-    })
-    .join("\n");
-}
 
 export interface RoundTripOptions {}
 
