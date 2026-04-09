@@ -42,6 +42,8 @@
 - [ ] Add mermaid diagrams
 - [ ] Add buttons as "editors" generally do, to let people click buttons etc. and insert checkboxes etc.
 - [ ] Claude Code integration — live diff in the rich editor when Claude edits a .md file; show accept (tick) / reject (cross) icons inline so the user can review and apply suggestions directly without leaving the rich editor
+- [ ] esc. key should highlight the entire line just like notion
+- [ ] make sure cursor does not vanish/gets autofocused after naving inside/outside of katex
 
 ## Known Limitations
 
