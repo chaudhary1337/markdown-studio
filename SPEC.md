@@ -52,46 +52,32 @@ A VSCode extension that replaces the default markdown editor with a Notion-like 
 
 ### Copy as Markdown
 
-- Cmd+C / Ctrl+C on a selection puts markdown source on the clipboard
-  (not Tiptap's rendered plain text). Both `text/plain` (markdown) and
-  `text/html` (HTML) are set, so rich paste targets still see structure.
+- Cmd+C / Ctrl+C on a selection puts markdown source on the clipboard (not Tiptap's rendered plain text). Both `text/plain` (markdown) and `text/html` (HTML) are set, so rich paste targets still see structure.
 - Cut (Cmd+X) does the same and removes the selection.
 
 ### Read-Only for Non-File URIs
 
-- Documents from git:, conflictResolution:, and similar non-file schemes
-  render as a read-only Tiptap view with a "Read-only" badge.
+- Documents from git:, conflictResolution:, and similar non-file schemes render as a read-only Tiptap view with a "Read-only" badge.
 - Git diff side panes get the full rich rendering on both sides.
 
 ### Settings Panel
 
 - Gear icon in the top-right opens a modal settings panel.
-- Every normalization step (`compactLists`, `unescapeSpecialChars`,
-  `renumberOrderedLists`, `shellscriptToBash`, `fixTableHeaders`,
-  `dedupImageAltText`) is independently toggleable.
-- Serializer markers (bullet, italic, bold, rule, list indent) and the
-  default code-block language label are configurable.
+- Every normalization step (`compactLists`, `unescapeSpecialChars`, `renumberOrderedLists`, `shellscriptToBash`, `fixTableHeaders`, `dedupImageAltText`) is independently toggleable.
+- Serializer markers (bullet, italic, bold, rule, list indent) and the default code-block language label are configurable.
 - Settings persist in VSCode's globalState and sync across open panels.
 
 ### Git Diff View
 
-- **Inline toggle**: "Diff" button (top-right of editor) compares live
-  buffer against HEAD. Uses `vscode.git` extension to fetch HEAD content.
-- **Standalone panel**: `betterMarkdown.openDiff` command opens a
-  dedicated rich diff webview between any two URIs. Accessible from:
+- **Inline toggle**: "Diff" button (top-right of editor) compares live buffer against HEAD. Uses `vscode.git` extension to fetch HEAD content.
+- **Standalone panel**: `betterMarkdown.openDiff` command opens a dedicated rich diff webview between any two URIs. Accessible from:
   - Command palette (Better Markdown: Open Rich Diff)
   - SCM resource context menu (right-click changed .md file)
   - Diff editor toolbar (when a .md diff is active)
 - **Two view modes**, switchable in the toolbar:
-  - **Source**: line-by-line diff via `diff` + `diff2html` (unified or
-    side-by-side layout, green/red/blue matching git conventions).
-  - **Rendered**: word-level HTML diff — both sides rendered via
-    `markdownToDisplayHtml`, then `node-htmldiff` produces
-    `<ins>`/`<del>` markers, styled with green/red highlights. Native
-    GFM task-list checkboxes are preserved.
-- **Prev/Next hunk navigation** (Rendered mode only): ↑/↓ buttons in
-  the toolbar with a position counter, plus keyboard shortcuts
-  `j`/`k` / `ArrowUp`/`ArrowDown`. Wraps around at both ends.
+  - **Source**: line-by-line diff via `diff` + `diff2html` (unified or side-by-side layout, green/red/blue matching git conventions).
+  - **Rendered**: word-level HTML diff — both sides rendered via `markdownToDisplayHtml`, then `node-htmldiff` produces `<ins>`/`<del>` markers, styled with green/red highlights. Native GFM task-list checkboxes are preserved.
+- **Prev/Next hunk navigation** (Rendered mode only): ↑/↓ buttons in the toolbar with a position counter, plus keyboard shortcuts `j`/`k` / `ArrowUp`/`ArrowDown`. Wraps around at both ends.
 - Panel refreshes when either side changes on disk.
 
 ## Architecture
@@ -117,17 +103,17 @@ Webview (Browser, React)
 
 ## Sync Protocol
 
-| Direction      | Trigger                           | Message                                                                       |
-| -------------- | --------------------------------- | ----------------------------------------------------------------------------- |
-| Host → Webview | File opened                       | `{ type: "init", content, baseUri, docFolderPath, isReadonly, settings }`     |
-| Host → Webview | External edit (git, other editor) | `{ type: "update", content: "..." }`                                          |
-| Host → Webview | Ctrl+F pressed                    | `{ type: "openSearch" }`                                                      |
-| Host → Webview | Another panel saved settings      | `{ type: "settingsUpdated", settings }`                                       |
-| Webview → Host | User types/edits                  | `{ type: "edit", content: "..." }` (debounced 300ms)                          |
-| Webview → Host | Webview loaded                    | `{ type: "ready" }`                                                           |
-| Webview → Host | Toggle editor                     | `{ type: "toggleEditor" }`                                                    |
-| Webview → Host | Open link                         | `{ type: "openLink", href: "..." }`                                           |
-| Webview → Host | Settings changed                  | `{ type: "saveSettings", settings }`                                          |
+| Direction      | Trigger                           | Message                                                                   |
+| -------------- | --------------------------------- | ------------------------------------------------------------------------- |
+| Host → Webview | File opened                       | `{ type: "init", content, baseUri, docFolderPath, isReadonly, settings }` |
+| Host → Webview | External edit (git, other editor) | `{ type: "update", content: "..." }`                                      |
+| Host → Webview | Ctrl+F pressed                    | `{ type: "openSearch" }`                                                  |
+| Host → Webview | Another panel saved settings      | `{ type: "settingsUpdated", settings }`                                   |
+| Webview → Host | User types/edits                  | `{ type: "edit", content: "..." }` (debounced 300ms)                      |
+| Webview → Host | Webview loaded                    | `{ type: "ready" }`                                                       |
+| Webview → Host | Toggle editor                     | `{ type: "toggleEditor" }`                                                |
+| Webview → Host | Open link                         | `{ type: "openLink", href: "..." }`                                       |
+| Webview → Host | Settings changed                  | `{ type: "saveSettings", settings }`                                      |
 
 ## File Structure
 
@@ -176,11 +162,11 @@ better-markdown/
 1. `extractFrontmatter()` strips YAML frontmatter (`---` block) from top of file
 2. `extractMeta()` strips metadata comment from end of file
 3. `buildMeta()` scans for h4-h6 headings
-3. `protectTableCodePipes()` — replace `|` inside code spans in table rows with placeholder (remark's GFM table parser splits on `|` even inside backticks)
-4. `unified().use(remarkParse, remarkGfm, remarkMath, remarkRehype, rehypeStringify)` → HTML, then restore placeholders. `remark-math` parses `$...$` / `$$...$$` into math AST nodes; custom `remark-rehype` handlers emit `<span data-type="mathInline">` / `<div data-type="mathBlock">` elements for Tiptap.
-5. DOMParser transforms: wrap bare `<li>` text in `<p>` (Tiptap needs block content), convert GFM task list HTML to Tiptap taskItem format, split multiple `<img>` in same `<p>` into separate blocks
-6. Trim code block trailing newlines, resolve relative image paths
-7. `editor.commands.setContent(html)` → Tiptap editor
+4. `protectTableCodePipes()` — replace `|` inside code spans in table rows with placeholder (remark's GFM table parser splits on `|` even inside backticks)
+5. `unified().use(remarkParse, remarkGfm, remarkMath, remarkRehype, rehypeStringify)` → HTML, then restore placeholders. `remark-math` parses `$...$` / `$$...$$` into math AST nodes; custom `remark-rehype` handlers emit `<span data-type="mathInline">` / `<div data-type="mathBlock">` elements for Tiptap.
+6. DOMParser transforms: wrap bare `<li>` text in `<p>` (Tiptap needs block content), convert GFM task list HTML to Tiptap taskItem format, split multiple `<img>` in same `<p>` into separate blocks
+7. Trim code block trailing newlines, resolve relative image paths
+8. `editor.commands.setContent(html)` → Tiptap editor
 
 ### Output (editor → markdown)
 
@@ -198,12 +184,32 @@ better-markdown/
    - Image followed by duplicate alt-text line → dedup
    - Compact lists (remove blank lines between items)
    - Orphaned list marker merging
-6. Restore math from code/pre placeholders back to `$...$` / `$$...$$`
-7. `&#x20;` / `&amp;` HTML entity cleanup
-7. `restoreHeadings()` converts `### ` back to `####`/`#####`/`######` using metadata
-8. `appendMeta()` adds metadata comment at end of file
-9. `prependFrontmatter()` restores YAML frontmatter at top of file
-10. Strip webview URI prefixes to restore relative image paths
+1. Restore math from code/pre placeholders back to `$...$` / `$$...$$`
+2. ` ` / `&` HTML entity cleanup
+3. `restoreHeadings()` converts `### `back to `####`/`#####`/`######` using metadata
+4. `appendMeta()` adds metadata comment at end of file
+5. `prependFrontmatter()` restores YAML frontmatter at top of file
+6. Strip webview URI prefixes to restore relative image paths
+
+## Claude Code Integration
+
+### Auto-close non-file tabs
+
+When VS Code opens a diff for a `.md` file, the custom editor (priority `"default"`) intercepts both sides. The original-content pane arrives as a `TabInputCustom` with a `git:` or `scm:` URI — read-only and useless in the rich editor. The `onDidChangeTabs` handler in `extension.ts` detects these (`instanceof TabInputCustom`, non-`file` scheme) and closes them on the next tick via `setTimeout`.
+
+### Pre-acceptance rich diff (not yet possible)
+
+Ideally, when Claude Code proposes an edit to an open `.md` file the extension would show a rich diff panel _before_ the user accepts. This is currently blocked because Claude Code writes to disk only **after** the user accepts in the CLI; before that the proposed content lives entirely inside Claude Code's process.
+
+Approaches investigated (Apr 2026):
+
+| Approach                                                              | Result                                                                                                                           |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Intercept `onDidChangeTabs`                                           | Claude Code opens a `TabInputCustom` (not `TabInputTextDiff`), and only after acceptance — nothing to intercept at proposal time |
+| Detect external changes via `onDidChangeTextDocument` in the provider | Works, but fires only post-acceptance — too late for pre-accept review                                                           |
+| `FileSystemWatcher` on `.md` files                                    | Same timing: fires after Claude Code writes, i.e. post-acceptance                                                                |
+
+**What would unblock this:** Claude Code exposing a VS Code extension API (event or virtual-document provider) that surfaces the proposed file content before the user accepts. The rich diff panel (`BetterMarkdownDiffPanel`) already accepts arbitrary URI pairs, so wiring it up would be straightforward once the content is available.
 
 ## Known Limitations
 

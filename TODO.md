@@ -36,7 +36,8 @@
 
 ## Remaining
 
-- [ ] Auto-close Claude Code diff tabs for .md files — interceptor logs tab types to "Better Markdown" Output channel but closing doesn't work yet; check log output to identify the correct tab input type, then fix the `onDidChangeTabs` handler in `src/extension.ts`
+- [x] Auto-close non-file custom editor tabs (git:, scm: schemes) via `onDidChangeTabs`
+- [ ] Claude Code rich diff integration — blocked on Claude Code exposing proposed content before acceptance (see SPEC.md § Claude Code Integration)
 - [ ] TOC should highlight diffed headings (added/removed/changed) when diff view is active
 - [ ] Allow images to be dragged and dropped into the editor
 - [ ] Add mermaid diagrams

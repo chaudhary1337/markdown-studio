@@ -127,39 +127,31 @@ export function activate(context: vscode.ExtensionContext) {
     },
   });
 
-  // Debug: log opened tab types to Output channel so we can see what
-  // Claude Code actually creates, then close unwanted markdown diff tabs.
-  const log = vscode.window.createOutputChannel("Better Markdown");
+  // Close non-file custom editor tabs (git:, scm: schemes).  When VS Code
+  // opens a diff for a .md file, the custom editor intercepts both sides and
+  // spawns read-only panes with git:/scm: URIs.  These render in the rich
+  // editor but can't be edited, so we auto-close them.
+  //
+  // NOTE: we investigated replacing these with the rich diff panel
+  // (BetterMarkdownDiffPanel) for Claude Code integration, but Claude Code
+  // writes to disk only AFTER the user accepts in the CLI — before that the
+  // proposed content is internal to Claude Code with no extension API to
+  // read it.  onDidChangeTextDocument fires post-acceptance (too late for
+  // review) and onDidChangeTabs sees only a TabInputCustom, not a
+  // TabInputTextDiff.  Pre-acceptance rich diff requires Claude Code to
+  // expose proposed content to extensions.
   context.subscriptions.push(
-    vscode.window.tabGroups.onDidChangeTabs(async (e) => {
+    vscode.window.tabGroups.onDidChangeTabs((e) => {
       for (const tab of e.opened) {
-        const input = tab.input as any;
-        log.appendLine(
-          `[tab opened] label=${JSON.stringify(tab.label)} ` +
-          `constructorName=${input?.constructor?.name} ` +
-          `viewType=${input?.viewType} ` +
-          `scheme=${input?.uri?.scheme ?? input?.modified?.scheme} ` +
-          `path=${input?.uri?.path ?? input?.modified?.path}`
-        );
-
-        // Text diff tabs for .md files
-        if (input?.modified && input?.original) {
-          const filePath: string = input.modified.fsPath || input.modified.path || "";
-          if (filePath.toLowerCase().endsWith(".md")) {
-            log.appendLine("  → closing text diff tab");
-            await vscode.window.tabGroups.close(tab);
-            continue;
-          }
-        }
-
-        // Custom editor tabs for non-file schemes (git:, etc.)
+        const input = tab.input;
         if (
-          input?.viewType === CUSTOM_EDITOR_VIEW_TYPE &&
-          input?.uri?.scheme &&
+          input instanceof vscode.TabInputCustom &&
+          input.viewType === CUSTOM_EDITOR_VIEW_TYPE &&
           input.uri.scheme !== "file"
         ) {
-          log.appendLine("  → closing non-file custom editor tab");
-          await vscode.window.tabGroups.close(tab);
+          setTimeout(async () => {
+            try { await vscode.window.tabGroups.close(tab); } catch {}
+          }, 50);
         }
       }
     })
