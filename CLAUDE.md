@@ -5,7 +5,7 @@
 Run all four steps, in this order, every time. No exceptions.
 
 1. **Run tests**: `npm test`
-   - Runs `scripts/test-conversions.ts` (targeted cases: headings, lists, tables, code blocks, task lists, math, images, escaping, normalizeMarkdown unit tests, settings-driven behavior) and then `scripts/test-roundtrip.ts` (full-file round-trip on `test.md`).
+   - Runs `test/test-conversions.ts` (targeted cases: headings, lists, tables, code blocks, task lists, math, images, escaping, normalizeMarkdown unit tests, settings-driven behavior) and then `test/test-roundtrip.ts` (full-file round-trip on `test/test.md`).
    - Expect: all named tests pass, 0 known-failing.
 1. **Build**: `npm run build`
    - Esbuild must succeed for both `src/extension.ts` (node) and `webview/index.tsx` (browser). Type errors in either halt the build.
@@ -28,13 +28,13 @@ Always update `CHANGELOG.md` with every version bump. Patch-level changes within
 
 - `webview/hooks/useVSCodeSync.ts` — `markdownToHtml` / `htmlToMarkdown`, production DOM-based transforms (DOMParser-backed).
 - `webview/markdown.config.ts` — `normalizeMarkdown` post-processing (task lists, table headers, unescaping, list compaction, etc.).
-- `scripts/pipeline.ts` — regex-based mirror of the production pipeline used by test scripts (no DOMParser in Node).
+- `test/pipeline.ts` — regex-based mirror of the production pipeline used by test scripts (no DOMParser in Node).
 
-When you touch any of these, add/update a test case in `scripts/test-conversions.ts` in the matching category (A-O).
+When you touch any of these, add/update a test case in `test/test-conversions.ts` in the matching category (A-O).
 
 ## Adding a new conversion test
 
-In `scripts/test-conversions.ts`:
+In `test/test-conversions.ts`:
 
 - Full round-trip: `await roundtripCase(name, input, expectedOutput?)` (omit `expectedOutput` if round-trip is idempotent).
 - Unit test on a helper: `eq(name, actual, expected)`.
@@ -48,12 +48,12 @@ In `scripts/test-conversions.ts`:
 1. `protectTableCodePipes` consumes `\|` as a single unit (strips the leading `\` alongside the `|`). Otherwise the backslash leaks into HTML and combines with remark-gfm's own escape to emit `\\|`.
 2. We do NOT manually escape `|` inside `<td>/<th> <code>` before rehype-remark — remark-gfm handles table-cell pipe escaping natively. Adding our own escape there caused the `\\|` double-escape.
 
-If you're touching either step, run category E tests and keep both invariants aligned between `useVSCodeSync.ts` and `scripts/pipeline.ts`.
+If you're touching either step, run category E tests and keep both invariants aligned between `useVSCodeSync.ts` and `test/pipeline.ts`.
 
 ## Math round-trip pipeline
 
-`$...$` (inline) and `$$...$$` (block) are parsed by `remark-math` and converted to `<span data-type="mathInline">` / `<div data-type="mathBlock">` via custom `remark-rehype` handlers (defined as `mathHandlers` in both `useVSCodeSync.ts` and `scripts/pipeline.ts`).
+`$...$` (inline) and `$$...$$` (block) are parsed by `remark-math` and converted to `<span data-type="mathInline">` / `<div data-type="mathBlock">` via custom `remark-rehype` handlers (defined as `mathHandlers` in both `useVSCodeSync.ts` and `test/pipeline.ts`).
 
 On the way back (HTML → markdown), `preprocessTiptapHtml` converts math nodes to code placeholders (`<code>BTRMK_MATH:latex</code>` for inline, `<pre><code class="language-btrmk-math-block">` for block). This protects LaTeX content from remark-stringify escaping. `postprocessMarkdown` restores them to `$...$` / `$$...$$`.
 
-Keep the handlers and placeholder logic in sync between `useVSCodeSync.ts` (production, DOMParser) and `scripts/pipeline.ts` (tests, regex). Run category O tests when touching math.
+Keep the handlers and placeholder logic in sync between `useVSCodeSync.ts` (production, DOMParser) and `test/pipeline.ts` (tests, regex). Run category O tests when touching math.

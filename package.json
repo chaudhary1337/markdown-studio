@@ -136,9 +136,9 @@
     }
   },
   "scripts": {
-    "test": "npx tsx scripts/test-conversions.ts && npx tsx scripts/test-roundtrip.ts",
-    "test:conversions": "npx tsx scripts/test-conversions.ts",
-    "test:roundtrip": "npx tsx scripts/test-roundtrip.ts",
+    "test": "npx tsx test/test-conversions.ts && npx tsx test/test-roundtrip.ts",
+    "test:conversions": "npx tsx test/test-conversions.ts",
+    "test:roundtrip": "npx tsx test/test-roundtrip.ts",
     "build": "node esbuild.js",
     "watch": "node esbuild.js --watch",
     "serve": "node esbuild.js && npx tsx server/index.ts",

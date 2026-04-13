@@ -3,10 +3,7 @@
 CLAUDE.md
 TODO.md
 SPEC.md
-test.md
-test-ref.md
-test_frontmatter.ts
-test_frontmatter_roundtrip.ts
+test/**
 src/**
 webview/**
 node_modules/**

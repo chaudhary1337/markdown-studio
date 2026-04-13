@@ -1,7 +1,7 @@
 /**
  * Shared conversion utilities used by both the production pipeline
  * (useVSCodeSync.ts, DOMParser-based) and the test pipeline
- * (scripts/pipeline.ts, regex-based).
+ * (test/pipeline.ts, regex-based).
  */
 
 /** Custom remark-rehype handlers that convert remark-math AST nodes to HTML. */

@@ -4,13 +4,13 @@
  * Exercises the full pipeline (remark/rehype + normalizeMarkdown)
  * without needing a browser. Catches most formatting regressions.
  *
- * Usage: npx tsx scripts/test-roundtrip.ts [file.md]
+ * Usage: npx tsx test/test-roundtrip.ts [file.md]
  */
 
 import { readFileSync } from "fs";
 import { roundTrip } from "./pipeline";
 
-const file = process.argv[2] || "test.md";
+const file = process.argv[2] || "test/test.md";
 const input = readFileSync(file, "utf-8");
 
 function showDiff(input: string, output: string) {

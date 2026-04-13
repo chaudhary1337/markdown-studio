@@ -134,10 +134,12 @@ better-markdown/
 ├── esbuild.js                # Dual build (extension + webview)
 ├── assets/                   # Logos, README screenshots/gifs (only logo7.png ships in the vsix)
 ├── scripts/
-│   ├── deploy.sh             # Build + package + optional publish
-│   ├── pipeline.ts           # Shared md↔md round-trip used by tests
+│   └── deploy.sh             # Build + package + optional publish
+├── test/
+│   ├── pipeline.ts           # Shared md↔md round-trip used by test scripts
 │   ├── test-conversions.ts   # 113+ targeted conversion assertions
-│   └── test-roundtrip.ts     # Full-file round-trip test
+│   ├── test-roundtrip.ts     # Full-file round-trip test (defaults to test/test.md)
+│   └── test.md               # Fixture covering every node type exercised by the round-trip suite
 ├── src/
 │   ├── extension.ts          # Activation, commands, keybindings, tab auto-close for non-file URIs
 │   ├── diffPanel.ts          # Standalone rich diff webview panel
@@ -175,7 +177,6 @@ better-markdown/
 │   │   └── MathBlock.tsx      # `$$...$$` block KaTeX node
 │   └── styles/
 │       └── editor.css
-└── test.md                   # Test file used by the round-trip suite
 ```
 
 ## Markdown Output Pipeline
@@ -240,9 +241,9 @@ Approaches investigated (Apr 2026):
 ## Testing
 
 ```bash
-npm test                          # Run round-trip test (test.md)
-npx tsx scripts/test-roundtrip.ts # Same, explicit
-npx tsx scripts/test-roundtrip.ts path/to/file.md  # Test specific file
+npm test                                      # Conversion + round-trip suites (defaults to test/test.md)
+npx tsx test/test-roundtrip.ts                # Just the round-trip, explicit
+npx tsx test/test-roundtrip.ts path/to/file.md  # Round-trip a specific file
 ```
 
 The round-trip test exercises the remark/rehype pipeline and `normalizeMarkdown` without needing a browser. It catches formatting regressions but cannot test Tiptap-specific behavior.

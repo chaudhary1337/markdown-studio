@@ -17,7 +17,7 @@
  *   L2. Frontmatter preservation
  *   M. Known-failing cases (documented, expected to fail)
  *
- * Usage: npx tsx scripts/test-conversions.ts
+ * Usage: npx tsx test/test-conversions.ts
  */
 
 import { roundTrip, mdToHtml, htmlToMd } from "./pipeline";
