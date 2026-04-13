@@ -128,6 +128,8 @@ I am actively using it myself, so expect frequent updates.
 
 ### Available Platforms
 
+VS Code: https://marketplace.visualstudio.com/items?itemName=tanishq-chaudhary.its-markdown-studio
+
 Open VSIX: https://open-vsx.org/extension/tanishq-chaudhary/its-markdown-studio
 
 ---
