@@ -45,7 +45,7 @@
 ## Remaining
 
 - [ ] **[HIGH PRIORITY] Automate publishing to VS Code Marketplace + Open VSX on version tag.** Currently every release is a manual `npm run package` + `vsce publish` + `ovsx publish` from my laptop, which means Cursor / VSCodium / Gitpod / Theia users (Open VSX) lag behind or get skipped entirely. Target: push a `v*` tag → GitHub Actions builds, tests, and publishes to both registries.
-  - **One-time human setup** (can't be automated): (1) claim the `tanishq-chaudhary` namespace on open-vsx.org (Eclipse Foundation approval, ~1 business day); (2) generate an Azure DevOps PAT with scope `Marketplace → Manage` (all orgs) → GitHub repo secret `VSCE_PAT`; (3) generate an open-vsx.org access token → GitHub repo secret `OVSX_PAT`.
+  - **One-time human setup** (can't be automated): (1) generate an Azure DevOps PAT with scope `Marketplace → Manage` (all orgs) → GitHub repo secret `VSCE_PAT`; (2) generate an open-vsx.org access token → GitHub repo secret `OVSX_PAT`.
   - **Repo changes**: add `ovsx` to `devDependencies` (match `@vscode/vsce` version range); add `.github/workflows/publish.yml` triggered on `push: tags: 'v*'` that runs `npm ci` → `npm test` → `npm run build` → `npx vsce publish -p $VSCE_PAT` → `npx ovsx publish -p $OVSX_PAT` (both CLIs read the version from `package.json` — the tag just triggers); add `.github/workflows/ci.yml` running `npm test && npm run build` on every PR so auto-publish can't ship a broken main; append an `ovsx publish` line to `scripts/deploy.sh` under the `--publish` branch so manual local deploys also hit both registries.
   - **Release flow once wired**: bump `package.json` version + `CHANGELOG.md` → commit → `git tag v2.0.1 && git push --tags` → workflow runs, both marketplaces update within ~5 minutes.
 - [ ] Claude Code rich diff integration — blocked on Claude Code exposing proposed content before acceptance (see SPEC.md § Claude Code Integration)
@@ -55,6 +55,7 @@
 - [ ] Claude Code integration — live diff in the rich editor when Claude edits a .md file; show accept (tick) / reject (cross) icons inline so the user can review and apply suggestions directly without leaving the rich editor
 - [ ] esc. key should highlight the entire line just like notion
 - [ ] make sure cursor does not vanish/gets autofocused after naving inside/outside of katex
+- [ ] Bullet points nested inside checkboxes do not appear right now. They are indented correctly.
 - [ ] This diff should not happen:
 
 ```diff
