@@ -2,7 +2,7 @@
 
 I read as much `.md` as all other programming languages combined.
 
-My own notes, AI agents generated reports, random READMEs.
+Personal notes, research notes, Claude Code generated reports, random READMEs.
 
 I find it easier to read Notion-like markdown rather than raw markdown.
 
@@ -12,11 +12,9 @@ That's why Markdown Studio exists.
 
 ### Rich git Diffs
 
-Rich editing, yes, of course. WYSIWYG for faster reading.
+You have seen rich editing. WYSIWYG for faster reading.
 
-But no one has made rich diffs.
-
-Till now.
+But have you seen rich diffing?
 
 ![diff](assets/diff.gif)
 
