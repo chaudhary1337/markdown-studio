@@ -4,24 +4,18 @@
 
 ### Open-source launch
 
-- Licensed under MIT (`LICENSE` + `package.json`).
-- Canonical repository moved to `https://github.com/chaudhary1337/markdown-studio` (the old `markdown-studio-issues` repo is retired).
-- Source documentation (`SPEC.md`, `TODO.md`, `CLAUDE.md`) brought in line with the current codebase for public contributors.
-
-### Editor improvements (accumulated during 1.0.x)
-
-- Full image support — insert dialog, drag-and-drop, paste, captions, custom Tiptap NodeView.
-- App.tsx split into focused hooks (`useEditorState`, `useSettingsPanel`, `useClipboardHandlers`, `useDragDrop`).
-- CodeLens "Open in Rich Editor" / "Open in Browser" above line 1 of the native markdown editor.
-- Graceful fallback when Claude Code proposes edits we can't intercept pre-acceptance.
-- h4–h6 headings now round-trip natively via Tiptap — the metadata-comment workaround has been removed.
-- Currency `$` signs no longer get parsed as math delimiters; table padding normalized to eliminate first-roundtrip whitespace diffs.
+- Overheads: Licensed under MIT (`LICENSE` + `package.json`).
+- Overheads: Canonical repository moved to `https://github.com/chaudhary1337/markdown-studio` (the old `markdown-studio-issues` repo is retired).
+- Overheads: Source documentation (`SPEC.md`, `TODO.md`, `CLAUDE.md`) brought in line with the current codebase.
 
 ## 1.0.x — 2026-04-08
 
-- Consolidated README images under `assets/` with relative paths (no more raw.githubusercontent URLs); extension icon moved to `assets/logo7.png`
-- Updated repository URL to `markdown-studio-issues`
-- Updated README copy and branding to Markdown Studio
+- Feature: Full image support — insert dialog, drag-and-drop, paste, captions, custom Tiptap NodeView.
+- Workaround: Graceful fallback when Claude Code proposes edits we can't intercept pre-acceptance.
+- Bug fix: Currency `$` signs no longer get parsed as math delimiters; table padding normalized to eliminate first-roundtrip whitespace diffs.
+- Overheads: Consolidated README images under `assets/` with relative paths (no more raw\.githubusercontent URLs); extension icon moved to `assets/logo7.png`
+- Overheads: Updated repository URL to `markdown-studio-issues`
+- Overheads: Updated README copy and branding to "Markdown Studio" from "Better Markdown"
 
 ## 1.0.0 — 2026-04-08
 
