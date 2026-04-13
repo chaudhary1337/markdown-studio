@@ -56,6 +56,9 @@
 - [ ] esc. key should highlight the entire line just like notion
 - [ ] make sure cursor does not vanish/gets autofocused after naving inside/outside of katex
 - [ ] Bullet points nested inside checkboxes do not appear right now. They are indented correctly.
+- [ ] Diff view scrolls the navigator row and cuts it in half when scrolled down.
+- [ ] Embeddings for YouTube & GitHub like Notion.
+- [ ] Preserve inline sibling images side-by-side (e.g. README badge rows). Right now consecutive `![...]` on one line get split into separate paragraphs on round-trip, and raw `<p><img/>...</p>` HTML blocks are dropped entirely — so there's no way to keep a row of shields.io badges side-by-side through the rich editor. Fix in `webview/hooks/useVSCodeSync.ts` + `test/pipeline.ts`; add a test case in category I (images).
 - [ ] This diff should not happen:
 
 ```diff
