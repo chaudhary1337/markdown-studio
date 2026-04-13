@@ -2,7 +2,7 @@
   "name": "its-markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Notion-like WYSIWYG markdown editor with rich diffs, tables, images, math, and more.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "tanishq-chaudhary",
   "license": "UNLICENSED",
   "repository": {
@@ -13,7 +13,7 @@
     "url": "https://github.com/chaudhary1337/markdown-studio-issues/issues"
   },
   "homepage": "https://github.com/chaudhary1337/markdown-studio-issues",
-  "icon": "logo7.png",
+  "icon": "assets/logo7.png",
   "engines": {
     "vscode": "^1.80.0"
   },

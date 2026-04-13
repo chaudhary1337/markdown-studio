@@ -2,6 +2,7 @@
 
 ## 1.0.x — 2026-04-08
 
+- Consolidated README images under `assets/` with relative paths (no more raw.githubusercontent URLs); extension icon moved to `assets/logo7.png`
 - Updated repository URL to `markdown-studio-issues`
 - Updated README copy and branding to Markdown Studio
 

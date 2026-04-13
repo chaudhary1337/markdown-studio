@@ -26,13 +26,6 @@ logo4.png
 logo5.png
 logo6.png
 bait.gif
-diff.gif
-seamless-sync.gif
-navigate.gif
-default-editor-overview.png
-rich-editor-overview.png
-browser-mode-overview.png
-slash-command-working.png
-checkboxes-table-inline-math.png
-math-block.png
 Screenshot *.png
+assets/**
+!assets/logo7.png
