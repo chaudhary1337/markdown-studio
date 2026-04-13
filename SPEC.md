@@ -185,7 +185,7 @@ better-markdown/
    - Compact lists (remove blank lines between items)
    - Orphaned list marker merging
 1. Restore math from code/pre placeholders back to `$...$` / `$$...$$`
-2. ` ` / `&` HTML entity cleanup
+2. `/` `&` HTML entity cleanup
 3. `restoreHeadings()` converts `### `back to `####`/`#####`/`######` using metadata
 4. `appendMeta()` adds metadata comment at end of file
 5. `prependFrontmatter()` restores YAML frontmatter at top of file
