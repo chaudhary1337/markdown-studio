@@ -134,7 +134,4 @@ Open VSIX: https://open-vsx.org/extension/tanishq-chaudhary/its-markdown-studio
 
 ---
 
-PS:
-
-- It is called "Mardown Studio" but In various places you'll see "Better Markdown", which was what I intended to call it originally.
-- I have used Claude Code Opus 4.6 and vibe coded >90% of this repo.
+PS: I have used Claude Code Opus 4.6 and vibe coded >90% of this repo.
