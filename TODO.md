@@ -51,6 +51,26 @@
 - [ ] Claude Code integration — live diff in the rich editor when Claude edits a .md file; show accept (tick) / reject (cross) icons inline so the user can review and apply suggestions directly without leaving the rich editor
 - [ ] esc. key should highlight the entire line just like notion
 - [ ] make sure cursor does not vanish/gets autofocused after naving inside/outside of katex
+- [ ] This diff should not happen:
+
+```diff
+diff --git a/SPEC.md b/SPEC.md
+index 16112b7..7c71357 100644
+--- a/SPEC.md
++++ b/SPEC.md
+@@ -205,10 +205,10 @@ better-markdown/
+    - Image followed by duplicate alt-text line → dedup
+    - Compact lists (remove blank lines between items)
+    - Orphaned list marker merging
+-6. Restore math from code/pre placeholders back to `$...$` / `$$...$$`
+-7. `/` `&` HTML entity cleanup
+-8. `prependFrontmatter()` restores YAML frontmatter at top of file
+-9. Strip webview URI prefixes to restore relative image paths
++1. Restore math from code/pre placeholders back to `$...$` / `$$...$$`
++2. `/` `&` HTML entity cleanup
++3. `prependFrontmatter()` restores YAML frontmatter at top of file
++4. Strip webview URI prefixes to restore relative image paths
+```
 
 ## Known Limitations
 

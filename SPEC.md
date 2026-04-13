@@ -205,10 +205,10 @@ better-markdown/
    - Image followed by duplicate alt-text line → dedup
    - Compact lists (remove blank lines between items)
    - Orphaned list marker merging
-6. Restore math from code/pre placeholders back to `$...$` / `$$...$$`
-7. `/` `&` HTML entity cleanup
-8. `prependFrontmatter()` restores YAML frontmatter at top of file
-9. Strip webview URI prefixes to restore relative image paths
+1. Restore math from code/pre placeholders back to `$...$` / `$$...$$`
+2. `/` `&` HTML entity cleanup
+3. `prependFrontmatter()` restores YAML frontmatter at top of file
+4. Strip webview URI prefixes to restore relative image paths
 
 > h4–h6 headings round-trip natively via Tiptap's `StarterKit.heading({ levels: [1,2,3,4,5,6] })` — no metadata sidecar is needed (removed in a75d719).
 
