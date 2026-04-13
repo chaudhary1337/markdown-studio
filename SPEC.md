@@ -55,6 +55,16 @@ A VSCode extension that replaces the default markdown editor with a Notion-like 
 - Cmd+C / Ctrl+C on a selection puts markdown source on the clipboard (not Tiptap's rendered plain text). Both `text/plain` (markdown) and `text/html` (HTML) are set, so rich paste targets still see structure.
 - Cut (Cmd+X) does the same and removes the selection.
 
+### Images
+
+- Custom Tiptap NodeView (`webview/extensions/ImageView.tsx`) with inline caption editing.
+- Insert via slash menu (`/Image` opens `ImageInsertDialog`), drag-and-drop onto the editor, or paste from clipboard (handled in `useDragDrop.ts`).
+- Relative image paths are resolved against the document folder when rendering and stripped back to relative on save.
+
+### CodeLens Entry Points
+
+- When a `.md` file is open in VS Code's native text editor, a CodeLens row at line 1 offers "Open in Rich Editor" and "Open in Browser" actions, so users can switch into the rich view without hunting for the command palette.
+
 ### Read-Only for Non-File URIs
 
 - Documents from git:, conflictResolution:, and similar non-file schemes render as a read-only Tiptap view with a "Read-only" badge.
@@ -122,37 +132,50 @@ better-markdown/
 ├── package.json              # Extension manifest + deps
 ├── tsconfig.json             # Extension host TS config
 ├── esbuild.js                # Dual build (extension + webview)
+├── assets/                   # Logos, README screenshots/gifs (only logo7.png ships in the vsix)
 ├── scripts/
 │   ├── deploy.sh             # Build + package + optional publish
 │   ├── pipeline.ts           # Shared md↔md round-trip used by tests
-│   ├── test-conversions.ts   # 118+ targeted conversion assertions
+│   ├── test-conversions.ts   # 113+ targeted conversion assertions
 │   └── test-roundtrip.ts     # Full-file round-trip test
 ├── src/
-│   ├── extension.ts          # Activation, commands, keybindings
+│   ├── extension.ts          # Activation, commands, keybindings, tab auto-close for non-file URIs
 │   ├── diffPanel.ts          # Standalone rich diff webview panel
 │   └── provider.ts           # CustomTextEditorProvider + settings persistence
 ├── webview/
 │   ├── tsconfig.json         # Webview TS config (JSX)
 │   ├── index.tsx             # React mount (App or DiffApp via __BTRMK_MODE__)
-│   ├── App.tsx               # Tiptap editor + sync + search + copy + settings
+│   ├── App.tsx               # Tiptap editor shell (sync, search, copy, settings, drag/drop)
 │   ├── DiffApp.tsx           # Standalone diff panel entry
+│   ├── vscode-api.ts         # postMessage wrapper for host ↔ webview
 │   ├── settings.ts           # User settings schema + defaults
 │   ├── utils.ts              # Shared helpers (getHeadingLevel, scrollToBlock)
 │   ├── frontmatter.ts        # YAML frontmatter strip/restore
-│   ├── metadata.ts           # h4-h6 preservation via HTML comments
+│   ├── conversion-utils.ts   # DOM/HTML helpers used by the md↔html pipeline
 │   ├── markdown.config.ts    # buildMarkdownConfig + normalizeMarkdown
 │   ├── hooks/
-│   │   └── useVSCodeSync.ts  # md ↔ html conversion (async + sync variants)
+│   │   ├── useVSCodeSync.ts        # md ↔ html conversion (async + sync variants)
+│   │   ├── useEditorState.ts       # Tiptap editor lifecycle + content sync
+│   │   ├── useSettingsPanel.ts     # Settings modal open/close + persistence
+│   │   ├── useClipboardHandlers.ts # Cmd+C/Cmd+X copy-as-markdown
+│   │   └── useDragDrop.ts          # Image paste/drag/drop into editor
 │   ├── components/
-│   │   ├── DiffView.tsx      # Source/Rendered diff UI (diff2html + htmldiff)
-│   │   ├── SearchBar.tsx     # Content search (Ctrl+F)
-│   │   ├── SettingsPanel.tsx # Settings modal (gear icon)
+│   │   ├── DiffView.tsx          # Source/Rendered diff UI (diff2html + htmldiff)
+│   │   ├── SearchBar.tsx         # Content search (Ctrl+F)
+│   │   ├── SettingsPanel.tsx     # Settings modal (gear icon)
+│   │   ├── ImageInsertDialog.tsx # Slash-command image insert dialog
+│   │   ├── TableControls.tsx     # Floating add/delete row/col toolbar
 │   │   ├── StickyHeadings.tsx
-│   │   └── TableOfContents.tsx  # Sidebar + filter
+│   │   └── TableOfContents.tsx   # Sidebar + filter
+│   ├── extensions/
+│   │   ├── SlashCommand.tsx   # `/` block-insert menu
+│   │   ├── CodeBlockView.tsx  # Custom NodeView with language selector
+│   │   ├── ImageView.tsx      # Custom image NodeView with captions
+│   │   ├── MathInline.tsx     # `$...$` inline KaTeX node
+│   │   └── MathBlock.tsx      # `$$...$$` block KaTeX node
 │   └── styles/
 │       └── editor.css
-├── test.md                   # Test file (opened by editor)
-└── test-ref.md               # Reference file (never opened, for comparison)
+└── test.md                   # Test file used by the round-trip suite
 ```
 
 ## Markdown Output Pipeline
@@ -160,13 +183,11 @@ better-markdown/
 ### Input (markdown → editor)
 
 1. `extractFrontmatter()` strips YAML frontmatter (`---` block) from top of file
-2. `extractMeta()` strips metadata comment from end of file
-3. `buildMeta()` scans for h4-h6 headings
-4. `protectTableCodePipes()` — replace `|` inside code spans in table rows with placeholder (remark's GFM table parser splits on `|` even inside backticks)
-5. `unified().use(remarkParse, remarkGfm, remarkMath, remarkRehype, rehypeStringify)` → HTML, then restore placeholders. `remark-math` parses `$...$` / `$$...$$` into math AST nodes; custom `remark-rehype` handlers emit `<span data-type="mathInline">` / `<div data-type="mathBlock">` elements for Tiptap.
-6. DOMParser transforms: wrap bare `<li>` text in `<p>` (Tiptap needs block content), convert GFM task list HTML to Tiptap taskItem format, split multiple `<img>` in same `<p>` into separate blocks
-7. Trim code block trailing newlines, resolve relative image paths
-8. `editor.commands.setContent(html)` → Tiptap editor
+2. `protectTableCodePipes()` — replace `|` inside code spans in table rows with placeholder (remark's GFM table parser splits on `|` even inside backticks)
+3. `unified().use(remarkParse, remarkGfm, remarkMath, remarkRehype, rehypeStringify)` → HTML, then restore placeholders. `remark-math` parses `$...$` / `$$...$$` into math AST nodes; custom `remark-rehype` handlers emit `<span data-type="mathInline">` / `<div data-type="mathBlock">` elements for Tiptap.
+4. DOMParser transforms: wrap bare `<li>` text in `<p>` (Tiptap needs block content), convert GFM task list HTML to Tiptap taskItem format, split multiple `<img>` in same `<p>` into separate blocks
+5. Trim code block trailing newlines, resolve relative image paths
+6. `editor.commands.setContent(html)` → Tiptap editor
 
 ### Output (editor → markdown)
 
@@ -184,12 +205,12 @@ better-markdown/
    - Image followed by duplicate alt-text line → dedup
    - Compact lists (remove blank lines between items)
    - Orphaned list marker merging
-1. Restore math from code/pre placeholders back to `$...$` / `$$...$$`
-2. `/` `&` HTML entity cleanup
-3. `restoreHeadings()` converts `### `back to `####`/`#####`/`######` using metadata
-4. `appendMeta()` adds metadata comment at end of file
-5. `prependFrontmatter()` restores YAML frontmatter at top of file
-6. Strip webview URI prefixes to restore relative image paths
+6. Restore math from code/pre placeholders back to `$...$` / `$$...$$`
+7. `/` `&` HTML entity cleanup
+8. `prependFrontmatter()` restores YAML frontmatter at top of file
+9. Strip webview URI prefixes to restore relative image paths
+
+> h4–h6 headings round-trip natively via Tiptap's `StarterKit.heading({ levels: [1,2,3,4,5,6] })` — no metadata sidecar is needed (removed in a75d719).
 
 ## Claude Code Integration
 

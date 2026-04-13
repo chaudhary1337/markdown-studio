@@ -4,7 +4,7 @@
 
 - [x] Toggle between rich/source editor (Cmd+Shift+M)
 - [x] Ctrl+F find-in-page with highlighting (CSS Custom Highlight API + mark fallback)
-- [x] Preserve h4-h6 headings via metadata comment
+- [x] h4–h6 headings round-trip natively via Tiptap (earlier metadata-comment workaround removed in a75d719)
 - [x] Prefix all console logging with `[better-markdown]`
 - [x] Fix list item formatting (orphaned markers, loose lists)
 - [x] Syntax highlighting in code blocks (lowlight)
@@ -33,13 +33,19 @@
 - [x] Strip `<https://...>` autolinks back to bare URLs; unescape `\=` before non-`=` content
 - [x] Ctrl+F → Esc places cursor at the active match; reopening Ctrl+F resumes with same query and position
 - [x] Math support — inline (`$...$`) and block (`$$...$$`) via KaTeX rendering, slash commands `/Math Block` and `/Inline Math`, click-to-edit LaTeX source
+- [x] Don't parse currency `$` signs as math delimiters (1d51609)
+- [x] Table formatting normalized to eliminate first-roundtrip whitespace diffs (6a9737e, b220192)
+- [x] Auto-close non-file custom editor tabs (git:, scm: schemes) via `onDidChangeTabs`
+- [x] Full image support — insert dialog, drag-and-drop, paste, captions, custom NodeView (e15f135)
+- [x] CodeLens "Open in Rich Editor" / "Open in Browser" above line 1 in the native markdown editor
+- [x] Refactor App.tsx into focused hooks (`useSettingsPanel`, `useEditorState`, `useClipboardHandlers`, `useDragDrop`) (64aa575)
+- [x] Graceful fallback when Claude Code edits can't be intercepted pre-acceptance (04b2502)
+- [x] Consolidate README assets under `assets/`, drop external `markdown-studio-issues` image hosting
 
 ## Remaining
 
-- [x] Auto-close non-file custom editor tabs (git:, scm: schemes) via `onDidChangeTabs`
 - [ ] Claude Code rich diff integration — blocked on Claude Code exposing proposed content before acceptance (see SPEC.md § Claude Code Integration)
 - [ ] TOC should highlight diffed headings (added/removed/changed) when diff view is active
-- [ ] Allow images to be dragged and dropped into the editor
 - [ ] Add mermaid diagrams
 - [ ] Add buttons as "editors" generally do, to let people click buttons etc. and insert checkboxes etc.
 - [ ] Claude Code integration — live diff in the rich editor when Claude edits a .md file; show accept (tick) / reject (cross) icons inline so the user can review and apply suggestions directly without leaving the rich editor

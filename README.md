@@ -103,7 +103,7 @@ You can write math using $\KaTeX$ in both inline and block modes.
 
 ### Installation
 
-Hit the Install button on this page. No login, setup or permissions required. It works out of the box.
+Hit the Install button on the marketplace page. No login, setup or permissions required. It works out of the box.
 
 ### Keyboard shortcuts
 
@@ -122,14 +122,17 @@ Everything runs locally in your VS Code instance.
 
 ### Bugs/Feature Requests
 
-If you encounter any bugs or have any feature requests, please [open an issue](https://github.com/chaudhary1337/markdown-studio-issues/issues).
+If you encounter any bugs or have any feature requests, please [open an issue](https://github.com/chaudhary1337/markdown-studio/issues).
 
 I am actively using it myself, so expect frequent updates.
 
-### Disclaimer
+### Available Platforms
 
-This software is provided as-is, without warranty of any kind. Use at your own risk.
+Open VSIX: https://open-vsx.org/extension/tanishq-chaudhary/its-markdown-studio
 
 ---
 
-PS: It is called "Mardown Studio" but In various places you'll see "Better Markdown", which was what I intended to call it originally.
+PS:
+
+- It is called "Mardown Studio" but In various places you'll see "Better Markdown", which was what I intended to call it originally.
+- I have used Claude Code Opus 4.6 and vibe coded >90% of this repo.
