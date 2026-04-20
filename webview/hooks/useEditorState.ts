@@ -144,7 +144,20 @@ export function useEditorState({
           );
           frontmatterRef.current = frontmatter;
           const html = await markdownToHtml(noFm, baseUri.current);
+          // setContent resets the ProseMirror selection to the doc end.
+          // Snapshot the caret before replacing content and restore it
+          // (clamped to the new doc size) so external updates — e.g. VS
+          // Code's own Cmd+Z firing a document change that echoes back —
+          // don't yank the cursor to the end of the file.
+          const { from, to } = editor.state.selection;
+          const wasFocused = editor.isFocused;
           editor.commands.setContent(html);
+          const maxPos = editor.state.doc.content.size;
+          editor.commands.setTextSelection({
+            from: Math.min(from, maxPos),
+            to: Math.min(to, maxPos),
+          });
+          if (wasFocused) editor.commands.focus();
         } catch {
           // Ignore parse failures on external updates
         }
@@ -166,6 +179,28 @@ export function useEditorState({
     vscodeApi.postMessage({ type: "ready" });
     return () => window.removeEventListener("message", handler);
   }, [editor, applySettings]);
+
+  // Restore cursor when the webview regains focus.
+  // ProseMirror keeps the selection in state across blur, but the DOM
+  // selection gets cleared when the window/tab loses focus. Track whether
+  // the editor was the last-focused element and, on window focus, call
+  // editor.commands.focus() to re-apply the DOM selection from state.
+  useEffect(() => {
+    if (!editor) return;
+    let editorWasLastFocused = false;
+    const onFocusIn = (e: FocusEvent) => {
+      editorWasLastFocused = editor.view.dom.contains(e.target as Node);
+    };
+    const onWindowFocus = () => {
+      if (editorWasLastFocused) editor.commands.focus();
+    };
+    document.addEventListener("focusin", onFocusIn);
+    window.addEventListener("focus", onWindowFocus);
+    return () => {
+      document.removeEventListener("focusin", onFocusIn);
+      window.removeEventListener("focus", onWindowFocus);
+    };
+  }, [editor]);
 
   // Link handling: Cmd+click / Ctrl+click
   useEffect(() => {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.x — 2026-04-20
+
+- Bug fix: Cursor position is preserved when the webview loses and regains focus (switching apps or VS Code tabs) — the caret returns to where you left off instead of being dropped.
+- Bug fix: Undo (Cmd/Ctrl+Z) no longer jumps the cursor to the end of the file — the caret stays at the location of the undone change.
+
 ## 2.0.0 — 2026-04-13
 
 ### Open-source launch
