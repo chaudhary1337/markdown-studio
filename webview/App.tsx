@@ -14,6 +14,8 @@ import { createCodeBlock } from "./extensions/CodeBlockView";
 import { SlashCommand } from "./extensions/SlashCommand";
 import { MathInline } from "./extensions/MathInline";
 import { MathBlock } from "./extensions/MathBlock";
+import { YouTubeEmbed } from "./extensions/YouTubeEmbed";
+import { GitHubEmbed } from "./extensions/GitHubEmbed";
 import { StickyHeadings } from "./components/StickyHeadings";
 import { TableOfContents } from "./components/TableOfContents";
 import { SearchBar } from "./components/SearchBar";
@@ -59,6 +61,8 @@ export function App() {
       createCodeBlock(lowlight),
       MathInline,
       MathBlock,
+      YouTubeEmbed,
+      GitHubEmbed,
       SlashCommand,
     ],
     editorProps: {

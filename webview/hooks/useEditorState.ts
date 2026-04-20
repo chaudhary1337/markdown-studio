@@ -132,6 +132,27 @@ export function useEditorState({
             frontmatterRef.current = frontmatter;
             const html = await markdownToHtml(noFm, baseUri.current);
             editor.commands.setContent(html);
+            // Place the caret: restore the last-known position for this
+            // file if we have one, otherwise drop it inside the first
+            // heading (usually the title). Falls back to doc start.
+            const maxPos = editor.state.doc.content.size;
+            let targetPos: number | null = null;
+            if (typeof msg.cursorPosition === "number") {
+              targetPos = Math.max(0, Math.min(msg.cursorPosition, maxPos));
+            } else {
+              editor.state.doc.descendants((n, pos) => {
+                if (targetPos !== null) return false;
+                if (n.type.name === "heading") {
+                  targetPos = pos + 1;
+                  return false;
+                }
+                return true;
+              });
+            }
+            if (targetPos !== null) {
+              editor.commands.setTextSelection(targetPos);
+            }
+            editor.commands.focus();
           } catch (err: any) {
             setStatus(`Parse error: ${err?.message || err}`);
           }
@@ -211,7 +232,10 @@ export function useEditorState({
       if (!href) return;
       e.preventDefault();
       e.stopPropagation();
-      if (e.metaKey || e.ctrlKey || e.button === 1) {
+      // Embed fallback links (YouTube / GitHub cards) mark themselves so a
+      // plain click opens externally instead of just consuming the event.
+      const alwaysExternal = anchor.getAttribute("data-external") === "true";
+      if (alwaysExternal || e.metaKey || e.ctrlKey || e.button === 1) {
         vscodeApi.postMessage({ type: "openLink", href });
       }
     };
@@ -263,6 +287,31 @@ export function useEditorState({
       editor.off("update", handleUpdate);
     };
   }, [editor, handleUpdate, handleUpdateRef]);
+
+  // Persist the caret position per file so reopening a file lands the user
+  // where they left off. Debounced to avoid flooding the host on every
+  // selection tick.
+  useEffect(() => {
+    if (!editor) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onSelection = () => {
+      if (!initialized.current) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        try {
+          const { from } = editor.state.selection;
+          vscodeApi.postMessage({ type: "saveCursor", position: from });
+        } catch {
+          /* ignore */
+        }
+      }, 500);
+    };
+    editor.on("selectionUpdate", onSelection);
+    return () => {
+      if (timer) clearTimeout(timer);
+      editor.off("selectionUpdate", onSelection);
+    };
+  }, [editor]);
 
   const switchToSource = useCallback(() => {
     vscodeApi.postMessage({ type: "toggleEditor" });

@@ -69,6 +69,7 @@ export function normalizeMarkdown(
     md = md.replace(/(!\[([^\]]+)\]\([^)]+\))\n+\2\s*$/gm, "$1\n");
   }
   md = stripAutolinks(md);
+  md = unescapeBareUrls(md);
   md = fixOrphanedListMarkers(md);
   if (settings.compactLists) {
     md = compactLists(md);
@@ -432,6 +433,46 @@ function stripAutolinks(md: string): string {
         break;
       }
       out += remaining.slice(0, tick).replace(/<(https?:\/\/[^\s>]+)>/g, "$1");
+      const end = remaining.indexOf("`", tick + 1);
+      if (end === -1) {
+        out += remaining.slice(tick);
+        break;
+      }
+      out += remaining.slice(tick, end + 1);
+      remaining = remaining.slice(end + 1);
+    }
+    lines[i] = out;
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Remove remark-stringify's "safety" backslash escapes on bare URLs
+ * (e.g. `https\://www\.example\.com`). We WANT these URLs to be parsed as
+ * GFM autolinks on re-load — that's how YouTube / GitHub embed detection
+ * recognizes them.
+ */
+function unescapeBareUrls(md: string): string {
+  const URL_RE = /\bhttps?\\:\/\/(?:[^\s\\]|\\[^\s])+/g;
+  const unescape = (m: string) => m.replace(/\\([^\s])/g, "$1");
+  const lines = md.split("\n");
+  let inCodeBlock = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^```/.test(lines[i])) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+    // Skip inline code spans so we don't touch escaped URLs inside them.
+    let out = "";
+    let remaining = lines[i];
+    while (remaining.length > 0) {
+      const tick = remaining.indexOf("`");
+      if (tick === -1) {
+        out += remaining.replace(URL_RE, unescape);
+        break;
+      }
+      out += remaining.slice(0, tick).replace(URL_RE, unescape);
       const end = remaining.indexOf("`", tick + 1);
       if (end === -1) {
         out += remaining.slice(tick);

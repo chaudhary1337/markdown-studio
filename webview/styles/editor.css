@@ -1508,6 +1508,181 @@ html, body, #root {
   font-size: 0.9em;
 }
 
+/* ---------- YouTube / GitHub embeds ---------- */
+
+.embed-wrapper {
+  margin: 0.75em 0;
+}
+
+/* Selection highlight when the node has focus (NodeSelection). */
+.embed-wrapper.selected .youtube-card,
+.embed-wrapper.selected .github-card {
+  border-color: var(--vscode-focusBorder, #007fd4);
+  box-shadow: 0 0 0 1px var(--vscode-focusBorder, #007fd4);
+}
+
+.embed-editing .embed-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--vscode-editorWidget-background, #252526);
+  border: 1px solid var(--vscode-focusBorder, #007fd4);
+  border-radius: 4px;
+}
+
+.embed-icon {
+  color: var(--vscode-descriptionForeground, #8a8a8a);
+  flex-shrink: 0;
+}
+
+.embed-url-input {
+  flex: 1;
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #ccc);
+  border: 1px solid var(--vscode-input-border, #5a5a5a);
+  border-radius: 3px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: var(--vscode-font-family, sans-serif);
+  outline: none;
+}
+
+.embed-url-input:focus {
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+.embed-error {
+  padding: 10px 14px;
+  color: var(--vscode-errorForeground, #f48771);
+  background: var(--vscode-inputValidation-errorBackground, rgba(244, 135, 113, 0.1));
+  border: 1px solid var(--vscode-inputValidation-errorBorder, #f48771);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.youtube-card {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid var(--vscode-widget-border, #3c3c3c);
+  border-radius: 6px;
+  background: var(--vscode-editorWidget-background, #252526);
+  color: var(--vscode-foreground, #ccc);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.youtube-card:hover {
+  background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+  border-color: var(--vscode-focusBorder, #007fd4);
+  text-decoration: none;
+}
+
+.youtube-thumb {
+  position: relative;
+  flex: 0 0 180px;
+  aspect-ratio: 16 / 9;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+}
+
+.youtube-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.youtube-play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.2);
+  transition: background 0.15s;
+  pointer-events: none;
+}
+
+.youtube-card:hover .youtube-play-overlay {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.youtube-card-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 4px 4px 4px 0;
+}
+
+.youtube-card-title {
+  font-weight: 500;
+  font-size: 0.95em;
+}
+
+.youtube-card-subtitle {
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground, #8a8a8a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.github-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--vscode-widget-border, #3c3c3c);
+  border-radius: 6px;
+  background: var(--vscode-editorWidget-background, #252526);
+  color: var(--vscode-foreground, #ccc);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.github-card:hover {
+  background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+  border-color: var(--vscode-focusBorder, #007fd4);
+  text-decoration: none;
+}
+
+.github-card-icon {
+  color: var(--vscode-descriptionForeground, #8a8a8a);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.github-card-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.github-card-title {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-card-subtitle {
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground, #8a8a8a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Drag-and-drop overlay ────────────────────────────────────── */
 
 .editor-container.drag-over::after {

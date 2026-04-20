@@ -5,7 +5,7 @@ import { Suggestion } from "@tiptap/suggestion";
 import {
   Heading1, Heading2, Heading3, Heading4, Heading5, Heading6,
   List, ListOrdered, CheckSquare, Code, Quote, Minus, Table, ImageIcon, Type,
-  Sigma,
+  Sigma, CirclePlay, Code,
 } from "lucide-react";
 
 interface SlashItem {
@@ -34,6 +34,8 @@ const ITEMS: SlashItem[] = [
   { title: "Image", icon: <ImageIcon size={16} />, command: () => {
     window.dispatchEvent(new CustomEvent("btrmk:showImageDialog"));
   }},
+  { title: "YouTube", icon: <CirclePlay size={16} />, command: (e) => e.chain().focus().insertContent({ type: "youtubeEmbed", attrs: { url: "" } }).run() },
+  { title: "GitHub", icon: <Code size={16} />, command: (e) => e.chain().focus().insertContent({ type: "githubEmbed", attrs: { url: "" } }).run() },
 ];
 
 function SlashMenu({ items, selectedIndex, onSelect }: {

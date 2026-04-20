@@ -17,6 +17,8 @@ import {
   protectCurrencyDollars,
   protectTableCodePipes,
 } from "../conversion-utils";
+import { isYouTubeUrl } from "../extensions/YouTubeEmbed";
+import { isGitHubUrl } from "../extensions/GitHubEmbed";
 
 /**
  * Render markdown to plain HTML suitable for display (NOT for Tiptap
@@ -112,6 +114,26 @@ export async function markdownToHtml(
       if (ul.querySelector('li[data-type="taskItem"]')) {
         ul.setAttribute("data-type", "taskList");
       }
+    });
+
+    // Detect "paragraph containing exactly one autolink to YouTube/GitHub"
+    // and rewrite it so Tiptap parses it as an embed node. remark-gfm turns
+    // a bare URL on its own line into <p><a href="url">url</a></p>, which
+    // is the shape we look for here.
+    doc.querySelectorAll("p").forEach((p) => {
+      const anchors = p.querySelectorAll("a");
+      if (anchors.length !== 1) return;
+      const a = anchors[0];
+      const href = a.getAttribute("href") || "";
+      const pText = (p.textContent || "").trim();
+      if (pText !== href) return;
+      let dataType: string | null = null;
+      if (isYouTubeUrl(href)) dataType = "youtubeEmbed";
+      else if (isGitHubUrl(href)) dataType = "githubEmbed";
+      if (!dataType) return;
+      p.setAttribute("data-type", dataType);
+      p.setAttribute("data-url", href);
+      p.textContent = href;
     });
 
     // Ensure each <img> is in its own <p> block (not inline with other images)

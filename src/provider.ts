@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 
 const SETTINGS_KEY = "betterMarkdown.settings";
+const CURSORS_KEY = "betterMarkdown.cursors";
 
 export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   constructor(readonly context: vscode.ExtensionContext) {}
@@ -23,6 +24,17 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
     for (const wv of this.openWebviews) {
       wv.postMessage({ type: "settingsUpdated", settings: next });
     }
+  }
+
+  private loadCursor(filePath: string): number | undefined {
+    const all = this.context.globalState.get<Record<string, number>>(CURSORS_KEY, {}) ?? {};
+    return all[filePath];
+  }
+
+  private async saveCursor(filePath: string, position: number): Promise<void> {
+    const all = this.context.globalState.get<Record<string, number>>(CURSORS_KEY, {}) ?? {};
+    all[filePath] = position;
+    await this.context.globalState.update(CURSORS_KEY, all);
   }
 
   /**
@@ -89,9 +101,15 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           content: document.getText(),
           baseUri,
           docFolderPath,
+          filePath: document.uri.fsPath,
           isReadonly,
           settings: this.loadSettings(),
+          cursorPosition: this.loadCursor(document.uri.fsPath),
         });
+      } else if (msg.type === "saveCursor") {
+        if (typeof msg.position === "number" && document.uri.scheme === "file") {
+          await this.saveCursor(document.uri.fsPath, msg.position);
+        }
       } else if (msg.type === "saveSettings") {
         await this.saveSettings(msg.settings as Record<string, unknown>);
       } else if (msg.type === "requestGitDiff") {

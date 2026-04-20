@@ -37,6 +37,8 @@ import {
   protectTableCodePipes,
 } from "../webview/conversion-utils";
 import { extractFrontmatter, prependFrontmatter } from "../webview/frontmatter";
+import { isYouTubeUrl } from "../webview/extensions/YouTubeEmbed";
+import { isGitHubUrl } from "../webview/extensions/GitHubEmbed";
 
 export interface RoundTripOptions {}
 
@@ -71,6 +73,19 @@ export async function roundTrip(
   html = html.replace(
     /(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
     (_m, open, c, close) => open + c.replace(/\n$/, "") + close
+  );
+
+  // Detect standalone autolink paragraphs as YouTube/GitHub embeds
+  // (mirrors the DOMParser-based step in useVSCodeSync.markdownToHtml).
+  html = html.replace(
+    /<p>\s*<a href="([^"]+)">\1<\/a>\s*<\/p>/g,
+    (match, href) => {
+      if (isYouTubeUrl(href))
+        return `<p data-type="youtubeEmbed" data-url="${href}">${href}</p>`;
+      if (isGitHubUrl(href))
+        return `<p data-type="githubEmbed" data-url="${href}">${href}</p>`;
+      return match;
+    }
   );
 
   // Convert math HTML to code placeholders (mirrors preprocessTiptapHtml)
@@ -127,6 +142,18 @@ export async function mdToHtml(md: string): Promise<string> {
   html = html.replace(
     /(<code[^>]*>)([\s\S]*?)(<\/code>)/g,
     (_m, open, c, close) => open + c.replace(/\n$/, "") + close
+  );
+  // Mirror the production embed detection (DOMParser-based in useVSCodeSync)
+  // using the same regex we use inside roundTrip.
+  html = html.replace(
+    /<p>\s*<a href="([^"]+)">\1<\/a>\s*<\/p>/g,
+    (match, href) => {
+      if (isYouTubeUrl(href))
+        return `<p data-type="youtubeEmbed" data-url="${href}">${href}</p>`;
+      if (isGitHubUrl(href))
+        return `<p data-type="githubEmbed" data-url="${href}">${href}</p>`;
+      return match;
+    }
   );
   return html;
 }

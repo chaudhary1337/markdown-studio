@@ -3,7 +3,13 @@ import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import katex from "katex";
 
-function MathInlineView({ node, updateAttributes, selected }: any) {
+function MathInlineView({
+  node,
+  updateAttributes,
+  selected,
+  editor,
+  getPos,
+}: any) {
   const [editing, setEditing] = useState(!node.attrs.latex);
   const [latex, setLatex] = useState(node.attrs.latex);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -29,6 +35,25 @@ function MathInlineView({ node, updateAttributes, selected }: any) {
     setEditing(false);
   }, [latex, updateAttributes]);
 
+  // Exit: save and move the caret to `pos` in the outer editor so the
+  // cursor doesn't vanish when dismissing the inline math via keyboard.
+  // `after: true` places the caret right after the node; false places it
+  // right before.
+  const exit = useCallback(
+    (after: boolean) => {
+      updateAttributes({ latex });
+      setEditing(false);
+      if (typeof getPos === "function" && editor) {
+        const base = getPos();
+        const pos = after ? base + node.nodeSize : base;
+        requestAnimationFrame(() => {
+          editor.chain().focus().setTextSelection(pos).run();
+        });
+      }
+    },
+    [latex, updateAttributes, editor, getPos, node],
+  );
+
   if (editing) {
     return (
       <NodeViewWrapper as="span" className="math-inline-wrapper editing">
@@ -39,9 +64,27 @@ function MathInlineView({ node, updateAttributes, selected }: any) {
           onChange={(e) => setLatex(e.target.value)}
           onBlur={save}
           onKeyDown={(e) => {
+            const input = e.currentTarget;
+            const atStart =
+              input.selectionStart === 0 && input.selectionEnd === 0;
+            const atEnd =
+              input.selectionStart === input.value.length &&
+              input.selectionEnd === input.value.length;
             if (e.key === "Enter" || e.key === "Escape") {
               e.preventDefault();
-              save();
+              exit(true);
+            } else if (
+              (e.key === "ArrowLeft" && atStart) ||
+              e.key === "ArrowUp"
+            ) {
+              e.preventDefault();
+              exit(false);
+            } else if (
+              (e.key === "ArrowRight" && atEnd) ||
+              e.key === "ArrowDown"
+            ) {
+              e.preventDefault();
+              exit(true);
             }
           }}
           placeholder="E=mc^2"

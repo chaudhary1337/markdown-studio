@@ -24,6 +24,14 @@ import { roundTrip, mdToHtml, htmlToMd } from "./pipeline";
 import { normalizeMarkdown, buildMarkdownConfig } from "../webview/markdown.config";
 import { DEFAULT_SETTINGS, mergeSettings } from "../webview/settings";
 import { extractFrontmatter, prependFrontmatter } from "../webview/frontmatter";
+import {
+  isYouTubeUrl,
+  getYouTubeVideoId,
+} from "../webview/extensions/YouTubeEmbed";
+import {
+  isGitHubUrl,
+  parseGitHubUrl,
+} from "../webview/extensions/GitHubEmbed";
 
 // ============================================================================
 // Mini test harness
@@ -609,6 +617,96 @@ async function run() {
       html
     );
   }
+
+  // --------------------------------------------------------------------------
+  category("P. Embeds (YouTube, GitHub)");
+  // --------------------------------------------------------------------------
+
+  // URL detection
+  assert("isYouTubeUrl: watch URL", isYouTubeUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ"));
+  assert("isYouTubeUrl: short URL", isYouTubeUrl("https://youtu.be/dQw4w9WgXcQ"));
+  assert("isYouTubeUrl: shorts URL", isYouTubeUrl("https://www.youtube.com/shorts/abcdef"));
+  assert("isYouTubeUrl: plain youtube.com rejected", !isYouTubeUrl("https://www.youtube.com/"));
+  assert("isYouTubeUrl: non-YT rejected", !isYouTubeUrl("https://example.com/watch?v=xyz"));
+
+  assert("isGitHubUrl: repo", isGitHubUrl("https://github.com/foo/bar"));
+  assert("isGitHubUrl: PR", isGitHubUrl("https://github.com/foo/bar/pull/42"));
+  assert("isGitHubUrl: issue", isGitHubUrl("https://github.com/foo/bar/issues/7"));
+  assert("isGitHubUrl: file blob", isGitHubUrl("https://github.com/foo/bar/blob/main/src/a.ts"));
+  assert("isGitHubUrl: user profile rejected", !isGitHubUrl("https://github.com/foo"));
+  assert("isGitHubUrl: non-GH rejected", !isGitHubUrl("https://gitlab.com/foo/bar"));
+
+  // Video ID extraction
+  eq(
+    "getYouTubeVideoId: watch?v=",
+    getYouTubeVideoId("https://www.youtube.com/watch?v=dQw4w9WgXcQ") || "",
+    "dQw4w9WgXcQ"
+  );
+  eq(
+    "getYouTubeVideoId: youtu.be short",
+    getYouTubeVideoId("https://youtu.be/dQw4w9WgXcQ") || "",
+    "dQw4w9WgXcQ"
+  );
+
+  // GitHub URL parsing — kind classification
+  const prInfo = parseGitHubUrl("https://github.com/foo/bar/pull/42");
+  assert(
+    "parseGitHubUrl: PR → kind='pr', owner, repo, number",
+    prInfo?.kind === "pr" &&
+      (prInfo as any).owner === "foo" &&
+      (prInfo as any).repo === "bar" &&
+      (prInfo as any).number === "42",
+    JSON.stringify(prInfo)
+  );
+  const fileInfo = parseGitHubUrl("https://github.com/foo/bar/blob/main/src/a.ts");
+  assert(
+    "parseGitHubUrl: file → kind='file' with path",
+    fileInfo?.kind === "file" && (fileInfo as any).path === "src/a.ts",
+    JSON.stringify(fileInfo)
+  );
+
+  // md→html: standalone autolink becomes embed paragraph
+  {
+    const html = await mdToHtml("https://www.youtube.com/watch?v=dQw4w9WgXcQ\n");
+    assert(
+      "md→html: YouTube URL becomes data-type='youtubeEmbed' paragraph",
+      html.includes('data-type="youtubeEmbed"') &&
+        html.includes('data-url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"'),
+      html
+    );
+  }
+  {
+    const html = await mdToHtml("https://github.com/foo/bar/pull/42\n");
+    assert(
+      "md→html: GitHub URL becomes data-type='githubEmbed' paragraph",
+      html.includes('data-type="githubEmbed"') &&
+        html.includes('data-url="https://github.com/foo/bar/pull/42"'),
+      html
+    );
+  }
+  {
+    // URL inside sentence should NOT be rewritten as an embed
+    const html = await mdToHtml("Check https://www.youtube.com/watch?v=abc here.\n");
+    assert(
+      "md→html: URL inside sentence is NOT embedded",
+      !html.includes('data-type="youtubeEmbed"'),
+      html
+    );
+  }
+
+  // Round-trip: bare URL survives as bare URL
+  await roundtripCase(
+    "YouTube URL on its own line round-trips",
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  );
+  await roundtripCase(
+    "GitHub PR URL on its own line round-trips",
+    "https://github.com/foo/bar/pull/42"
+  );
+  await roundtripCase(
+    "GitHub file URL on its own line round-trips",
+    "https://github.com/foo/bar/blob/main/src/a.ts"
+  );
 
   // --------------------------------------------------------------------------
   category("N. Settings-driven behavior");
