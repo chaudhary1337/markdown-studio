@@ -101,6 +101,7 @@ export function TableOfContents() {
         }
       } else if (raw < COLLAPSE_THRESHOLD) {
         setCollapsed(true);
+        stopDrag();
       } else {
         const w = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, raw));
         setCollapsed(false);
