@@ -1154,6 +1154,7 @@ html, body, #root {
 .diff-body {
   flex: 1;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 8px 16px 16px;
 }
 

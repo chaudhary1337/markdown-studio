@@ -209,8 +209,6 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
       (e) => {
         if (e.document.uri.toString() !== document.uri.toString()) return;
         if (e.contentChanges.length === 0) return;
-        // Only send updates when this editor panel is visible/active
-        if (!webviewPanel.visible) return;
 
         if (pendingWebviewEdits > 0) {
           pendingWebviewEdits--;

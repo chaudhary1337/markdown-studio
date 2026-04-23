@@ -2,6 +2,8 @@
 
 ## 2.1.x — 2026-04-20
 
+- Bug fix: Rich editor tabs now stay in sync when hidden. Previously, external changes to a `.md` file (from Claude Code, git operations, format-on-save in the source view, or another editor panel) were dropped while the rich editor tab wasn't focused, so switching back showed a stale view. Combined with `retainContextWhenHidden: true`, the webview now keeps its DOM *and* keeps applying document updates in the background.
+- Bug fix: Scrolling past the end of the rich diff view no longer scrolls the editor behind it — `overscroll-behavior: contain` on the diff body stops scroll events from chaining into the underlying markdown file.
 - Bug fix: Dragging the Table of Contents handle past the collapse threshold now ends the drag immediately, so the TOC doesn't oscillate / "stick" to the cursor as you keep moving the mouse. Release and start a new drag to reopen.
 - Feature: Reopening a file places the cursor where you last left it. First-time opens drop the caret inside the first heading (title) instead of at the doc start.
 - Bug fix: YouTube embeds no longer hit error 153 in the VS Code webview — switched from `youtube-nocookie.com` to the standard `youtube.com/embed/` and added `referrerpolicy="no-referrer"` so the webview's `vscode-webview://` origin doesn't trip YouTube's stricter host checks.
