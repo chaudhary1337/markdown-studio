@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.0 — 2026-04-25
+
+- Feature: Selection bubble menu. Highlight text and a floating toolbar pops up with Bold / Italic / Strike / Inline code / Link buttons plus a "Turn into" dropdown (Text, H1-H6, Quote, Bullet / Numbered / Task list, Code block). Active marks/blocks are highlighted so you can tell what formatting is already applied and click to remove it — no need to delete and retype. Hidden inside code blocks, math, and embeds.
+- Feature: Keyboard shortcut to open the bubble menu. Default `Mod+/` (⌘+/ on macOS, Ctrl+/ elsewhere) — if the cursor sits inside a word with no selection, the shortcut expands the selection to that word so the menu has something to anchor to. Customize or disable under Settings → Shortcuts.
+- Feature: Keyboard navigation inside the bubble menu. After the open-menu shortcut fires, Arrow Left / Right moves between buttons, Arrow Down on "Turn into" opens the dropdown, Arrow Up / Down navigates dropdown items, Enter activates the focused button/item, Escape returns focus to the editor. The currently focused button gets a focus-colored outline.
+
 ## 2.1.x — 2026-04-20
 
 - Feature: Mermaid diagram support. ` ```mermaid ` fences render as live diagrams inline; edit the source and the preview updates. Mermaid is lazy-loaded on first use so docs with no diagrams don't pay the ~1MB bundle cost. On parse errors, the source stays editable and the error is shown underneath. The source pane has a collapse toggle so you can hide the syntax and focus on the diagram. Diagrams scale to fill the preview width instead of rendering at mermaid's intrinsic (often tiny) pixel size. Closes #1.

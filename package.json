@@ -2,7 +2,7 @@
   "name": "its-markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Notion-like WYSIWYG markdown editor with rich diffs, tables, images, math, and more.",
-  "version": "2.1.15",
+  "version": "2.2.0",
   "publisher": "tanishq-chaudhary",
   "license": "MIT",
   "repository": {
