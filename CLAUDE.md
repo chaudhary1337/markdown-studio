@@ -24,6 +24,23 @@ Update the vsix filename in the force-install step above to match.
 
 Always update `CHANGELOG.md` with every version bump. Patch-level changes within the same minor version are grouped under a single `x.y.x` heading (e.g. `## 1.0.x`).
 
+## Releasing to the Marketplace
+
+Publishing is automated via `.github/workflows/publish.yml`, which fires on pushed tags matching `v*`. It packages one `.vsix` and publishes it to both the VS Code Marketplace (`vsce`, `VSCODE_PAT` secret) and Open VSX (`ovsx`, `OPENVSX_PAT` secret). The workflow fails fast if the tag version doesn't match `package.json`.
+
+After a version bump + commit is pushed to `master`, ask the user for permission before tagging. Example:
+
+> "Ready to release v2.1.13 — want me to tag and push so the workflow publishes it?"
+
+On approval, run:
+
+```
+git tag v<version>
+git push origin v<version>
+```
+
+Never tag without explicit user approval — tagging triggers a live marketplace publish.
+
 ## Conversion pipeline files (where bugs live)
 
 - `webview/hooks/useVSCodeSync.ts` — `markdownToHtml` / `htmlToMarkdown`, production DOM-based transforms (DOMParser-backed).

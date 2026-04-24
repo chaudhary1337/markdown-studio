@@ -1,0 +1,45 @@
+name: Publish Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Verify tag matches package.json version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)"
+            exit 1
+          fi
+
+      - run: npm test
+
+      - run: node esbuild.js --production
+
+      - name: Package .vsix
+        run: npx vsce package --no-dependencies -o extension.vsix
+
+      - name: Publish to VS Code Marketplace
+        run: npx vsce publish --no-dependencies --packagePath extension.vsix -p $VSCE_PAT
+        env:
+          VSCE_PAT: ${{ secrets.VSCODE_PAT }}
+
+      - name: Publish to Open VSX
+        run: npx ovsx publish extension.vsix -p $OVSX_PAT
+        env:
+          OVSX_PAT: ${{ secrets.OPENVSX_PAT }}
