@@ -172,7 +172,14 @@ export function useEditorState({
           // don't yank the cursor to the end of the file.
           const { from, to } = editor.state.selection;
           const wasFocused = editor.isFocused;
-          editor.commands.setContent(html);
+          // emitUpdate: false suppresses the re-serialization loop that
+          // otherwise fires when an external save participant (e.g. VS
+          // Code's built-in markdown formatter with formatOnSave) mutates
+          // the doc post-Ctrl+S. Without this, setContent would fire
+          // Tiptap's update event → handleUpdate → new edit back to the
+          // host → dirty-after-save. The host just told us the content;
+          // echoing it back as an edit is redundant.
+          editor.commands.setContent(html, { emitUpdate: false });
           const maxPos = editor.state.doc.content.size;
           editor.commands.setTextSelection({
             from: Math.min(from, maxPos),

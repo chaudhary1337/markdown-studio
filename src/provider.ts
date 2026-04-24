@@ -92,6 +92,13 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
 
     let pendingWebviewEdits = 0;
 
+    // The first edit the webview emits after init is the normalization
+    // round-trip (md → html → md). We save it silently so users don't see
+    // a surprise dirty state on open, then hand off: every subsequent edit
+    // follows VS Code's own save behavior (`files.autoSave`, Cmd+S, etc.)
+    // so we don't fight the user's configured save cadence.
+    let firstEditPending = true;
+
     this.openWebviews.add(webview);
 
     const msgDisposable = webview.onDidReceiveMessage(async (msg) => {
@@ -194,6 +201,17 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           newContent
         );
         await vscode.workspace.applyEdit(edit);
+        if (firstEditPending) {
+          firstEditPending = false;
+          if (this.loadSettings().autoSave !== false) {
+            try {
+              await document.save();
+            } catch {
+              // Transient save failures (read-only FS, permission) leave
+              // the doc dirty; the user can retry with Cmd+S.
+            }
+          }
+        }
       }
     });
 

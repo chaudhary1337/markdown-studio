@@ -40,6 +40,16 @@ export function SettingsPanel({
 
         <div className="settings-body">
           <section>
+            <h3>Saving</h3>
+
+            <Toggle
+              label="Save normalization on open (silently persists the md → html → md round-trip)"
+              checked={settings.autoSave}
+              onChange={(v) => set("autoSave", v)}
+            />
+          </section>
+
+          <section>
             <h3>Serialization</h3>
 
             <Row label="Bullet marker">
