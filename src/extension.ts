@@ -36,10 +36,54 @@ export function activate(context: vscode.ExtensionContext) {
       const uri = (input as any).uri as vscode.Uri | undefined;
       if (!uri) return;
 
-      if (isCustomEditor) {
-        await vscode.commands.executeCommand("vscode.openWith", uri, "default");
-      } else {
-        await vscode.commands.executeCommand("vscode.openWith", uri, CUSTOM_EDITOR_VIEW_TYPE);
+      const targetViewType = isCustomEditor ? "default" : CUSTOM_EDITOR_VIEW_TYPE;
+
+      // Save the doc if dirty so closing the source tab below does not
+      // trigger VS Code's "Save changes?" prompt (which, if the user
+      // misses/cancels, leaves both tabs open).
+      const doc = vscode.workspace.textDocuments.find(
+        (d) => d.uri.toString() === uri.toString()
+      );
+      if (doc?.isDirty) {
+        try {
+          await doc.save();
+        } catch {
+          /* best-effort */
+        }
+      }
+
+      await vscode.commands.executeCommand(
+        "vscode.openWith",
+        uri,
+        targetViewType
+      );
+
+      // Close any tabs for the same URI that are NOT the target viewType.
+      // Walking every tab group (not just the active one) catches cases
+      // where the source tab lives in a different column. The captured
+      // `activeTab` ref would have worked too, but filtering by viewType
+      // is more robust against tab-identity quirks after openWith.
+      const toClose: vscode.Tab[] = [];
+      for (const group of vscode.window.tabGroups.all) {
+        for (const tab of group.tabs) {
+          const tabInput = tab.input;
+          if (!tabInput || typeof tabInput !== "object") continue;
+          if (!("uri" in tabInput)) continue;
+          const tabUri = (tabInput as any).uri as vscode.Uri;
+          if (tabUri.toString() !== uri.toString()) continue;
+          const tabViewType =
+            "viewType" in tabInput
+              ? ((tabInput as any).viewType as string)
+              : "default";
+          if (tabViewType !== targetViewType) toClose.push(tab);
+        }
+      }
+      if (toClose.length > 0) {
+        try {
+          await vscode.window.tabGroups.close(toClose);
+        } catch {
+          /* no-op */
+        }
       }
     })
   );
