@@ -114,6 +114,45 @@ export function SettingsPanel({
           </section>
 
           <section>
+            <h3>Appearance</h3>
+
+            <Row label="Editor surface">
+              <Segmented
+                value={settings.editorSurface}
+                options={[
+                  { value: "editor", label: "Default" },
+                  { value: "sideBar", label: "Sidebar" },
+                  { value: "panel", label: "Panel" },
+                  { value: "input", label: "Input" },
+                  { value: "editorWidget", label: "Widget" },
+                  { value: "textBlockQuote", label: "Quote" },
+                  { value: "custom", label: "Custom" },
+                ]}
+                onChange={(v) =>
+                  set(
+                    "editorSurface",
+                    v as BetterMarkdownSettings["editorSurface"],
+                  )
+                }
+              />
+            </Row>
+
+            {settings.editorSurface === "custom" && (
+              <Row label="Custom hex">
+                <input
+                  type="text"
+                  className="settings-input"
+                  value={settings.editorSurfaceCustom}
+                  placeholder="#1e1e1e"
+                  onChange={(e) =>
+                    set("editorSurfaceCustom", e.target.value)
+                  }
+                />
+              </Row>
+            )}
+          </section>
+
+          <section>
             <h3>Code blocks</h3>
 
             <Row label="Default language label">
