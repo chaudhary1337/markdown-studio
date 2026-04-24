@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.0 — 2026-04-25
+
+- Feature: Editor surface setting. Under Settings → Appearance, pick a VS Code theme token (`Sidebar`, `Panel`, `Input`, `Widget`, `Quote`) or a custom hex for the rich-editor pane background. Margins, TOC, and status bar keep the default editor bg so the editor body visually separates from surrounding VS Code chrome.
+- Bug fix: Settings panel widened from 560px to 680px so the 7-option "Editor surface" segmented control no longer clips the "Custom" label.
+
 ## 2.1.x — 2026-04-20
 
 - Feature: Mermaid diagram support. ` ```mermaid ` fences render as live diagrams inline; edit the source and the preview updates. Mermaid is lazy-loaded on first use so docs with no diagrams don't pay the ~1MB bundle cost. On parse errors, the source stays editable and the error is shown underneath. The source pane has a collapse toggle so you can hide the syntax and focus on the diagram. Diagrams scale to fill the preview width instead of rendering at mermaid's intrinsic (often tiny) pixel size. Closes #1.
