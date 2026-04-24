@@ -30,11 +30,15 @@ const serverBuild = esbuild.build({
   format: "cjs",
 });
 
-// 3. Webview build (browser, ESM so dynamic imports from blocknote are bundled)
+// 3. Webview build (browser, ESM with code-splitting so heavy deps like
+// mermaid can be dynamically imported and ship as separate chunks).
 const webviewBuild = esbuild.build({
   ...commonOptions,
   entryPoints: ["webview/index.tsx"],
-  outfile: "dist/webview.js",
+  outdir: "dist",
+  entryNames: "webview",
+  chunkNames: "chunks/webview-[hash]",
+  splitting: true,
   platform: "browser",
   format: "esm",
   define: {
@@ -112,7 +116,10 @@ Promise.all([extensionBuild, serverBuild, webviewBuild])
         esbuild.context({
           ...commonOptions,
           entryPoints: ["webview/index.tsx"],
-          outfile: "dist/webview.js",
+          outdir: "dist",
+          entryNames: "webview",
+          chunkNames: "chunks/webview-[hash]",
+          splitting: true,
           platform: "browser",
           format: "esm",
           define: {

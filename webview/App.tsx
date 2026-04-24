@@ -14,6 +14,7 @@ import { createCodeBlock } from "./extensions/CodeBlockView";
 import { SlashCommand } from "./extensions/SlashCommand";
 import { MathInline } from "./extensions/MathInline";
 import { MathBlock } from "./extensions/MathBlock";
+import { MermaidBlock } from "./extensions/MermaidBlock";
 import { YouTubeEmbed } from "./extensions/YouTubeEmbed";
 import { GitHubEmbed } from "./extensions/GitHubEmbed";
 import { StickyHeadings } from "./components/StickyHeadings";
@@ -58,6 +59,7 @@ export function App() {
       TableHeader,
       TaskList,
       TaskItem.configure({ nested: true }),
+      MermaidBlock,
       createCodeBlock(lowlight),
       MathInline,
       MathBlock,

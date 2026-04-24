@@ -1509,6 +1509,114 @@ html, body, #root {
   font-size: 0.9em;
 }
 
+/* ---------- Mermaid diagrams ---------- */
+
+.mermaid-block-wrapper {
+  margin: 0.75em 0;
+  border: 1px solid var(--vscode-widget-border, #333);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.mermaid-block-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 8px;
+  background: var(--vscode-editorWidget-background, #252526);
+  border-bottom: 1px solid var(--vscode-widget-border, #333);
+}
+
+.mermaid-block-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--vscode-descriptionForeground, #888);
+  font-family: var(--vscode-font-family, sans-serif);
+  font-size: 0.75em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mermaid-block-toggle:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.08));
+  color: var(--vscode-foreground, #ccc);
+}
+
+.mermaid-block-source {
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--vscode-editorWidget-background, #252526);
+  border-bottom: 1px solid var(--vscode-widget-border, #333);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.9em;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  transition: padding 0.12s ease, max-height 0.12s ease;
+}
+
+/* Collapsed state: zero height but kept in DOM so ProseMirror's content
+   hole stays mounted (display:none would break selection/focus). */
+.mermaid-block-source.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+  overflow: hidden;
+}
+
+.mermaid-block-source code {
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  white-space: pre;
+  display: block;
+}
+
+.mermaid-block-preview {
+  padding: 16px;
+  background: var(--vscode-editor-background, #1e1e1e);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 48px;
+}
+
+.mermaid-block-rendered {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.mermaid-block-rendered svg {
+  width: 100%;
+  height: auto;
+}
+
+.mermaid-block-loading,
+.mermaid-block-empty {
+  color: var(--vscode-descriptionForeground, #888);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.9em;
+  font-style: italic;
+}
+
+.mermaid-block-error {
+  color: var(--vscode-errorForeground, #f48771);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  text-align: left;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--vscode-inputValidation-errorBackground, rgba(244, 135, 113, 0.1));
+  border-left: 3px solid var(--vscode-errorForeground, #f48771);
+  border-radius: 2px;
+}
+
 /* ---------- YouTube / GitHub embeds ---------- */
 
 .embed-wrapper {

@@ -16,6 +16,10 @@
  *   L. normalizeMarkdown unit tests
  *   L2. Frontmatter preservation
  *   M. Known-failing cases (documented, expected to fail)
+ *   O. Math (inline and block)
+ *   P. Embeds (YouTube, GitHub)
+ *   Q. Mermaid diagrams
+ *   N. Settings-driven behavior
  *
  * Usage: npx tsx test/test-conversions.ts
  */
@@ -707,6 +711,42 @@ async function run() {
     "GitHub file URL on its own line round-trips",
     "https://github.com/foo/bar/blob/main/src/a.ts"
   );
+
+  // --------------------------------------------------------------------------
+  category("Q. Mermaid diagrams");
+  // --------------------------------------------------------------------------
+
+  // Mermaid blocks are plain fenced code blocks on disk — the rich editor
+  // renders them via a dedicated Tiptap node, but round-trip goes through
+  // the standard code-block path (no placeholder machinery).
+  await roundtripCase(
+    "mermaid simple graph",
+    "```mermaid\ngraph TD\nA-->B\n```"
+  );
+  await roundtripCase(
+    "mermaid sequence diagram",
+    "```mermaid\nsequenceDiagram\nAlice->>Bob: Hi\n```"
+  );
+  await roundtripCase(
+    "mermaid block surrounded by text",
+    "Before:\n\n```mermaid\ngraph LR\nA-->B\n```\n\nAfter."
+  );
+  await roundtripCase(
+    "mermaid alongside a regular code block",
+    "```mermaid\ngraph TD\nA-->B\n```\n\n```javascript\nconsole.log(1);\n```"
+  );
+
+  // md→html: mermaid fence produces a standard <pre><code class="language-mermaid">
+  // (the custom Tiptap parseHTML hook picks this up client-side).
+  {
+    const html = await mdToHtml("```mermaid\ngraph TD\nA-->B\n```");
+    assert(
+      "md→html: mermaid fence produces <pre><code class='language-mermaid'>",
+      html.includes('<code class="language-mermaid">') &&
+        html.includes("graph TD"),
+      html
+    );
+  }
 
   // --------------------------------------------------------------------------
   category("N. Settings-driven behavior");
