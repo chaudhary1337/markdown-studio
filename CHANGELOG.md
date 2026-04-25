@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.0 — 2026-04-25
+
+- Bug fix: Switching between the rich editor and the source editor no longer leaves two tabs open for the same file. The toggle command now saves the document first (so no "Save changes?" prompt can cancel the close), then walks every tab group for tabs matching the file URI whose viewType differs from the target and closes them. Covers both the `betterMarkdown.toggleEditor` command and the in-editor "Open in Default Editor" link.
+
 ## 2.1.x — 2026-04-20
 
 - Overheads: README now shows animated demos of Mermaid diagrams and YouTube / GitHub embeds (`assets/mermaid.gif`, `assets/embedding.gif`).

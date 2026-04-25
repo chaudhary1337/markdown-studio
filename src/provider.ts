@@ -130,11 +130,11 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           fileName: path.basename(document.uri.fsPath),
         });
       } else if (msg.type === "toggleEditor") {
-        vscode.commands.executeCommand(
-          "vscode.openWith",
-          document.uri,
-          "default"
-        );
+        // Route through the command so the "close the original tab"
+        // logic in extension.ts runs — otherwise we end up with both
+        // the rich editor tab and a new default editor tab open for
+        // the same file.
+        vscode.commands.executeCommand("betterMarkdown.toggleEditor");
       } else if (msg.type === "openLink") {
         const href = msg.href as string;
         if (href.startsWith("http://") || href.startsWith("https://")) {
