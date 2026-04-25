@@ -30,7 +30,14 @@ export function matchesBinding(
   if (!!e.shiftKey !== wantShift) return false;
   if (!!e.altKey !== wantAlt) return false;
 
-  return e.key.toLowerCase() === key;
+  // On macOS, Option+letter sets e.key to the produced character (e.g. "π"
+  // for Option+P) instead of the base key. e.code is always the physical key
+  // ("KeyP"), so use it when alt is held on Mac.
+  const eventKey =
+    wantAlt && IS_MAC && e.code.startsWith("Key")
+      ? e.code.slice(3).toLowerCase()
+      : e.key.toLowerCase();
+  return eventKey === key;
 }
 
 /** If the editor selection is collapsed inside a text node, expand it to
