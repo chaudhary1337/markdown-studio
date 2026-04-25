@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.0 — 2026-04-25
+
+- Feature: Editor surface setting. Under Settings → Appearance, pick a VS Code theme token (`Sidebar`, `Panel`, `Input`, `Widget`, `Quote`) or a custom hex for the rich-editor pane background. Margins, TOC, and status bar keep the default editor bg so the editor body visually separates from surrounding VS Code chrome.
+- Bug fix: Settings panel widened from 560px to 680px so the 7-option "Editor surface" segmented control no longer clips the "Custom" label.
+
 ## 2.1.x — 2026-04-20
 
 - Overheads: README now shows animated demos of Mermaid diagrams and YouTube / GitHub embeds (`assets/mermaid.gif`, `assets/embedding.gif`).

@@ -25,6 +25,7 @@ import { DiffView } from "./components/DiffView";
 import { TableControls } from "./components/TableControls";
 import { ImageInsertDialog } from "./components/ImageInsertDialog";
 import { useSettingsPanel } from "./hooks/useSettingsPanel";
+import { resolveEditorSurface } from "./utils";
 import { useEditorState } from "./hooks/useEditorState";
 import { useClipboardHandlers } from "./hooks/useClipboardHandlers";
 import { useDragDrop } from "./hooks/useDragDrop";
@@ -114,7 +115,15 @@ export function App() {
 
   return (
     <div className="editor-layout">
-      <div className={"editor-container" + (dragOver ? " drag-over" : "")} ref={editorContainerRef}>
+      <div
+        className={"editor-container" + (dragOver ? " drag-over" : "")}
+        ref={editorContainerRef}
+        style={
+          resolveEditorSurface(settings)
+            ? ({ ["--editor-surface-bg" as any]: resolveEditorSurface(settings) } as React.CSSProperties)
+            : undefined
+        }
+      >
         <SearchBar
           visible={searchVisible}
           onClose={(activeRange) => {

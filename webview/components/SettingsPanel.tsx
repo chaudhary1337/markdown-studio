@@ -114,6 +114,45 @@ export function SettingsPanel({
           </section>
 
           <section>
+            <h3>Appearance</h3>
+
+            <Row label="Editor surface">
+              <Segmented
+                value={settings.editorSurface}
+                options={[
+                  { value: "editor",         label: "Default", swatch: "var(--vscode-editor-background, #1e1e1e)" },
+                  { value: "sideBar",        label: "Sidebar",  swatch: "var(--vscode-sideBar-background)" },
+                  { value: "panel",          label: "Panel",    swatch: "var(--vscode-panel-background)" },
+                  { value: "input",          label: "Input",    swatch: "var(--vscode-input-background)" },
+                  { value: "editorWidget",   label: "Widget",   swatch: "var(--vscode-editorWidget-background)" },
+                  { value: "textBlockQuote", label: "Quote",    swatch: "var(--vscode-textBlockQuote-background)" },
+                  { value: "custom",         label: "Custom",   swatch: settings.editorSurfaceCustom || "#1e1e1e" },
+                ]}
+                onChange={(v) =>
+                  set(
+                    "editorSurface",
+                    v as BetterMarkdownSettings["editorSurface"],
+                  )
+                }
+              />
+            </Row>
+
+            {settings.editorSurface === "custom" && (
+              <Row label="Custom hex">
+                <input
+                  type="text"
+                  className="settings-input"
+                  value={settings.editorSurfaceCustom}
+                  placeholder="#1e1e1e"
+                  onChange={(e) =>
+                    set("editorSurfaceCustom", e.target.value)
+                  }
+                />
+              </Row>
+            )}
+          </section>
+
+          <section>
             <h3>Code blocks</h3>
 
             <Row label="Default language label">
@@ -225,7 +264,7 @@ function Segmented({
   onChange,
 }: {
   value: string;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; swatch?: string }[];
   onChange: (v: string) => void;
 }) {
   return (
@@ -234,11 +273,19 @@ function Segmented({
         <button
           key={opt.value}
           className={
-            "settings-segment" + (opt.value === value ? " active" : "")
+            "settings-segment" +
+            (opt.swatch ? " settings-segment--swatch" : "") +
+            (opt.value === value ? " active" : "")
           }
           onClick={() => onChange(opt.value)}
         >
           {opt.label}
+          {opt.swatch && (
+            <span
+              className="settings-segment-swatch"
+              style={{ ["--swatch-color" as string]: opt.swatch }}
+            />
+          )}
         </button>
       ))}
     </div>

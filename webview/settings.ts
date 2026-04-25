@@ -59,6 +59,25 @@ export interface BetterMarkdownSettings {
    * manual-save behavior so we don't fight the user's configured cadence.
    */
   autoSave: boolean;
+
+  // --- appearance ---
+  /**
+   * Background surface for the rich editor pane. Pulled from VS Code theme
+   * tokens so it follows the active theme, or a user-supplied hex when
+   * `custom`. Only affects the rich editor surface — margins, scrollbar,
+   * status bar, and TOC stay on the default editor background so the
+   * editor body visually separates from surrounding VS Code chrome.
+   */
+  editorSurface:
+    | "editor"
+    | "sideBar"
+    | "panel"
+    | "input"
+    | "editorWidget"
+    | "textBlockQuote"
+    | "custom";
+  /** Hex color used when `editorSurface === "custom"`. */
+  editorSurfaceCustom: string;
 }
 
 export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
@@ -79,6 +98,8 @@ export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
   diffLayout: "side-by-side",
   diffMode: "rendered",
   autoSave: true,
+  editorSurface: "editor",
+  editorSurfaceCustom: "#1e1e1e",
 };
 
 /**
