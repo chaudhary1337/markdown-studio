@@ -120,13 +120,13 @@ export function SettingsPanel({
               <Segmented
                 value={settings.editorSurface}
                 options={[
-                  { value: "editor", label: "Default" },
-                  { value: "sideBar", label: "Sidebar" },
-                  { value: "panel", label: "Panel" },
-                  { value: "input", label: "Input" },
-                  { value: "editorWidget", label: "Widget" },
-                  { value: "textBlockQuote", label: "Quote" },
-                  { value: "custom", label: "Custom" },
+                  { value: "editor",         label: "Default", swatch: "var(--vscode-editor-background, #1e1e1e)" },
+                  { value: "sideBar",        label: "Sidebar",  swatch: "var(--vscode-sideBar-background)" },
+                  { value: "panel",          label: "Panel",    swatch: "var(--vscode-panel-background)" },
+                  { value: "input",          label: "Input",    swatch: "var(--vscode-input-background)" },
+                  { value: "editorWidget",   label: "Widget",   swatch: "var(--vscode-editorWidget-background)" },
+                  { value: "textBlockQuote", label: "Quote",    swatch: "var(--vscode-textBlockQuote-background)" },
+                  { value: "custom",         label: "Custom",   swatch: settings.editorSurfaceCustom || "#1e1e1e" },
                 ]}
                 onChange={(v) =>
                   set(
@@ -264,7 +264,7 @@ function Segmented({
   onChange,
 }: {
   value: string;
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; swatch?: string }[];
   onChange: (v: string) => void;
 }) {
   return (
@@ -273,11 +273,19 @@ function Segmented({
         <button
           key={opt.value}
           className={
-            "settings-segment" + (opt.value === value ? " active" : "")
+            "settings-segment" +
+            (opt.swatch ? " settings-segment--swatch" : "") +
+            (opt.value === value ? " active" : "")
           }
           onClick={() => onChange(opt.value)}
         >
           {opt.label}
+          {opt.swatch && (
+            <span
+              className="settings-segment-swatch"
+              style={{ ["--swatch-color" as string]: opt.swatch }}
+            />
+          )}
         </button>
       ))}
     </div>
