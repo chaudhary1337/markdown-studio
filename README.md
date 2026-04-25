@@ -91,6 +91,18 @@ You can write math using $\KaTeX$ in both inline and block modes.
 
 ![math-block](assets/math-block.png)
 
+#### Mermaid Diagrams
+
+` ```mermaid ` fences render as live diagrams inline — edit the source, the preview updates.
+
+![mermaid](assets/mermaid.gif)
+
+#### YouTube & GitHub Embeds
+
+Paste a YouTube or GitHub URL and get a rich card; the source stays a bare URL so the file remains portable.
+
+![embedding](assets/embedding.gif)
+
 ## Known Limitations
 
 - Conversion from markdown to rich text and back to markdown is not one-to-one exact map. The markdown after is normalized. You can control this via the settings icon in the rich editor mode.
@@ -105,10 +117,11 @@ Hit the Install button on the marketplace page. No login, setup or permissions r
 
 ### Keyboard shortcuts
 
-| Shortcut    | Action                      |
-| ----------- | --------------------------- |
-| Cmd+Shift+M | Toggle rich / source editor |
-| Cmd+F       | Find in document            |
+| Shortcut    | Action                                  |
+| ----------- | --------------------------------------- |
+| Cmd+Shift+M | Toggle rich / source editor             |
+| Cmd+F       | Find in document                        |
+| /           | Open slash command menu (start of line) |
 
 ### Privacy
 
@@ -129,7 +142,3 @@ I am actively using it myself, so expect frequent updates.
 VS Code: https://marketplace.visualstudio.com/items?itemName=tanishq-chaudhary.its-markdown-studio
 
 Open VSIX: https://open-vsx.org/extension/tanishq-chaudhary/its-markdown-studio
-
----
-
-PS: I have used Claude Code Opus 4.6 and vibe coded >90% of this repo.
