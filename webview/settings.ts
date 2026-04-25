@@ -59,6 +59,17 @@ export interface BetterMarkdownSettings {
    * manual-save behavior so we don't fight the user's configured cadence.
    */
   autoSave: boolean;
+
+  // --- shortcuts ---
+  /**
+   * Keybinding that opens the selection bubble menu. If the cursor is
+   * inside a word with no active selection, the shortcut expands the
+   * selection to the surrounding word first so the menu has something to
+   * anchor to. Format: modifier+key chain separated by `+` (e.g.
+   * `Mod+/`, `Ctrl+Shift+B`). `Mod` resolves to `Meta` on macOS, `Ctrl`
+   * elsewhere. Empty string disables the shortcut.
+   */
+  bubbleMenuShortcut: string;
 }
 
 export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
@@ -79,6 +90,7 @@ export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
   diffLayout: "side-by-side",
   diffMode: "rendered",
   autoSave: true,
+  bubbleMenuShortcut: "Mod+/",
 };
 
 /**

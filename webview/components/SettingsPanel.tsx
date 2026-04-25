@@ -114,6 +114,28 @@ export function SettingsPanel({
           </section>
 
           <section>
+            <h3>Shortcuts</h3>
+
+            <Row label="Open bubble menu (expands to word at cursor)">
+              <input
+                type="text"
+                className="settings-input"
+                value={settings.bubbleMenuShortcut}
+                placeholder="Mod+/"
+                onChange={(e) =>
+                  set("bubbleMenuShortcut", e.target.value)
+                }
+              />
+            </Row>
+            <div className="settings-hint">
+              Format: modifiers joined with <code>+</code>. <code>Mod</code>{" "}
+              = ⌘ on macOS, Ctrl elsewhere. Examples: <code>Mod+/</code>,{" "}
+              <code>Ctrl+Shift+B</code>, <code>Alt+P</code>. Leave blank to
+              disable.
+            </div>
+          </section>
+
+          <section>
             <h3>Code blocks</h3>
 
             <Row label="Default language label">
