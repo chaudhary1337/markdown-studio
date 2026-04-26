@@ -2,7 +2,7 @@
   "name": "its-markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Notion-like WYSIWYG markdown editor with rich diffs, tables, images, math, and more.",
-  "version": "2.1.24",
+  "version": "2.1.25",
   "publisher": "tanishq-chaudhary",
   "license": "MIT",
   "repository": {
@@ -95,6 +95,11 @@
       {
         "command": "betterMarkdown.openSetupPrompt",
         "title": "Open Setup Prompt",
+        "category": "Markdown Studio"
+      },
+      {
+        "command": "betterMarkdown.resetSetupState",
+        "title": "Rerun First-Run Setup",
         "category": "Markdown Studio"
       }
     ],

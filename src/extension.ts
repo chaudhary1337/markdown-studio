@@ -59,6 +59,14 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Reset setup state — clears the first-run consent flag so the
+  // on-open welcome modal fires again on the next markdown file open.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("betterMarkdown.resetSetupState", () => {
+      void provider.resetSetupState();
+    })
+  );
+
   // Rich diff — opens a dedicated webview panel comparing any two URIs.
   // Invoked from command palette, SCM context menu, or diff-editor toolbar.
   context.subscriptions.push(

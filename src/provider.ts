@@ -71,6 +71,18 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   }
 
   /**
+   * Clear the first-run consent flag so the on-open setup modal fires
+   * again the next time a markdown file is opened. Useful for testing
+   * and for users who want to re-see the welcome flow.
+   */
+  async resetSetupState(): Promise<void> {
+    await this.context.globalState.update(CONSENT_SHOWN_KEY, undefined);
+    vscode.window.showInformationMessage(
+      "Markdown Studio: first-run setup reset. Open any markdown file to see the welcome prompt.",
+    );
+  }
+
+  /**
    * Fetch the HEAD version of a file via VSCode's built-in git extension.
    * Returns null if git isn't available, the file isn't tracked, or the ref
    * doesn't exist (e.g. new file).
