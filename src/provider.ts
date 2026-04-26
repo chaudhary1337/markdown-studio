@@ -16,7 +16,10 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   }
 
   private loadSettings(): Record<string, unknown> {
-    return this.context.globalState.get<Record<string, unknown>>(SETTINGS_KEY, {}) ?? {};
+    return (
+      this.context.globalState.get<Record<string, unknown>>(SETTINGS_KEY, {}) ??
+      {}
+    );
   }
 
   private async saveSettings(next: Record<string, unknown>) {
@@ -28,12 +31,16 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   }
 
   private loadCursor(filePath: string): number | undefined {
-    const all = this.context.globalState.get<Record<string, number>>(CURSORS_KEY, {}) ?? {};
+    const all =
+      this.context.globalState.get<Record<string, number>>(CURSORS_KEY, {}) ??
+      {};
     return all[filePath];
   }
 
   private async saveCursor(filePath: string, position: number): Promise<void> {
-    const all = this.context.globalState.get<Record<string, number>>(CURSORS_KEY, {}) ?? {};
+    const all =
+      this.context.globalState.get<Record<string, number>>(CURSORS_KEY, {}) ??
+      {};
     all[filePath] = position;
     await this.context.globalState.update(CURSORS_KEY, all);
   }
@@ -71,14 +78,31 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   }
 
   /**
-   * Clear the first-run consent flag so the on-open setup modal fires
-   * again the next time a markdown file is opened. Useful for testing
-   * and for users who want to re-see the welcome flow.
+   * Wipe all Markdown Studio user settings + the first-run consent flag,
+   * so settings revert to defaults and the welcome modal fires again on
+   * the next file open. Confirms before nuking so a stray click in the
+   * command palette doesn't cost the user their configuration.
    */
-  async resetSetupState(): Promise<void> {
+  async factoryReset(): Promise<void> {
+    const RESET = "Reset";
+    const choice = await vscode.window.showWarningMessage(
+      "Factory reset Markdown Studio? All settings revert to defaults.",
+      { modal: true },
+      RESET,
+    );
+    if (choice !== RESET) return;
+
+    await this.context.globalState.update(SETTINGS_KEY, undefined);
     await this.context.globalState.update(CONSENT_SHOWN_KEY, undefined);
+
+    // Push fresh (empty) settings to every open webview so they
+    // re-merge with defaults instead of holding the old values.
+    for (const wv of this.openWebviews) {
+      wv.postMessage({ type: "settingsUpdated", settings: {} });
+    }
+
     vscode.window.showInformationMessage(
-      "Markdown Studio: first-run setup reset. Open any markdown file to see the welcome prompt.",
+      "Markdown Studio: factory reset complete. Open any markdown file to see the welcome prompt.",
     );
   }
 
@@ -96,7 +120,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
       const gitApi = (gitExt.exports as any).getAPI(1);
       if (!gitApi) return null;
       const repo = gitApi.repositories.find((r: any) =>
-        fileUri.fsPath.startsWith(r.rootUri.fsPath)
+        fileUri.fsPath.startsWith(r.rootUri.fsPath),
       );
       if (!repo) return null;
       // Empty ref ('') = staged, 'HEAD' = committed. We want HEAD.
@@ -110,7 +134,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   async resolveCustomTextEditor(
     document: vscode.TextDocument,
     webviewPanel: vscode.WebviewPanel,
-    _token: vscode.CancellationToken
+    _token: vscode.CancellationToken,
   ): Promise<void> {
     const webview = webviewPanel.webview;
 
@@ -172,7 +196,10 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           this.showFirstRunConsent(webview);
         }
       } else if (msg.type === "saveCursor") {
-        if (typeof msg.position === "number" && document.uri.scheme === "file") {
+        if (
+          typeof msg.position === "number" &&
+          document.uri.scheme === "file"
+        ) {
           await this.saveCursor(document.uri.fsPath, msg.position);
         }
       } else if (msg.type === "saveSettings") {
@@ -193,7 +220,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
         vscode.commands.executeCommand(
           "vscode.openWith",
           document.uri,
-          "default"
+          "default",
         );
       } else if (msg.type === "openLink") {
         const href = msg.href as string;
@@ -213,7 +240,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
       } else if (msg.type === "openInBrowser") {
         vscode.commands.executeCommand(
           "betterMarkdown.openInBrowser",
-          document.uri
+          document.uri,
         );
       } else if (msg.type === "promptImageUrl") {
         const url = await vscode.window.showInputBox({
@@ -258,15 +285,12 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
         edit.replace(
           document.uri,
           new vscode.Range(0, 0, document.lineCount, 0),
-          newContent
+          newContent,
         );
         await vscode.workspace.applyEdit(edit);
         if (firstEditPending) {
           firstEditPending = false;
-          if (
-            consentShownAtStart &&
-            this.loadSettings().autoSave !== false
-          ) {
+          if (consentShownAtStart && this.loadSettings().autoSave !== false) {
             try {
               await document.save();
             } catch {
@@ -300,7 +324,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           type: "update",
           content: document.getText(),
         });
-      }
+      },
     );
 
     webviewPanel.onDidDispose(() => {
@@ -312,10 +336,10 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
 
   private getHtmlForWebview(webview: vscode.Webview): string {
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, "dist", "webview.js")
+      vscode.Uri.joinPath(this.context.extensionUri, "dist", "webview.js"),
     );
     const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, "dist", "editor.css")
+      vscode.Uri.joinPath(this.context.extensionUri, "dist", "editor.css"),
     );
     const nonce = getNonce();
 

@@ -51,19 +51,12 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Setup prompt — re-runs the first-run consent dialog so users can
-  // review or change normalization handling at any time.
+  // Factory reset — wipes all settings + the first-run consent flag so
+  // settings revert to defaults and the welcome modal fires again on
+  // the next file open. Confirms before applying.
   context.subscriptions.push(
-    vscode.commands.registerCommand("betterMarkdown.openSetupPrompt", () => {
-      provider.showFirstRunConsent();
-    })
-  );
-
-  // Reset setup state — clears the first-run consent flag so the
-  // on-open welcome modal fires again on the next markdown file open.
-  context.subscriptions.push(
-    vscode.commands.registerCommand("betterMarkdown.resetSetupState", () => {
-      void provider.resetSetupState();
+    vscode.commands.registerCommand("betterMarkdown.factoryReset", () => {
+      void provider.factoryReset();
     })
   );
 

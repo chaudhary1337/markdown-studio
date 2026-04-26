@@ -11,7 +11,7 @@ Run all four steps, in this order, every time. No exceptions.
    - Esbuild must succeed for both `src/extension.ts` (node) and `webview/index.tsx` (browser). Type errors in either halt the build.
 1. **Package**: `npm run package`
    - Produces a `.vsix` file via `vsce package` for local install / distribution.
-1. **Force install**: install the latest version of markdown studio. For example:`code --install-extension its-markdown-studio-2.1.25.vsix --force`. Refer Versioning section for more information on when the version changes.
+1. **Force install**: install the latest version of markdown studio. For example:`code --install-extension its-markdown-studio-2.1.26.vsix --force`. Refer Versioning section for more information on when the version changes.
    - Installs/updates the extension in VS Code. Reload the window afterwards.
 
 If you skip any step, the user won't see the change. Always do all four.

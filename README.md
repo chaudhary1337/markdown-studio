@@ -105,8 +105,8 @@ Paste a YouTube or GitHub URL and get a rich card; the source stays a bare URL s
 
 ## Known Limitations
 
-- Conversion from markdown to rich text and back to markdown is not one-to-one exact map. The markdown after is normalized. You can control this via the settings icon in the rich editor mode.
-- Bold/italic adjacent to a word, when the run also contains a code span, can't be expressed in plain CommonMark (e.g. `**`bold`**Apples` parses as literal asterisks, not bold). The editor saves these as `**`bold`**<!---->Apples` — an empty HTML comment is the cleanest CommonMark-valid way to break the flanking run so the bold survives re-open. Adding a space (or any non-word char) avoids the separator entirely.
+- Conversion from markdown to rich text and back to markdown is not one-to-one exact map. The markdown after is normalized. You can control this to some extent via the settings icon in the rich editor mode.
+- Bold/italic adjacent to a word, when the run also contains a code span, can't be expressed in plain CommonMark (e.g. `**`bold`**Apples` parses as literal asterisks, not bold). The editor saves these as `**`bold`**<!---->Apples` — an empty HTML comment is the cleanest CommonMark-valid way to break the flanking run so the bold survives re-open. Adding a space (or any non-word char) avoids the separator entirely and is handled naturally.
 
 ---
 
@@ -116,13 +116,26 @@ Paste a YouTube or GitHub URL and get a rich card; the source stays a bare URL s
 
 Hit the Install button on the marketplace page. No login, setup or permissions required. It works out of the box.
 
+### Commands
+
+Every action is in the command palette under the `Markdown Studio:` prefix.
+
+| Command palette title     | Shortcut                                      | What it does                                                                                                                                                      |
+| ------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Toggle Rich/Source Editor | Cmd/Ctrl+Shift+M (on `.md` files)             | Swap the active `.md` between the rich editor and VS Code's default text editor.                                                                                  |
+| Find in Document          | Cmd/Ctrl+F (inside the rich editor)           | Open the in-editor search bar for the current rich-editor pane.                                                                                                   |
+| Open Rich Diff            | Right-click an SCM entry, or the diff toolbar | Open a side-by-side or rendered markdown diff of the selected file vs HEAD (or any two URIs).                                                                     |
+| Open in Browser           | —                                             | Spin up a local server and open the file in your default browser as the same rich editor — drag-and-drop images, leave it open as a tab, edits sync back to disk. |
+| Factory Reset Settings    | —                                             | Wipe all Markdown Studio settings back to defaults and re-show the welcome modal on the next file open. Confirms before applying.                                 |
+
 ### Keyboard shortcuts
 
-| Shortcut    | Action                                  |
-| ----------- | --------------------------------------- |
-| Cmd+Shift+M | Toggle rich / source editor             |
-| Cmd+F       | Find in document                        |
-| /           | Open slash command menu (start of line) |
+| Shortcut         | Action                                  |
+| ---------------- | --------------------------------------- |
+| Cmd/Ctrl+Shift+M | Toggle rich / source editor             |
+| Cmd/Ctrl+F       | Find in document                        |
+| /                | Open slash command menu (start of line) |
+| Esc              | Close active modal (settings, setup)    |
 
 ### Privacy
 

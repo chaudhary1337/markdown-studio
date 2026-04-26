@@ -48,10 +48,8 @@ export function SetupPrompt({
             Markdown Studio reformats files on open. Compacts lists, unifies
             bullet markers, and similar tidy-ups. Then, it gets out of your way.
           </p>
-          <p>
-            Pick how you'd like to handle the reformatting. You can change any
-            of these at any time from the ⚙ settings panel.
-          </p>
+          <p>Pick how you'd like to handle the reformatting.</p>
+          <p>You can change any of these later from the ⚙ settings panel.</p>
         </div>
         <div className="setup-prompt-actions">
           <button
