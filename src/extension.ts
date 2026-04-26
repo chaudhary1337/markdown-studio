@@ -51,6 +51,14 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Setup prompt — re-runs the first-run consent dialog so users can
+  // review or change normalization handling at any time.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("betterMarkdown.openSetupPrompt", () => {
+      provider.showFirstRunConsent();
+    })
+  );
+
   // Rich diff — opens a dedicated webview panel comparing any two URIs.
   // Invoked from command palette, SCM context menu, or diff-editor toolbar.
   context.subscriptions.push(
@@ -82,12 +90,25 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "betterMarkdown.openInBrowser",
       async (uri?: vscode.Uri) => {
+        // The active editor when the rich (custom) editor is focused is
+        // a CustomEditor, so `vscode.window.activeTextEditor` is undefined.
+        // Fall back to the active tab's input URI, then the active text
+        // editor as a last resort.
+        const activeTabInput =
+          vscode.window.tabGroups.activeTabGroup.activeTab?.input;
+        const tabUri =
+          activeTabInput &&
+          typeof activeTabInput === "object" &&
+          "uri" in activeTabInput
+            ? ((activeTabInput as { uri: vscode.Uri }).uri)
+            : undefined;
         const fileUri =
           uri ||
+          tabUri ||
           vscode.window.activeTextEditor?.document.uri;
         if (!fileUri || fileUri.scheme !== "file") {
           vscode.window.showWarningMessage(
-            "Better Markdown: no markdown file to open in browser."
+            "Markdown Studio: no markdown file to open in browser."
           );
           return;
         }

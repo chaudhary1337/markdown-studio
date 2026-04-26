@@ -3,6 +3,7 @@ import * as path from "path";
 
 const SETTINGS_KEY = "betterMarkdown.settings";
 const CURSORS_KEY = "betterMarkdown.cursors";
+const CONSENT_SHOWN_KEY = "betterMarkdown.consentShown";
 
 export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   constructor(readonly context: vscode.ExtensionContext) {}
@@ -35,6 +36,38 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
     const all = this.context.globalState.get<Record<string, number>>(CURSORS_KEY, {}) ?? {};
     all[filePath] = position;
     await this.context.globalState.update(CURSORS_KEY, all);
+  }
+
+  /**
+   * Setup prompt fired the first time the rich editor opens any file
+   * post-install, and re-runnable via the `Markdown Studio: Open Setup
+   * Prompt` command. The actual UI is rendered inside the webview (see
+   * `SetupPrompt.tsx`); this method just routes the trigger to the right
+   * webview. The webview posts `setupPromptChoice` back, which is
+   * handled by `applySetupChoice` below.
+   */
+  showFirstRunConsent(webview?: vscode.Webview): void {
+    const target = webview ?? this.activeWebview;
+    if (target) {
+      target.postMessage({ type: "showSetupPrompt" });
+      return;
+    }
+    // Manual command path with no markdown file open — the in-webview
+    // prompt has nowhere to render. Tell the user to open a file and
+    // re-run, since the on-open path will fire automatically next time.
+    vscode.window.showInformationMessage(
+      "Open a markdown file in the rich editor to access Markdown Studio setup.",
+    );
+  }
+
+  /**
+   * Apply the user's setup-prompt choice. Called from the webview
+   * message handler when `setupPromptChoice` arrives. Records consent so
+   * the on-open prompt doesn't re-fire. The webview opens its own
+   * settings panel for `review` directly, so no host action needed.
+   */
+  async applySetupChoice(_choice: string): Promise<void> {
+    await this.context.globalState.update(CONSENT_SHOWN_KEY, true);
   }
 
   /**
@@ -99,6 +132,13 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
     // so we don't fight the user's configured save cadence.
     let firstEditPending = true;
 
+    // First-run consent: the very first file opened post-install must not
+    // be silently rewritten before the user has chosen how to handle
+    // normalization. Snapshot the flag at start so a "Disable all" choice
+    // mid-session still suppresses this open's silent save.
+    const consentShownAtStart =
+      this.context.globalState.get<boolean>(CONSENT_SHOWN_KEY) === true;
+
     this.openWebviews.add(webview);
 
     const msgDisposable = webview.onDidReceiveMessage(async (msg) => {
@@ -113,12 +153,20 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           settings: this.loadSettings(),
           cursorPosition: this.loadCursor(document.uri.fsPath),
         });
+        // Fire the first-run setup prompt only after the webview has
+        // signalled `ready` — posting earlier would land before the
+        // message listener is attached and the message would be lost.
+        if (!consentShownAtStart) {
+          this.showFirstRunConsent(webview);
+        }
       } else if (msg.type === "saveCursor") {
         if (typeof msg.position === "number" && document.uri.scheme === "file") {
           await this.saveCursor(document.uri.fsPath, msg.position);
         }
       } else if (msg.type === "saveSettings") {
         await this.saveSettings(msg.settings as Record<string, unknown>);
+      } else if (msg.type === "setupPromptChoice") {
+        await this.applySetupChoice(msg.choice as string);
       } else if (msg.type === "requestGitDiff") {
         let headContent: string | null = null;
         if (document.uri.scheme === "file") {
@@ -203,7 +251,10 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
         await vscode.workspace.applyEdit(edit);
         if (firstEditPending) {
           firstEditPending = false;
-          if (this.loadSettings().autoSave !== false) {
+          if (
+            consentShownAtStart &&
+            this.loadSettings().autoSave !== false
+          ) {
             try {
               await document.save();
             } catch {
