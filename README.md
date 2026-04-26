@@ -80,10 +80,10 @@ The beloved `/` works out of the box. It's like you never left your favourite ed
 
 Tables have options to:
 
-- add row above, add row below
-- add column to the left, add columns to the right
-- remove rows, remove columns
-- drop the entire table
++ add row above, add row below
++ add column to the left, add columns to the right
++ remove rows, remove columns
++ drop the entire table
 
 You can write math using $\KaTeX$ in both inline and block modes.
 
@@ -105,10 +105,10 @@ Paste a YouTube or GitHub URL and get a rich card; the source stays a bare URL s
 
 ## Known Limitations
 
-- Conversion from markdown to rich text and back to markdown is not one-to-one exact map. The markdown after is normalized. You can control this to some extent via the settings icon in the rich editor mode.
-- Bold/italic adjacent to a word, when the run also contains a code span, can't be expressed in plain CommonMark (e.g. `**`bold`**Apples` parses as literal asterisks, not bold). The editor saves these as `**`bold`**<!---->Apples` — an empty HTML comment is the cleanest CommonMark-valid way to break the flanking run so the bold survives re-open. Adding a space (or any non-word char) avoids the separator entirely and is handled naturally.
++ Conversion from markdown to rich text and back to markdown is not one-to-one exact map. The markdown after is normalized. You can control this to some extent via the settings icon in the rich editor mode.
++ Bold/italic adjacent to a word, when the run also contains a code span, can't be expressed in plain CommonMark (e.g. `**`bold`**Apples` parses as literal asterisks, not bold). The editor saves these as `**`bold`**<!---->Apples` — an empty HTML comment is the cleanest CommonMark-valid way to break the flanking run so the bold survives re-open. Adding a space (or any non-word char) avoids the separator entirely and is handled naturally.
 
----
+***
 
 ## Meta Thingies
 
@@ -135,7 +135,6 @@ Every action is in the command palette under the `Markdown Studio:` prefix.
 | Cmd/Ctrl+Shift+M | Toggle rich / source editor             |
 | Cmd/Ctrl+F       | Find in document                        |
 | /                | Open slash command menu (start of line) |
-| Esc              | Close active modal (settings, setup)    |
 
 ### Privacy
 
@@ -155,4 +154,4 @@ I am actively using it myself, so expect frequent updates.
 
 VS Code: https://marketplace.visualstudio.com/items?itemName=tanishq-chaudhary.its-markdown-studio
 
-Open VSIX: https://open-vsx.org/extension/tanishq-chaudhary/its-markdown-studio
+Open VSX: https://open-vsx.org/extension/tanishq-chaudhary/its-markdown-studio
