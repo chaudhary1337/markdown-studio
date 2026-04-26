@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
+import { Code } from "@tiptap/extension-code";
 import { Link } from "@tiptap/extension-link";
 import { ImageBlock } from "./extensions/ImageView";
 import { Table } from "@tiptap/extension-table";
@@ -49,8 +50,13 @@ export function App() {
     extensions: [
       StarterKit.configure({
         codeBlock: false, // replaced by CodeBlockLowlight
+        code: false, // replaced below so inline code can coexist with bold/italic
         heading: { levels: [1, 2, 3, 4, 5, 6] },
       }),
+      // Tiptap's default Code mark sets `excludes: '_'`, which strips every
+      // other mark (e.g. bold) when the code mark is applied. Override to ''
+      // so `**\`bold code\`**` round-trips without losing the bold wrapper.
+      Code.extend({ excludes: "" }),
       Link.configure({ openOnClick: false }),
       ImageBlock,
       Table.configure({ resizable: false }),

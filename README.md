@@ -106,6 +106,7 @@ Paste a YouTube or GitHub URL and get a rich card; the source stays a bare URL s
 ## Known Limitations
 
 - Conversion from markdown to rich text and back to markdown is not one-to-one exact map. The markdown after is normalized. You can control this via the settings icon in the rich editor mode.
+- Bold/italic adjacent to a word, when the run also contains a code span, can't be expressed in plain CommonMark (e.g. `**`bold`**Apples` parses as literal asterisks, not bold). The editor saves these as `**`bold`**<!---->Apples` — an empty HTML comment is the cleanest CommonMark-valid way to break the flanking run so the bold survives re-open. Adding a space (or any non-word char) avoids the separator entirely.
 
 ---
 

@@ -70,6 +70,7 @@ export function normalizeMarkdown(
   }
   md = stripAutolinks(md);
   md = unescapeBareUrls(md);
+  md = replaceSafetyEntities(md);
   md = fixOrphanedListMarkers(md);
   if (settings.compactLists) {
     md = compactLists(md);
@@ -484,6 +485,77 @@ function unescapeBareUrls(md: string): string {
     lines[i] = out;
   }
   return lines.join("\n");
+}
+
+/**
+ * Swap remark-stringify "safety" numeric character entities for the literal
+ * char + an empty HTML comment separator.
+ *
+ * When emphasis / strong / code-span markers abut a word character that the
+ * markers _wouldn't_ reach under CommonMark flanking rules (`_x_after`,
+ * `**``x``**Apples`), remark-stringify encodes the adjacent letter as a
+ * numeric character reference (`&#x41;`, `&#x78;`, …) so the output re-parses
+ * as the same tree. The reference is correct but ugly in the source.
+ *
+ * Replacement form: marker + `<!---->` + decoded char (or the inverse for
+ * an opening-side entity). The empty HTML comment is a CommonMark inline-HTML
+ * node — it breaks the flanking run the same way the entity does, but the
+ * source reads cleanly. The transform is idempotent: a re-emitted tree drops
+ * the comment, the entity comes back, and this step rewrites it again.
+ */
+function replaceSafetyEntities(md: string): string {
+  const lines = md.split("\n");
+  let inCodeBlock = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^```/.test(lines[i])) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+    let out = "";
+    let remaining = lines[i];
+    while (remaining.length > 0) {
+      const tick = remaining.indexOf("`");
+      if (tick === -1) {
+        out += swapSafetyEntities(remaining);
+        break;
+      }
+      out += swapSafetyEntities(remaining.slice(0, tick));
+      const end = remaining.indexOf("`", tick + 1);
+      if (end === -1) {
+        out += remaining.slice(tick);
+        break;
+      }
+      out += remaining.slice(tick, end + 1);
+      remaining = remaining.slice(end + 1);
+    }
+    lines[i] = out;
+  }
+  return lines.join("\n");
+}
+
+function swapSafetyEntities(text: string): string {
+  const decode = (cp: number, raw: string) =>
+    cp >= 0x20 && cp <= 0x7e ? String.fromCharCode(cp) : raw;
+  // marker (close) + entity → marker + <!----> + char
+  text = text.replace(
+    /(\*{1,2}|_{1,2})&#x([0-9a-fA-F]+);/g,
+    (m, marker, hex) => `${marker}<!---->${decode(parseInt(hex, 16), m)}`
+  );
+  text = text.replace(
+    /(\*{1,2}|_{1,2})&#(\d+);/g,
+    (m, marker, dec) => `${marker}<!---->${decode(parseInt(dec, 10), m)}`
+  );
+  // entity + marker (open) → char + <!----> + marker
+  text = text.replace(
+    /&#x([0-9a-fA-F]+);(\*{1,2}|_{1,2})/g,
+    (m, hex, marker) => `${decode(parseInt(hex, 16), m)}<!---->${marker}`
+  );
+  text = text.replace(
+    /&#(\d+);(\*{1,2}|_{1,2})/g,
+    (m, dec, marker) => `${decode(parseInt(dec, 10), m)}<!---->${marker}`
+  );
+  return text;
 }
 
 /**

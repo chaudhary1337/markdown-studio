@@ -147,6 +147,32 @@ async function run() {
     "bold mid-sentence",
     "A sentence with **bold** in the middle and _emphasis_ too."
   );
+  // Regression: `**`bold code`**` lost its bold wrapper because Tiptap's
+  // default Code mark has `excludes: '_'` (drops all other marks). Issue #3.
+  await roundtripCase("bold around inline code", "**`bold code`**");
+  eq(
+    "html→md: <strong><code>x</code></strong> keeps bold",
+    (await htmlToMd("<p><strong><code>bold code</code></strong></p>")).trim(),
+    "**`bold code`**"
+  );
+  // Regression: when bold-around-code abuts a word with no space between,
+  // remark-stringify emits `&#x41;` to disambiguate. We post-process that
+  // into `<!---->` + literal char, which is valid CommonMark and re-parses
+  // identically. Issue #3 follow-up.
+  eq(
+    "html→md: <strong><code>x</code></strong>Apples uses HTML-comment separator",
+    (await htmlToMd("<p><strong><code>bold code</code></strong>Apples</p>")).trim(),
+    "**`bold code`**<!---->Apples"
+  );
+  eq(
+    "html→md: <em>x</em>after uses HTML-comment separator",
+    (await htmlToMd("<p><em>x</em>after</p>")).trim(),
+    "_<!---->x_<!---->after"
+  );
+  await roundtripCase(
+    "bold-code adjacent to word round-trips with comment separator",
+    "**`bold code`**<!---->Apples"
+  );
 
   // --------------------------------------------------------------------------
   category("C. Lists");
