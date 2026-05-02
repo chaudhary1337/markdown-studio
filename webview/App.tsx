@@ -22,11 +22,13 @@ import { StickyHeadings } from "./components/StickyHeadings";
 import { TableOfContents } from "./components/TableOfContents";
 import { SearchBar } from "./components/SearchBar";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { EditorBubbleMenu } from "./components/EditorBubbleMenu";
 import { SetupPrompt, type SetupChoice } from "./components/SetupPrompt";
 import { DiffView } from "./components/DiffView";
 import { TableControls } from "./components/TableControls";
 import { ImageInsertDialog } from "./components/ImageInsertDialog";
 import { useSettingsPanel } from "./hooks/useSettingsPanel";
+import { matchesBinding, selectWordAtCursor } from "./utils";
 import { useEditorState } from "./hooks/useEditorState";
 import { useClipboardHandlers } from "./hooks/useClipboardHandlers";
 import { useDragDrop } from "./hooks/useDragDrop";
@@ -111,11 +113,34 @@ export function App() {
         setSearchVisible(true);
       } else if (e.key === "Escape") {
         setSettingsVisible(false);
+      } else if (
+        editor &&
+        matchesBinding(e, settingsRef.current.bubbleMenuShortcut)
+      ) {
+        // Open bubble menu on a collapsed cursor by selecting the word
+        // around the caret. If the selection is already non-empty the
+        // menu is already anchored; swallow the event either way so the
+        // binding doesn't fall through to VS Code (e.g. Mod+/ toggle
+        // comment in the host).
+        e.preventDefault();
+        const selected = selectWordAtCursor(editor);
+        if (selected || !editor.state.selection.empty) {
+          // Queue after Tiptap's selection transaction settles so the
+          // bubble menu plugin has mounted/positioned before we switch
+          // it to keyboard-nav mode.
+          requestAnimationFrame(() => {
+            window.dispatchEvent(new CustomEvent("btrmk:focusBubbleMenu"));
+          });
+        } else {
+          // Cursor not inside a word — still focus so any follow-up
+          // selection drag will show the menu.
+          editor.commands.focus();
+        }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [setSearchVisible, setSettingsVisible]);
+  }, [setSearchVisible, setSettingsVisible, editor, settingsRef]);
 
   // Host-driven settings open (e.g. first-run consent → "Review settings")
   useEffect(() => {
@@ -244,6 +269,7 @@ export function App() {
           )}
         </div>
         <EditorContent editor={editor} />
+        {!readonly && <EditorBubbleMenu editor={editor} />}
         <TableControls editor={editor} containerRef={editorContainerRef} />
       </div>
       <div className="toc-wrapper">

@@ -992,6 +992,21 @@ html, body, #root {
   justify-content: flex-end;
 }
 
+.settings-hint {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground, #888);
+  margin: 4px 0 8px;
+  line-height: 1.5;
+}
+
+.settings-hint code {
+  font-family: var(--vscode-editor-fontFamily, monospace);
+  font-size: 10px;
+  padding: 1px 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+}
+
 .settings-segmented {
   display: inline-flex;
   border: 1px solid var(--vscode-widget-border, #454545);
@@ -2125,3 +2140,144 @@ html, body, #root {
   opacity: 0.5;
   cursor: default;
 }
+
+/* Bubble menu (selection-anchored formatting toolbar) */
+.bubble-menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--vscode-editorWidget-background, #252526);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  z-index: 40;
+}
+
+.bubble-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--vscode-foreground, #ccc);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.1s, color 0.1s;
+}
+
+.bubble-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.08));
+  color: var(--vscode-editor-foreground, #fff);
+}
+
+.bubble-btn.active {
+  background: var(--vscode-list-activeSelectionBackground, #094771);
+  color: var(--vscode-list-activeSelectionForeground, #fff);
+}
+
+.bubble-btn.focused {
+  outline: 2px solid var(--vscode-focusBorder, #007fd4);
+  outline-offset: -2px;
+}
+
+.bubble-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 2px;
+  background: var(--vscode-widget-border, #444);
+}
+
+.bubble-turn-into {
+  position: relative;
+}
+
+.bubble-turn-into-btn {
+  padding: 0 8px;
+  font-weight: 500;
+}
+
+.bubble-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 160px;
+  padding: 4px;
+  background: var(--vscode-dropdown-background, #252526);
+  border: 1px solid var(--vscode-dropdown-border, #454545);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  z-index: 41;
+}
+
+.bubble-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--vscode-foreground, #ccc);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bubble-dropdown-item:hover {
+  background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.06));
+}
+
+.bubble-dropdown-item.active {
+  color: var(--vscode-list-activeSelectionForeground, #fff);
+  background: var(--vscode-list-activeSelectionBackground, #094771);
+}
+
+.bubble-dropdown-item.focused {
+  outline: 2px solid var(--vscode-focusBorder, #007fd4);
+  outline-offset: -2px;
+}
+
+.bubble-dropdown-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  color: var(--vscode-descriptionForeground, #888);
+}
+
+.bubble-link-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.bubble-link-input {
+  flex: 1;
+  min-width: 220px;
+  height: 26px;
+  padding: 0 8px;
+  background: var(--vscode-input-background, #3c3c3c);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 4px;
+  color: var(--vscode-input-foreground, #ccc);
+  font-size: 12px;
+  outline: none;
+}
+
+.bubble-link-input:focus {
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+.bubble-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
