@@ -6,7 +6,6 @@ import {
   Italic,
   Strikethrough,
   Code,
-  Link as LinkIcon,
   Heading1,
   Heading2,
   Heading3,
@@ -56,9 +55,8 @@ const BTN_BOLD = 0;
 const BTN_ITALIC = 1;
 const BTN_STRIKE = 2;
 const BTN_CODE = 3;
-const BTN_LINK = 4;
-const BTN_TURN_INTO = 5;
-const BTN_COUNT = 6;
+const BTN_TURN_INTO = 4;
+const BTN_COUNT = 5;
 
 export function EditorBubbleMenu({ editor }: Props) {
   const [, forceUpdate] = useState(0);
@@ -69,6 +67,15 @@ export function EditorBubbleMenu({ editor }: Props) {
   const focusedIndexRef = useRef<number | null>(null);
   const turnIntoOpenRef = useRef(false);
   const dropdownIndexRef = useRef(0);
+  // Anchor cache: keyed on selection range so bold/italic toggles (which
+  // keep from/to constant but reflow glyph widths) don't shift the menu.
+  // Stored relative to the editor DOM so scroll/resize still track.
+  const anchorCacheRef = useRef<{
+    from: number;
+    to: number;
+    relX: number;
+    relY: number;
+  } | null>(null);
 
   useEffect(() => {
     focusedIndexRef.current = focusedIndex;
@@ -149,22 +156,6 @@ export function EditorBubbleMenu({ editor }: Props) {
     [editor],
   );
 
-  const setLink = useCallback(() => {
-    const prev = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("Link URL", prev ?? "https://");
-    if (url === null) return;
-    if (url === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run();
-      return;
-    }
-    editor
-      .chain()
-      .focus()
-      .extendMarkRange("link")
-      .setLink({ href: url })
-      .run();
-  }, [editor]);
-
   const runButton = useCallback(
     (idx: number) => {
       switch (idx) {
@@ -180,16 +171,13 @@ export function EditorBubbleMenu({ editor }: Props) {
         case BTN_CODE:
           editor.chain().focus().toggleCode().run();
           break;
-        case BTN_LINK:
-          setLink();
-          break;
         case BTN_TURN_INTO:
           setTurnIntoOpen((v) => !v);
           setDropdownIndex(0);
           break;
       }
     },
-    [editor, setLink],
+    [editor],
   );
 
   // Listen for the external "enter keyboard-nav mode" event dispatched
@@ -299,7 +287,50 @@ export function EditorBubbleMenu({ editor }: Props) {
   return (
     <BubbleMenu
       editor={editor}
-      options={{ placement: "top", offset: 6 }}
+      // Anchor the menu to a zero-size rect at the very end of the selection,
+      // so the dropdown opens right after the last selected character and one
+      // line beneath it — keeping the highlighted text fully visible.
+      //
+      // Cache the anchor by selection range and store it relative to the
+      // editor DOM. Bold/italic toggles keep (from, to) constant but reflow
+      // glyph widths slightly — without caching, the menu visibly jumps on
+      // every click. Storing relative to the editor's bounding rect means
+      // scrolling and resizing still track correctly because we add the
+      // current editor rect on every read.
+      getReferencedVirtualElement={() => {
+        const { view } = editor;
+        if (!view) return null;
+        const { from, to } = view.state.selection;
+        const editorRect = view.dom.getBoundingClientRect();
+        let cache = anchorCacheRef.current;
+        if (!cache || cache.from !== from || cache.to !== to) {
+          const end = view.coordsAtPos(to);
+          cache = {
+            from,
+            to,
+            relX: end.right - editorRect.left,
+            relY: end.bottom - editorRect.top,
+          };
+          anchorCacheRef.current = cache;
+        }
+        const left = editorRect.left + cache.relX;
+        const top = editorRect.top + cache.relY;
+        return {
+          getBoundingClientRect: () =>
+            ({
+              x: left,
+              y: top,
+              top,
+              bottom: top,
+              left,
+              right: left,
+              width: 0,
+              height: 0,
+              toJSON: () => ({}),
+            }) as DOMRect,
+        };
+      }}
+      options={{ placement: "bottom-start", offset: 6 }}
       shouldShow={({ editor: e, state }) => {
         const { selection } = state;
         if (selection.empty) return false;
@@ -350,15 +381,6 @@ export function EditorBubbleMenu({ editor }: Props) {
       >
         <Code size={14} />
       </button>
-      <button
-        type="button"
-        className={btnClass(BTN_LINK, isActive("link") ? " active" : "")}
-        onClick={() => runButton(BTN_LINK)}
-        title="Link"
-      >
-        <LinkIcon size={14} />
-      </button>
-
       <span className="bubble-sep" />
 
       <div className="bubble-turn-into">

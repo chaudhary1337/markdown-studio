@@ -1,8 +1,15 @@
 # Changelog
 
+## 2.3.x — 2026-05-02
+
+- Bug fix: Bubble menu no longer jumps a few pixels every time you click Bold / Italic / Strike. Toggling a mark reflows glyph metrics, so `view.coordsAtPos(to)` returned a slightly different x for the same selection range on each call, and the menu re-anchored on every transaction. Now the anchor is cached by `(from, to)` and stored relative to the editor DOM — bold/italic clicks reuse the cached offset (menu stays put) while scroll and resize still update because we re-read the editor's bounding rect on every read.
+- Change: Bubble menu now opens below the end of the selection (anchored to a zero-size virtual rect at the trailing caret position with `placement: "bottom-start"`) instead of floating above the highlight. The menu used to sit on top of the selected text and obscure it; now the highlighted run stays fully visible while you click formatting buttons.
+
 ## 2.3.0 — 2026-05-02
 
-- Feature: Selection bubble menu. Highlight text and a floating toolbar pops up with Bold / Italic / Strike / Inline code / Link buttons plus a "Turn into" dropdown (Text, H1-H6, Quote, Bullet / Numbered / Task list, Code block). Active marks/blocks are highlighted so you can tell what formatting is already applied and click to remove it — no need to delete and retype. Hidden inside code blocks, math, and embeds.
+Bubble menu contributed by [@gvajda](https://github.com/gvajda) — PR [#6](https://github.com/chaudhary1337/markdown-studio/pull/6). Thanks Gergely!
+
+- Feature: Selection bubble menu. Highlight text and a floating toolbar pops up with Bold / Italic / Strike / Inline code buttons plus a "Turn into" dropdown (Text, H1-H6, Quote, Bullet / Numbered / Task list, Code block). Active marks/blocks are highlighted so you can tell what formatting is already applied and click to remove it — no need to delete and retype. Hidden inside code blocks, math, and embeds.
 - Feature: Keyboard shortcut to open the bubble menu. Default `Mod+/` (⌘+/ on macOS, Ctrl+/ elsewhere) — if the cursor sits inside a word with no selection, the shortcut expands the selection to that word so the menu has something to anchor to. Customize or disable under Settings → Shortcuts.
 - Feature: Keyboard navigation inside the bubble menu. After the open-menu shortcut fires, Arrow Left / Right moves between buttons, Arrow Down on "Turn into" opens the dropdown, Arrow Up / Down navigates dropdown items, Enter activates the focused button/item, Escape returns focus to the editor. The currently focused button gets a focus-colored outline.
 
