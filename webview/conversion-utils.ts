@@ -39,10 +39,69 @@ export const DOLLAR_PH = "%%BTRMK_DOLLAR%%";
  * remarkMath pairs unrelated $14B ... $1.4B as inline math, eating
  * everything in between (including bold markers). Replace $ followed
  * by a digit with a placeholder before parsing; restore after HTML.
+ *
+ * Inline math whose content starts with a digit (e.g. `$24 \times 5 = 120$`)
+ * looks identical to a currency `$` at the opening boundary. We disambiguate
+ * by inspecting the closing `$` on the same line: if the `$...$` content
+ * contains LaTeX-like syntax (a `\command`, sub/superscript, or operator with
+ * a letter operand), we treat it as math and leave both `$`s alone. Otherwise
+ * we treat the `$` as currency and protect it.
  */
 export function protectCurrencyDollars(md: string): string {
-  // Match $ followed by a digit, but not $$ (block math)
-  return md.replace(/(?<!\$)\$(?=\d)(?!\$)/g, DOLLAR_PH);
+  return md.split("\n").map(protectCurrencyInLine).join("\n");
+}
+
+function protectCurrencyInLine(line: string): string {
+  let out = "";
+  let i = 0;
+  while (i < line.length) {
+    if (
+      line[i] === "$" &&
+      line[i - 1] !== "$" &&
+      line[i + 1] !== "$" &&
+      /\d/.test(line[i + 1] || "")
+    ) {
+      const close = findClosingDollar(line, i + 1);
+      if (close !== -1 && looksLikeMath(line.slice(i + 1, close))) {
+        // Preserve the entire $...$ math span untouched
+        out += line.slice(i, close + 1);
+        i = close + 1;
+        continue;
+      }
+      out += DOLLAR_PH;
+      i++;
+      continue;
+    }
+    out += line[i];
+    i++;
+  }
+  return out;
+}
+
+function findClosingDollar(line: string, from: number): number {
+  for (let j = from; j < line.length; j++) {
+    if (line[j] === "$" && line[j - 1] !== "\\" && line[j + 1] !== "$") {
+      return j;
+    }
+  }
+  return -1;
+}
+
+function looksLikeMath(content: string): boolean {
+  // Markdown bold/italic markers inside the span are a strong signal that the
+  // surrounding `$`s are currency adjacent to formatted text, not a math pair.
+  if (/\*\*|__/.test(content)) return false;
+  // LaTeX command (\times, \frac, \alpha, ...)
+  if (/\\[a-zA-Z]/.test(content)) return true;
+  // Sub/superscript
+  if (/[\^_]/.test(content)) return true;
+  // Equation form: ` = ` (spaces around =) — common in math, rare in currency
+  if (/\s=\s/.test(content)) return true;
+  // Operator (excluding `*`, which is also markdown's bold marker) with a
+  // letter operand on either side (e.g. `2x + 3 = y`).
+  if (/[a-zA-Z]\s*[+\-/=]\s*\S/.test(content)) return true;
+  if (/\S\s*[+\-/=]\s*[a-zA-Z]/.test(content)) return true;
+  return false;
 }
 
 /**
