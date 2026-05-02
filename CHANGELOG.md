@@ -2,6 +2,7 @@
 
 ## 2.3.x — 2026-05-02
 
+- Feature: Restored the Link button in the bubble menu — this time as an inline URL editor instead of a `window.prompt`. Click the Link button (or press it via keyboard nav) and the bubble's button row swaps for a URL input flanked by Cancel / Apply / Remove. The input is auto-focused and pre-selected, so paste-and-Enter applies the link in one motion. Pressing Escape returns to the formatting row without applying. If the selection already has a link, the existing href is prefilled and the Remove button appears. Restored `BTN_LINK` (index 4) and bumped `BTN_TURN_INTO`/`BTN_COUNT` back to 5/6 so keyboard arrow-counting matches.
 - Bug fix: Bubble menu no longer jumps a few pixels every time you click Bold / Italic / Strike. Toggling a mark reflows glyph metrics, so `view.coordsAtPos(to)` returned a slightly different x for the same selection range on each call, and the menu re-anchored on every transaction. Now the anchor is cached by `(from, to)` and stored relative to the editor DOM — bold/italic clicks reuse the cached offset (menu stays put) while scroll and resize still update because we re-read the editor's bounding rect on every read.
 - Change: Bubble menu now opens below the end of the selection (anchored to a zero-size virtual rect at the trailing caret position with `placement: "bottom-start"`) instead of floating above the highlight. The menu used to sit on top of the selected text and obscure it; now the highlighted run stays fully visible while you click formatting buttons.
 

@@ -2252,3 +2252,32 @@ html, body, #root {
   color: var(--vscode-descriptionForeground, #888);
 }
 
+.bubble-link-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.bubble-link-input {
+  flex: 1;
+  min-width: 220px;
+  height: 26px;
+  padding: 0 8px;
+  background: var(--vscode-input-background, #3c3c3c);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 4px;
+  color: var(--vscode-input-foreground, #ccc);
+  font-size: 12px;
+  outline: none;
+}
+
+.bubble-link-input:focus {
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+.bubble-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+

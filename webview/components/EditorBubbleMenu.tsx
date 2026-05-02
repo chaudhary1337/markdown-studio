@@ -6,6 +6,10 @@ import {
   Italic,
   Strikethrough,
   Code,
+  Link as LinkIcon,
+  Unlink,
+  Check,
+  X,
   Heading1,
   Heading2,
   Heading3,
@@ -55,8 +59,9 @@ const BTN_BOLD = 0;
 const BTN_ITALIC = 1;
 const BTN_STRIKE = 2;
 const BTN_CODE = 3;
-const BTN_TURN_INTO = 4;
-const BTN_COUNT = 5;
+const BTN_LINK = 4;
+const BTN_TURN_INTO = 5;
+const BTN_COUNT = 6;
 
 export function EditorBubbleMenu({ editor }: Props) {
   const [, forceUpdate] = useState(0);
@@ -64,6 +69,12 @@ export function EditorBubbleMenu({ editor }: Props) {
   // null → menu not keyboard-focused. Number → active button index.
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [dropdownIndex, setDropdownIndex] = useState(0);
+  // Inline link editor: when true the bubble swaps its button row for a URL
+  // input. Keeping it inline (instead of window.prompt or a separate modal)
+  // matches the editor's visual context and lets keyboard nav stay tight.
+  const [linkMode, setLinkMode] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const linkInputRef = useRef<HTMLInputElement>(null);
   const focusedIndexRef = useRef<number | null>(null);
   const turnIntoOpenRef = useRef(false);
   const dropdownIndexRef = useRef(0);
@@ -97,19 +108,63 @@ export function EditorBubbleMenu({ editor }: Props) {
     };
   }, [editor]);
 
-  // Clear keyboard focus when the menu hides (selection became empty or
-  // moved into an ignored block).
+  // Clear keyboard focus and link mode when the menu hides (selection
+  // became empty or moved into an ignored block).
   useEffect(() => {
     const check = () => {
-      if (editor.state.selection.empty && focusedIndexRef.current !== null) {
-        setFocusedIndex(null);
+      if (editor.state.selection.empty) {
+        if (focusedIndexRef.current !== null) setFocusedIndex(null);
         setTurnIntoOpen(false);
+        setLinkMode(false);
       }
     };
     editor.on("selectionUpdate", check);
     return () => {
       editor.off("selectionUpdate", check);
     };
+  }, [editor]);
+
+  // Auto-focus and select the URL field whenever link mode opens, so the
+  // user can immediately type / paste / overwrite an existing URL.
+  useEffect(() => {
+    if (!linkMode) return;
+    const t = setTimeout(() => {
+      linkInputRef.current?.focus();
+      linkInputRef.current?.select();
+    }, 0);
+    return () => clearTimeout(t);
+  }, [linkMode]);
+
+  const enterLinkMode = useCallback(() => {
+    const existing =
+      (editor.getAttributes("link").href as string | undefined) ?? "";
+    setLinkUrl(existing);
+    setLinkMode(true);
+    // Suspend keyboard-nav so global keydown handler doesn't swallow
+    // Enter/Escape that the input wants to handle.
+    setFocusedIndex(null);
+    setTurnIntoOpen(false);
+  }, [editor]);
+
+  const exitLinkMode = useCallback(() => {
+    setLinkMode(false);
+    editor.commands.focus();
+  }, [editor]);
+
+  const applyLink = useCallback(() => {
+    const url = linkUrl.trim();
+    const chain = editor.chain().focus().extendMarkRange("link");
+    if (url === "") {
+      chain.unsetLink().run();
+    } else {
+      chain.setLink({ href: url }).run();
+    }
+    setLinkMode(false);
+  }, [editor, linkUrl]);
+
+  const removeLink = useCallback(() => {
+    editor.chain().focus().extendMarkRange("link").unsetLink().run();
+    setLinkMode(false);
   }, [editor]);
 
   const isActive = useCallback(
@@ -171,13 +226,16 @@ export function EditorBubbleMenu({ editor }: Props) {
         case BTN_CODE:
           editor.chain().focus().toggleCode().run();
           break;
+        case BTN_LINK:
+          enterLinkMode();
+          break;
         case BTN_TURN_INTO:
           setTurnIntoOpen((v) => !v);
           setDropdownIndex(0);
           break;
       }
     },
-    [editor],
+    [editor, enterLinkMode],
   );
 
   // Listen for the external "enter keyboard-nav mode" event dispatched
@@ -349,72 +407,131 @@ export function EditorBubbleMenu({ editor }: Props) {
       }}
       className="bubble-menu"
     >
-      <button
-        type="button"
-        className={btnClass(BTN_BOLD, isActive("bold") ? " active" : "")}
-        onClick={() => runButton(BTN_BOLD)}
-        title="Bold (Cmd/Ctrl+B)"
-      >
-        <Bold size={14} />
-      </button>
-      <button
-        type="button"
-        className={btnClass(BTN_ITALIC, isActive("italic") ? " active" : "")}
-        onClick={() => runButton(BTN_ITALIC)}
-        title="Italic (Cmd/Ctrl+I)"
-      >
-        <Italic size={14} />
-      </button>
-      <button
-        type="button"
-        className={btnClass(BTN_STRIKE, isActive("strike") ? " active" : "")}
-        onClick={() => runButton(BTN_STRIKE)}
-        title="Strikethrough"
-      >
-        <Strikethrough size={14} />
-      </button>
-      <button
-        type="button"
-        className={btnClass(BTN_CODE, isActive("code") ? " active" : "")}
-        onClick={() => runButton(BTN_CODE)}
-        title="Inline code (Cmd/Ctrl+E)"
-      >
-        <Code size={14} />
-      </button>
-      <span className="bubble-sep" />
+      {linkMode ? (
+        <div className="bubble-link-row">
+          <button
+            type="button"
+            className="bubble-btn"
+            onClick={exitLinkMode}
+            title="Cancel (Esc)"
+          >
+            <X size={14} />
+          </button>
+          <input
+            ref={linkInputRef}
+            type="text"
+            className="bubble-link-input"
+            value={linkUrl}
+            placeholder="Paste or type a URL"
+            onChange={(e) => setLinkUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                applyLink();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                exitLinkMode();
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="bubble-btn"
+            onClick={applyLink}
+            title="Apply (Enter)"
+            disabled={linkUrl.trim() === "" && !isActive("link")}
+          >
+            <Check size={14} />
+          </button>
+          {isActive("link") && (
+            <button
+              type="button"
+              className="bubble-btn"
+              onClick={removeLink}
+              title="Remove link"
+            >
+              <Unlink size={14} />
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          <button
+            type="button"
+            className={btnClass(BTN_BOLD, isActive("bold") ? " active" : "")}
+            onClick={() => runButton(BTN_BOLD)}
+            title="Bold (Cmd/Ctrl+B)"
+          >
+            <Bold size={14} />
+          </button>
+          <button
+            type="button"
+            className={btnClass(BTN_ITALIC, isActive("italic") ? " active" : "")}
+            onClick={() => runButton(BTN_ITALIC)}
+            title="Italic (Cmd/Ctrl+I)"
+          >
+            <Italic size={14} />
+          </button>
+          <button
+            type="button"
+            className={btnClass(BTN_STRIKE, isActive("strike") ? " active" : "")}
+            onClick={() => runButton(BTN_STRIKE)}
+            title="Strikethrough"
+          >
+            <Strikethrough size={14} />
+          </button>
+          <button
+            type="button"
+            className={btnClass(BTN_CODE, isActive("code") ? " active" : "")}
+            onClick={() => runButton(BTN_CODE)}
+            title="Inline code (Cmd/Ctrl+E)"
+          >
+            <Code size={14} />
+          </button>
+          <button
+            type="button"
+            className={btnClass(BTN_LINK, isActive("link") ? " active" : "")}
+            onClick={() => runButton(BTN_LINK)}
+            title={isActive("link") ? "Edit link" : "Add link"}
+          >
+            <LinkIcon size={14} />
+          </button>
+          <span className="bubble-sep" />
 
-      <div className="bubble-turn-into">
-        <button
-          type="button"
-          className={btnClass(BTN_TURN_INTO, " bubble-turn-into-btn")}
-          onClick={() => runButton(BTN_TURN_INTO)}
-          title="Turn into (↓ opens, Enter applies)"
-        >
-          <span>{currentBlockLabel}</span>
-          <ChevronDown size={12} />
-        </button>
-        {turnIntoOpen && (
-          <div className="bubble-dropdown">
-            {BLOCK_OPTIONS.map((opt, i) => (
-              <button
-                type="button"
-                key={opt.kind}
-                className={
-                  "bubble-dropdown-item" +
-                  (isCurrentKind(editor, opt.kind) ? " active" : "") +
-                  (focusedIndex !== null && dropdownIndex === i
-                    ? " focused"
-                    : "")
-                }
-                onClick={() => applyBlock(opt.kind)}
-              >
-                <span className="bubble-dropdown-icon">{opt.icon}</span>
-                {opt.label}
-              </button>
-            ))}
+          <div className="bubble-turn-into">
+            <button
+              type="button"
+              className={btnClass(BTN_TURN_INTO, " bubble-turn-into-btn")}
+              onClick={() => runButton(BTN_TURN_INTO)}
+              title="Turn into (↓ opens, Enter applies)"
+            >
+              <span>{currentBlockLabel}</span>
+              <ChevronDown size={12} />
+            </button>
+            {turnIntoOpen && (
+              <div className="bubble-dropdown">
+                {BLOCK_OPTIONS.map((opt, i) => (
+                  <button
+                    type="button"
+                    key={opt.kind}
+                    className={
+                      "bubble-dropdown-item" +
+                      (isCurrentKind(editor, opt.kind) ? " active" : "") +
+                      (focusedIndex !== null && dropdownIndex === i
+                        ? " focused"
+                        : "")
+                    }
+                    onClick={() => applyBlock(opt.kind)}
+                  >
+                    <span className="bubble-dropdown-icon">{opt.icon}</span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </BubbleMenu>
   );
 }
