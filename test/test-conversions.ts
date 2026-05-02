@@ -147,6 +147,32 @@ async function run() {
     "bold mid-sentence",
     "A sentence with **bold** in the middle and _emphasis_ too."
   );
+  // Regression: `**`bold code`**` lost its bold wrapper because Tiptap's
+  // default Code mark has `excludes: '_'` (drops all other marks). Issue #3.
+  await roundtripCase("bold around inline code", "**`bold code`**");
+  eq(
+    "html→md: <strong><code>x</code></strong> keeps bold",
+    (await htmlToMd("<p><strong><code>bold code</code></strong></p>")).trim(),
+    "**`bold code`**"
+  );
+  // Regression: when bold-around-code abuts a word with no space between,
+  // remark-stringify emits `&#x41;` to disambiguate. We post-process that
+  // into `<!---->` + literal char, which is valid CommonMark and re-parses
+  // identically. Issue #3 follow-up.
+  eq(
+    "html→md: <strong><code>x</code></strong>Apples uses HTML-comment separator",
+    (await htmlToMd("<p><strong><code>bold code</code></strong>Apples</p>")).trim(),
+    "**`bold code`**<!---->Apples"
+  );
+  eq(
+    "html→md: <em>x</em>after uses HTML-comment separator",
+    (await htmlToMd("<p><em>x</em>after</p>")).trim(),
+    "_<!---->x_<!---->after"
+  );
+  await roundtripCase(
+    "bold-code adjacent to word round-trips with comment separator",
+    "**`bold code`**<!---->Apples"
+  );
 
   // --------------------------------------------------------------------------
   category("C. Lists");
@@ -602,6 +628,24 @@ async function run() {
   await roundtripCase(
     "block math surrounded by text",
     "Before math:\n\n$$\nf(x) = x^2\n$$\n\nAfter math."
+  );
+
+  // Inline math whose content starts AND ends with a digit must not be
+  // mis-protected by protectCurrencyDollars (regression: the leading `$`
+  // matched the `$<digit>` currency pattern, breaking the math pair).
+  await roundtripCase(
+    "inline math digit boundaries with LaTeX command",
+    "So 5 cats would have $24 \\times 5 = 120$ whiskers between them."
+  );
+  await roundtripCase(
+    "inline math digit boundaries with operator",
+    "Result: $2x + 3 = 5$ is the answer."
+  );
+
+  // Currency must still be protected even when math also appears nearby
+  await roundtripCase(
+    "currency and inline math on same line",
+    "It costs $100 but $E=mc^2$ stays."
   );
 
   // Verify md→html produces correct data attributes

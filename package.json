@@ -2,7 +2,7 @@
   "name": "its-markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Notion-like WYSIWYG markdown editor with rich diffs, tables, images, math, and more.",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "publisher": "tanishq-chaudhary",
   "license": "MIT",
   "repository": {
@@ -59,7 +59,7 @@
     "customEditors": [
       {
         "viewType": "betterMarkdown.editor",
-        "displayName": "Better Markdown",
+        "displayName": "Markdown Studio",
         "selector": [
           {
             "filenamePattern": "*.md"
@@ -72,25 +72,30 @@
       {
         "command": "betterMarkdown.toggleEditor",
         "title": "Toggle Rich/Source Editor",
-        "category": "Better Markdown",
+        "category": "Markdown Studio",
         "icon": "$(notebook-render-output)"
       },
       {
         "command": "betterMarkdown.find",
         "title": "Find in Document",
-        "category": "Better Markdown"
+        "category": "Markdown Studio"
       },
       {
         "command": "betterMarkdown.openDiff",
         "title": "Open Rich Diff",
-        "category": "Better Markdown",
+        "category": "Markdown Studio",
         "icon": "$(diff)"
       },
       {
         "command": "betterMarkdown.openInBrowser",
         "title": "Open in Browser",
-        "category": "Better Markdown",
+        "category": "Markdown Studio",
         "icon": "$(globe)"
+      },
+      {
+        "command": "betterMarkdown.factoryReset",
+        "title": "Factory Reset Settings",
+        "category": "Markdown Studio"
       }
     ],
     "keybindings": [
@@ -158,6 +163,7 @@
   },
   "dependencies": {
     "@tiptap/extension-bubble-menu": "^3.22.1",
+    "@tiptap/extension-code": "^3.22.1",
     "@tiptap/extension-code-block-lowlight": "^3.22.1",
     "@tiptap/extension-image": "^3.22.1",
     "@tiptap/extension-link": "^3.22.1",

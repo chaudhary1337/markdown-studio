@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
+import { Code } from "@tiptap/extension-code";
 import { Link } from "@tiptap/extension-link";
 import { ImageBlock } from "./extensions/ImageView";
 import { Table } from "@tiptap/extension-table";
@@ -22,6 +23,7 @@ import { TableOfContents } from "./components/TableOfContents";
 import { SearchBar } from "./components/SearchBar";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { EditorBubbleMenu } from "./components/EditorBubbleMenu";
+import { SetupPrompt, type SetupChoice } from "./components/SetupPrompt";
 import { DiffView } from "./components/DiffView";
 import { TableControls } from "./components/TableControls";
 import { ImageInsertDialog } from "./components/ImageInsertDialog";
@@ -30,7 +32,7 @@ import { matchesBinding, selectWordAtCursor } from "./utils";
 import { useEditorState } from "./hooks/useEditorState";
 import { useClipboardHandlers } from "./hooks/useClipboardHandlers";
 import { useDragDrop } from "./hooks/useDragDrop";
-import { isBrowserMode } from "./vscode-api";
+import { isBrowserMode, vscodeApi } from "./vscode-api";
 
 const lowlight = createLowlight(common);
 
@@ -51,8 +53,13 @@ export function App() {
     extensions: [
       StarterKit.configure({
         codeBlock: false, // replaced by CodeBlockLowlight
+        code: false, // replaced below so inline code can coexist with bold/italic
         heading: { levels: [1, 2, 3, 4, 5, 6] },
       }),
+      // Tiptap's default Code mark sets `excludes: '_'`, which strips every
+      // other mark (e.g. bold) when the code mark is applied. Override to ''
+      // so `**\`bold code\`**` round-trips without losing the bold wrapper.
+      Code.extend({ excludes: "" }),
       Link.configure({ openOnClick: false }),
       ImageBlock,
       Table.configure({ resizable: false }),
@@ -135,6 +142,39 @@ export function App() {
     return () => window.removeEventListener("keydown", handler);
   }, [setSearchVisible, setSettingsVisible, editor, settingsRef]);
 
+  // Host-driven settings open (e.g. first-run consent → "Review settings")
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === "openSettings") setSettingsVisible(true);
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [setSettingsVisible]);
+
+  // First-run setup prompt: host posts `showSetupPrompt`, we render the
+  // modal and post the user's choice back so the host can apply settings.
+  const [setupPromptVisible, setSetupPromptVisible] = useState(false);
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === "showSetupPrompt") setSetupPromptVisible(true);
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
+  const handleSetupChoice = (choice: SetupChoice) => {
+    setSetupPromptVisible(false);
+    if (choice === "review") setSettingsVisible(true);
+    vscodeApi.postMessage({ type: "setupPromptChoice", choice });
+  };
+
+  const dismissSetupPrompt = () => {
+    setSetupPromptVisible(false);
+    // Treat dismissal as "keep defaults" — record consent so the host
+    // doesn't re-prompt on the next file open.
+    vscodeApi.postMessage({ type: "setupPromptChoice", choice: "keep" });
+  };
+
   if (!editor) return null;
 
   return (
@@ -185,6 +225,11 @@ export function App() {
           settings={settings}
           onChange={updateSettings}
           onClose={() => setSettingsVisible(false)}
+        />
+        <SetupPrompt
+          visible={setupPromptVisible}
+          onChoice={handleSetupChoice}
+          onDismiss={dismissSetupPrompt}
         />
         {diffVisible && diffData && (
           <DiffView

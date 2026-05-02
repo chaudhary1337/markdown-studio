@@ -1,8 +1,5 @@
 import React from "react";
-import {
-  DEFAULT_SETTINGS,
-  type BetterMarkdownSettings,
-} from "../settings";
+import { DEFAULT_SETTINGS, type BetterMarkdownSettings } from "../settings";
 
 interface SettingsPanelProps {
   visible: boolean;
@@ -43,7 +40,8 @@ export function SettingsPanel({
             <h3>Saving</h3>
 
             <Toggle
-              label="Save normalization on open (silently persists the md → html → md round-trip)"
+              label="Save normalization on open (Recommended)"
+              description="Rich editor requires a stable round-trip, so opening a file always re-emits its markdown according to the normalization settings below. This setting turns on the auto-save feature for the first time Markdown Studio looks at a markdown file."
               checked={settings.autoSave}
               onChange={(v) => set("autoSave", v)}
             />
@@ -269,10 +267,12 @@ function Segmented({
 
 function Toggle({
   label,
+  description,
   checked,
   onChange,
 }: {
   label: string;
+  description?: string;
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
@@ -283,7 +283,12 @@ function Toggle({
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
       />
-      <span>{label}</span>
+      <span className="settings-toggle-text">
+        <span className="settings-toggle-label">{label}</span>
+        {description && (
+          <span className="settings-toggle-description">{description}</span>
+        )}
+      </span>
     </label>
   );
 }

@@ -3,6 +3,7 @@ import * as path from "path";
 
 const SETTINGS_KEY = "betterMarkdown.settings";
 const CURSORS_KEY = "betterMarkdown.cursors";
+const CONSENT_SHOWN_KEY = "betterMarkdown.consentShown";
 
 export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   constructor(readonly context: vscode.ExtensionContext) {}
@@ -15,7 +16,10 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   }
 
   private loadSettings(): Record<string, unknown> {
-    return this.context.globalState.get<Record<string, unknown>>(SETTINGS_KEY, {}) ?? {};
+    return (
+      this.context.globalState.get<Record<string, unknown>>(SETTINGS_KEY, {}) ??
+      {}
+    );
   }
 
   private async saveSettings(next: Record<string, unknown>) {
@@ -27,14 +31,79 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   }
 
   private loadCursor(filePath: string): number | undefined {
-    const all = this.context.globalState.get<Record<string, number>>(CURSORS_KEY, {}) ?? {};
+    const all =
+      this.context.globalState.get<Record<string, number>>(CURSORS_KEY, {}) ??
+      {};
     return all[filePath];
   }
 
   private async saveCursor(filePath: string, position: number): Promise<void> {
-    const all = this.context.globalState.get<Record<string, number>>(CURSORS_KEY, {}) ?? {};
+    const all =
+      this.context.globalState.get<Record<string, number>>(CURSORS_KEY, {}) ??
+      {};
     all[filePath] = position;
     await this.context.globalState.update(CURSORS_KEY, all);
+  }
+
+  /**
+   * Setup prompt fired the first time the rich editor opens any file
+   * post-install, and re-runnable via the `Markdown Studio: Open Setup
+   * Prompt` command. The actual UI is rendered inside the webview (see
+   * `SetupPrompt.tsx`); this method just routes the trigger to the right
+   * webview. The webview posts `setupPromptChoice` back, which is
+   * handled by `applySetupChoice` below.
+   */
+  showFirstRunConsent(webview?: vscode.Webview): void {
+    const target = webview ?? this.activeWebview;
+    if (target) {
+      target.postMessage({ type: "showSetupPrompt" });
+      return;
+    }
+    // Manual command path with no markdown file open — the in-webview
+    // prompt has nowhere to render. Tell the user to open a file and
+    // re-run, since the on-open path will fire automatically next time.
+    vscode.window.showInformationMessage(
+      "Open a markdown file in the rich editor to access Markdown Studio setup.",
+    );
+  }
+
+  /**
+   * Apply the user's setup-prompt choice. Called from the webview
+   * message handler when `setupPromptChoice` arrives. Records consent so
+   * the on-open prompt doesn't re-fire. The webview opens its own
+   * settings panel for `review` directly, so no host action needed.
+   */
+  async applySetupChoice(_choice: string): Promise<void> {
+    await this.context.globalState.update(CONSENT_SHOWN_KEY, true);
+  }
+
+  /**
+   * Wipe all Markdown Studio user settings + the first-run consent flag,
+   * so settings revert to defaults and the welcome modal fires again on
+   * the next file open. Confirms before nuking so a stray click in the
+   * command palette doesn't cost the user their configuration.
+   */
+  async factoryReset(): Promise<void> {
+    const RESET = "Reset";
+    const choice = await vscode.window.showWarningMessage(
+      "Factory reset Markdown Studio? All settings revert to defaults.",
+      { modal: true },
+      RESET,
+    );
+    if (choice !== RESET) return;
+
+    await this.context.globalState.update(SETTINGS_KEY, undefined);
+    await this.context.globalState.update(CONSENT_SHOWN_KEY, undefined);
+
+    // Push fresh (empty) settings to every open webview so they
+    // re-merge with defaults instead of holding the old values.
+    for (const wv of this.openWebviews) {
+      wv.postMessage({ type: "settingsUpdated", settings: {} });
+    }
+
+    vscode.window.showInformationMessage(
+      "Markdown Studio: factory reset complete. Open any markdown file to see the welcome prompt.",
+    );
   }
 
   /**
@@ -51,7 +120,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
       const gitApi = (gitExt.exports as any).getAPI(1);
       if (!gitApi) return null;
       const repo = gitApi.repositories.find((r: any) =>
-        fileUri.fsPath.startsWith(r.rootUri.fsPath)
+        fileUri.fsPath.startsWith(r.rootUri.fsPath),
       );
       if (!repo) return null;
       // Empty ref ('') = staged, 'HEAD' = committed. We want HEAD.
@@ -65,7 +134,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   async resolveCustomTextEditor(
     document: vscode.TextDocument,
     webviewPanel: vscode.WebviewPanel,
-    _token: vscode.CancellationToken
+    _token: vscode.CancellationToken,
   ): Promise<void> {
     const webview = webviewPanel.webview;
 
@@ -99,6 +168,13 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
     // so we don't fight the user's configured save cadence.
     let firstEditPending = true;
 
+    // First-run consent: the very first file opened post-install must not
+    // be silently rewritten before the user has chosen how to handle
+    // normalization. Snapshot the flag at start so a "Disable all" choice
+    // mid-session still suppresses this open's silent save.
+    const consentShownAtStart =
+      this.context.globalState.get<boolean>(CONSENT_SHOWN_KEY) === true;
+
     this.openWebviews.add(webview);
 
     const msgDisposable = webview.onDidReceiveMessage(async (msg) => {
@@ -113,12 +189,23 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           settings: this.loadSettings(),
           cursorPosition: this.loadCursor(document.uri.fsPath),
         });
+        // Fire the first-run setup prompt only after the webview has
+        // signalled `ready` — posting earlier would land before the
+        // message listener is attached and the message would be lost.
+        if (!consentShownAtStart) {
+          this.showFirstRunConsent(webview);
+        }
       } else if (msg.type === "saveCursor") {
-        if (typeof msg.position === "number" && document.uri.scheme === "file") {
+        if (
+          typeof msg.position === "number" &&
+          document.uri.scheme === "file"
+        ) {
           await this.saveCursor(document.uri.fsPath, msg.position);
         }
       } else if (msg.type === "saveSettings") {
         await this.saveSettings(msg.settings as Record<string, unknown>);
+      } else if (msg.type === "setupPromptChoice") {
+        await this.applySetupChoice(msg.choice as string);
       } else if (msg.type === "requestGitDiff") {
         let headContent: string | null = null;
         if (document.uri.scheme === "file") {
@@ -133,7 +220,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
         vscode.commands.executeCommand(
           "vscode.openWith",
           document.uri,
-          "default"
+          "default",
         );
       } else if (msg.type === "openLink") {
         const href = msg.href as string;
@@ -153,7 +240,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
       } else if (msg.type === "openInBrowser") {
         vscode.commands.executeCommand(
           "betterMarkdown.openInBrowser",
-          document.uri
+          document.uri,
         );
       } else if (msg.type === "promptImageUrl") {
         const url = await vscode.window.showInputBox({
@@ -198,12 +285,12 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
         edit.replace(
           document.uri,
           new vscode.Range(0, 0, document.lineCount, 0),
-          newContent
+          newContent,
         );
         await vscode.workspace.applyEdit(edit);
         if (firstEditPending) {
           firstEditPending = false;
-          if (this.loadSettings().autoSave !== false) {
+          if (consentShownAtStart && this.loadSettings().autoSave !== false) {
             try {
               await document.save();
             } catch {
@@ -237,7 +324,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           type: "update",
           content: document.getText(),
         });
-      }
+      },
     );
 
     webviewPanel.onDidDispose(() => {
@@ -249,10 +336,10 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
 
   private getHtmlForWebview(webview: vscode.Webview): string {
     const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, "dist", "webview.js")
+      vscode.Uri.joinPath(this.context.extensionUri, "dist", "webview.js"),
     );
     const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.context.extensionUri, "dist", "editor.css")
+      vscode.Uri.joinPath(this.context.extensionUri, "dist", "editor.css"),
     );
     const nonce = getNonce();
 

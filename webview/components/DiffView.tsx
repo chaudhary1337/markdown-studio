@@ -2,10 +2,139 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createTwoFilesPatch } from "diff";
 import { html as diff2html } from "diff2html";
 import htmldiff from "node-htmldiff";
+import katex from "katex";
 import { markdownToDisplayHtml } from "../hooks/useVSCodeSync";
 
 export type DiffMode = "source" | "rendered";
 export type DiffLayout = "unified" | "side-by-side";
+
+/**
+ * Wrap math nodes and GFM checkboxes in a `<video>` sentinel before
+ * htmldiff. (Yes, `<video>` — see why below.)
+ *
+ * htmldiff's default token-key function only includes attributes for a few
+ * special tags: `<img>` (src), `<a>` (href), `<object>` (data),
+ * `<iframe>` (src), and `<svg>/<math>/<video>` (full token). Everything
+ * else collapses to just `<tagname>`, so two `<span data-latex="a^2">`
+ * vs `<span data-latex="b^2">` look identical to it — same with
+ * `<input type="checkbox">` vs `<input type="checkbox" checked>`.
+ *
+ * `<video>` is the only one of those three that DOMParser parses as a
+ * regular HTML element (no foreign-content / MathML / SVG namespace
+ * switch), so attributes round-trip cleanly. Wrapping changed nodes in
+ * a `<video>` forces htmldiff to emit a `<del>`/`<ins>` pair around the
+ * wrapper, which is exactly the before/after view we want. The wrappers
+ * are replaced with their real rendering in postprocessAfterDiff before
+ * the user ever sees the DOM.
+ */
+const SENTINEL_TAG = "video";
+
+function preprocessForDiff(html: string): string {
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
+
+  // Math nodes first — math inside a task item gets folded into the task
+  // sentinel below as encoded HTML, which preserves it through the diff.
+  doc
+    .querySelectorAll('[data-type="mathInline"], [data-type="mathBlock"]')
+    .forEach((el) => {
+      const latex = el.getAttribute("data-latex") || el.textContent || "";
+      const kind = el.getAttribute("data-type") === "mathBlock" ? "block" : "inline";
+      const wrap = doc.createElement(SENTINEL_TAG);
+      wrap.setAttribute("data-btrmk-math", kind);
+      wrap.setAttribute("data-btrmk-latex", latex);
+      wrap.textContent = latex;
+      el.replaceWith(wrap);
+    });
+
+  // Task list items: collapse the entire <li> body into a single sentinel
+  // whose text content is "☐ <line text>" or "☑ <line text>". This makes
+  // htmldiff treat the whole line atomically, so a checkbox-only or
+  // text-only change shows the full "[ ] foo" → "[x] foo" diff with the
+  // line's text repeated on both sides — instead of just the checkbox
+  // input wrapped in <del>/<ins> with an unchanged label trailing it.
+  doc.querySelectorAll("li.task-list-item").forEach((li) => {
+    const checkbox = li.querySelector('input[type="checkbox"]');
+    if (!checkbox) return;
+    const checked = checkbox.hasAttribute("checked");
+    const innerHtml = li.innerHTML;
+    const lineText = (li.textContent || "").trim();
+    const wrap = doc.createElement(SENTINEL_TAG);
+    wrap.setAttribute("data-btrmk-task", checked ? "on" : "off");
+    // Stash the original HTML so post-processing can restore it verbatim;
+    // encodeURIComponent escapes < and > (and quotes via %22) so the
+    // attribute value is safe.
+    wrap.setAttribute("data-btrmk-html", encodeURIComponent(innerHtml));
+    wrap.textContent = (checked ? "☑ " : "☐ ") + lineText;
+    li.innerHTML = "";
+    li.appendChild(wrap);
+  });
+
+  // Stray checkboxes outside task items (defensive — GFM only emits
+  // checkboxes inside task list items, but raw HTML in source could).
+  doc.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+    const checked = input.hasAttribute("checked");
+    const wrap = doc.createElement(SENTINEL_TAG);
+    wrap.setAttribute("data-btrmk-checkbox", checked ? "on" : "off");
+    wrap.textContent = checked ? "☑" : "☐";
+    input.replaceWith(wrap);
+  });
+
+  return doc.body.innerHTML;
+}
+
+/**
+ * Inverse of `preprocessForDiff`: replace each `<video>` sentinel in the
+ * htmldiff output with the proper rendered element. `<del>`/`<ins>`
+ * wrappers around the sentinel (added by htmldiff for changed nodes) are
+ * preserved, so the user sees old (red strike) and new (green underline)
+ * versions side by side.
+ */
+function postprocessAfterDiff(html: string): string {
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
+
+  // Task-item sentinels go FIRST. The decoded HTML may contain math
+  // sentinels (math nested inside a task line), which the next loop
+  // picks up as live DOM nodes.
+  doc.querySelectorAll(`${SENTINEL_TAG}[data-btrmk-task]`).forEach((wrap) => {
+    const encoded = wrap.getAttribute("data-btrmk-html") || "";
+    const inner = decodeURIComponent(encoded);
+    const tmp = doc.createElement("span");
+    tmp.innerHTML = inner;
+    const fragment = doc.createDocumentFragment();
+    while (tmp.firstChild) fragment.appendChild(tmp.firstChild);
+    wrap.replaceWith(fragment);
+  });
+
+  doc.querySelectorAll(`${SENTINEL_TAG}[data-btrmk-math]`).forEach((wrap) => {
+    const kind = wrap.getAttribute("data-btrmk-math");
+    const latex = wrap.getAttribute("data-btrmk-latex") || "";
+    const display = kind === "block";
+    const tag = display ? "div" : "span";
+    const out = doc.createElement(tag);
+    out.setAttribute("data-type", display ? "mathBlock" : "mathInline");
+    out.setAttribute("data-latex", latex);
+    try {
+      out.innerHTML = katex.renderToString(latex, {
+        throwOnError: false,
+        displayMode: display,
+      });
+    } catch {
+      out.textContent = latex;
+    }
+    wrap.replaceWith(out);
+  });
+
+  doc.querySelectorAll(`${SENTINEL_TAG}[data-btrmk-checkbox]`).forEach((wrap) => {
+    const checked = wrap.getAttribute("data-btrmk-checkbox") === "on";
+    const input = doc.createElement("input");
+    input.type = "checkbox";
+    input.disabled = true;
+    if (checked) input.setAttribute("checked", "");
+    wrap.replaceWith(input);
+  });
+
+  return doc.body.innerHTML;
+}
 
 interface DiffViewProps {
   oldContent: string;
@@ -67,8 +196,11 @@ export function DiffView({
           markdownToDisplayHtml(newContent),
         ]);
         if (cancelled) return;
-        const diffed = htmldiff(oldHtml, newHtml);
-        setRenderedHtml(diffed);
+        const oldPre = preprocessForDiff(oldHtml);
+        const newPre = preprocessForDiff(newHtml);
+        const diffed = htmldiff(oldPre, newPre);
+        const final = postprocessAfterDiff(diffed);
+        setRenderedHtml(final);
       } catch (e: any) {
         if (!cancelled) setRenderedErr(e?.message || String(e));
       }
@@ -119,6 +251,9 @@ export function DiffView({
 
   // Apply "current" class to the focused hunk and scroll it into view.
   // Skipped when cursor === -1 (initial state, no user navigation yet).
+  // We manually scroll the .diff-body container instead of using
+  // scrollIntoView, which walks the ancestor chain and can shift outer
+  // scroll containers (e.g. the editor-container in integrated mode).
   useEffect(() => {
     hunks.forEach((el, i) => {
       if (i === cursor) el.classList.add("diff-hunk-current");
@@ -126,7 +261,18 @@ export function DiffView({
     });
     if (cursor < 0) return;
     const el = hunks[cursor];
-    if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+    const body = renderedRef.current?.parentElement;
+    if (!el || !body) return;
+    const bodyRect = body.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const target =
+      body.scrollTop +
+      (elRect.top - bodyRect.top) -
+      (body.clientHeight - elRect.height) / 2;
+    body.scrollTo({
+      top: Math.max(0, target),
+      behavior: "smooth",
+    });
   }, [hunks, cursor]);
 
   const gotoHunk = (delta: number) => {

@@ -1056,7 +1056,7 @@ html, body, #root {
 
 .settings-toggle {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 4px 0;
   cursor: pointer;
@@ -1064,8 +1064,22 @@ html, body, #root {
 }
 
 .settings-toggle input[type="checkbox"] {
-  margin: 0;
+  margin: 3px 0 0;
   cursor: pointer;
+  flex-shrink: 0;
+}
+
+.settings-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.settings-toggle-description {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--vscode-descriptionForeground, #888);
 }
 
 .settings-footer {
@@ -1089,6 +1103,111 @@ html, body, #root {
 .settings-reset:hover {
   background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.08));
   color: var(--vscode-editor-foreground, #d4d4d4);
+}
+
+/* ================================================================ */
+/* First-run setup prompt                                           */
+/* ================================================================ */
+
+.setup-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.setup-prompt-panel {
+  background: var(--vscode-editorWidget-background, #252526);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  width: min(480px, 100%);
+  display: flex;
+  flex-direction: column;
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  font-size: 13px;
+}
+
+.setup-prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--vscode-widget-border, #333);
+}
+
+.setup-prompt-header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.setup-prompt-close {
+  background: transparent;
+  border: none;
+  color: var(--vscode-descriptionForeground, #888);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.setup-prompt-close:hover {
+  color: var(--vscode-editor-foreground, #d4d4d4);
+}
+
+.setup-prompt-body {
+  padding: 14px 16px;
+  line-height: 1.5;
+}
+
+.setup-prompt-body p {
+  margin: 0 0 10px;
+}
+
+.setup-prompt-body p:last-child {
+  margin-bottom: 0;
+}
+
+.setup-prompt-actions {
+  padding: 12px 16px;
+  border-top: 1px solid var(--vscode-widget-border, #333);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.setup-prompt-button {
+  border: 1px solid var(--vscode-widget-border, #454545);
+  border-radius: 3px;
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.setup-prompt-button-secondary {
+  background: transparent;
+  color: var(--vscode-descriptionForeground, #aaa);
+}
+
+.setup-prompt-button-secondary:hover {
+  background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.08));
+  color: var(--vscode-editor-foreground, #d4d4d4);
+}
+
+.setup-prompt-button-primary {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+  border-color: transparent;
+}
+
+.setup-prompt-button-primary:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb);
 }
 
 /* ================================================================ */
@@ -1122,7 +1241,13 @@ html, body, #root {
 }
 
 .diff-view {
-  position: absolute;
+  /* Use fixed positioning so the diff sits on top of the entire webview
+     viewport. Earlier this was `position: absolute; inset: 0` inside
+     .editor-container, which only covered the visible portion — once the
+     user scrolled the editor-container, the underlying Tiptap editor
+     showed up below the diff (looked like a duplicated, undiffed copy
+     of the document). */
+  position: fixed;
   inset: 0;
   z-index: 10;
   background: var(--vscode-editor-background, #1e1e1e);
@@ -1137,6 +1262,9 @@ html, body, #root {
   padding: 8px 16px;
   border-bottom: 1px solid var(--vscode-widget-border, #333);
   background: var(--vscode-editorWidget-background, #252526);
+  /* Defensive: keep the toolbar at its natural height so a wide diff
+     body can't squash it via flex-shrink. */
+  flex-shrink: 0;
 }
 
 .diff-toolbar-left,
@@ -1290,10 +1418,21 @@ html, body, #root {
 .diff-rendered ul,
 .diff-rendered ol { padding-left: 1.5em; margin: 0.5em 0; }
 
-/* GFM task lists — Notion-style checkboxes in diff view */
+/* GFM task lists — Notion-style checkboxes in diff view.
+   Use a descendant selector (no `>`) so the styling still applies when
+   htmldiff wraps the <input> in <ins>/<del> for changed task items. */
 .diff-rendered ul.contains-task-list { padding-left: 0.5em; list-style: none; }
 .diff-rendered li.task-list-item { display: list-item; list-style: none; }
-.diff-rendered li.task-list-item > input[type="checkbox"] {
+
+/* When a task line changes, the whole <li> body is wrapped in a sentinel
+   that htmldiff turns into a paired <del>/<ins>. Stack them on separate
+   rows so the user sees the old and new versions one above the other,
+   instead of crammed on the same line. */
+.diff-rendered li.task-list-item > del,
+.diff-rendered li.task-list-item > ins {
+  display: block;
+}
+.diff-rendered li.task-list-item input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   width: 16px;
@@ -1308,12 +1447,12 @@ html, body, #root {
   transition: background 0.15s ease, border-color 0.15s ease;
   opacity: 0.55;
 }
-.diff-rendered li.task-list-item > input[type="checkbox"]:checked {
+.diff-rendered li.task-list-item input[type="checkbox"]:checked {
   background: var(--vscode-button-background, #2383e2);
   border-color: var(--vscode-button-background, #2383e2);
   opacity: 0.85;
 }
-.diff-rendered li.task-list-item > input[type="checkbox"]:checked::after {
+.diff-rendered li.task-list-item input[type="checkbox"]:checked::after {
   content: "";
   position: absolute;
   left: 3.5px;
@@ -1396,6 +1535,31 @@ html, body, #root {
 .diff-rendered .diff-hunk-current {
   scroll-margin-top: 80px;
   scroll-margin-bottom: 80px;
+}
+
+/* Math nodes inside the rendered diff. Generated by postprocessAfterDiff
+   in DiffView.tsx — the markup is identical to the regular editor's
+   math NodeView output (data-type="mathInline" / "mathBlock") so we can
+   share styling. Changed math is wrapped in <ins>/<del> by htmldiff
+   thanks to the <math> sentinel preprocessing, so no extra "changed"
+   class is needed here. */
+.diff-rendered [data-type="mathInline"] { display: inline; }
+.diff-rendered [data-type="mathBlock"] {
+  display: block;
+  text-align: center;
+  margin: 0.5em 0;
+}
+
+/* When a block math is inside <del>/<ins>, the wrapper inherits inline
+   layout by default, so the red/green diff background only paints the
+   thin baseline strip — the formula itself looks uncolored. Make those
+   wrappers display: block so the background fills the whole formula
+   row. Uses :has() (Chromium 105+, fine in current VS Code Electron). */
+.diff-rendered del:has(> [data-type="mathBlock"]),
+.diff-rendered ins:has(> [data-type="mathBlock"]) {
+  display: block;
+  margin: 0.5em 0;
+  padding: 4px 8px;
 }
 
 /* Prev/Next navigation controls in the diff toolbar */
