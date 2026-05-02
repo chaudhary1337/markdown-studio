@@ -7,9 +7,6 @@ import {
   Strikethrough,
   Code,
   Link as LinkIcon,
-  Unlink,
-  Check,
-  X,
   Heading1,
   Heading2,
   Heading3,
@@ -20,6 +17,7 @@ import {
   CheckSquare,
   ChevronDown,
 } from "lucide-react";
+import { BubbleLinkEditor } from "./BubbleLinkEditor";
 
 interface Props {
   editor: Editor;
@@ -69,12 +67,10 @@ export function EditorBubbleMenu({ editor }: Props) {
   // null → menu not keyboard-focused. Number → active button index.
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [dropdownIndex, setDropdownIndex] = useState(0);
-  // Inline link editor: when true the bubble swaps its button row for a URL
-  // input. Keeping it inline (instead of window.prompt or a separate modal)
-  // matches the editor's visual context and lets keyboard nav stay tight.
+  // When true the bubble swaps its button row for the BubbleLinkEditor
+  // (URL input). Keeping the link UI in-bubble matches the editor's visual
+  // context and lets keyboard nav stay tight.
   const [linkMode, setLinkMode] = useState(false);
-  const [linkUrl, setLinkUrl] = useState("");
-  const linkInputRef = useRef<HTMLInputElement>(null);
   const focusedIndexRef = useRef<number | null>(null);
   const turnIntoOpenRef = useRef(false);
   const dropdownIndexRef = useRef(0);
@@ -124,47 +120,17 @@ export function EditorBubbleMenu({ editor }: Props) {
     };
   }, [editor]);
 
-  // Auto-focus and select the URL field whenever link mode opens, so the
-  // user can immediately type / paste / overwrite an existing URL.
-  useEffect(() => {
-    if (!linkMode) return;
-    const t = setTimeout(() => {
-      linkInputRef.current?.focus();
-      linkInputRef.current?.select();
-    }, 0);
-    return () => clearTimeout(t);
-  }, [linkMode]);
-
   const enterLinkMode = useCallback(() => {
-    const existing =
-      (editor.getAttributes("link").href as string | undefined) ?? "";
-    setLinkUrl(existing);
     setLinkMode(true);
-    // Suspend keyboard-nav so global keydown handler doesn't swallow
-    // Enter/Escape that the input wants to handle.
+    // Suspend keyboard-nav so the global keydown handler doesn't swallow
+    // Enter/Escape that the URL input wants to handle.
     setFocusedIndex(null);
     setTurnIntoOpen(false);
-  }, [editor]);
+  }, []);
 
   const exitLinkMode = useCallback(() => {
     setLinkMode(false);
     editor.commands.focus();
-  }, [editor]);
-
-  const applyLink = useCallback(() => {
-    const url = linkUrl.trim();
-    const chain = editor.chain().focus().extendMarkRange("link");
-    if (url === "") {
-      chain.unsetLink().run();
-    } else {
-      chain.setLink({ href: url }).run();
-    }
-    setLinkMode(false);
-  }, [editor, linkUrl]);
-
-  const removeLink = useCallback(() => {
-    editor.chain().focus().extendMarkRange("link").unsetLink().run();
-    setLinkMode(false);
   }, [editor]);
 
   const isActive = useCallback(
@@ -408,52 +374,7 @@ export function EditorBubbleMenu({ editor }: Props) {
       className="bubble-menu"
     >
       {linkMode ? (
-        <div className="bubble-link-row">
-          <button
-            type="button"
-            className="bubble-btn"
-            onClick={exitLinkMode}
-            title="Cancel (Esc)"
-          >
-            <X size={14} />
-          </button>
-          <input
-            ref={linkInputRef}
-            type="text"
-            className="bubble-link-input"
-            value={linkUrl}
-            placeholder="Paste or type a URL"
-            onChange={(e) => setLinkUrl(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                applyLink();
-              } else if (e.key === "Escape") {
-                e.preventDefault();
-                exitLinkMode();
-              }
-            }}
-          />
-          <button
-            type="button"
-            className="bubble-btn"
-            onClick={applyLink}
-            title="Apply (Enter)"
-            disabled={linkUrl.trim() === "" && !isActive("link")}
-          >
-            <Check size={14} />
-          </button>
-          {isActive("link") && (
-            <button
-              type="button"
-              className="bubble-btn"
-              onClick={removeLink}
-              title="Remove link"
-            >
-              <Unlink size={14} />
-            </button>
-          )}
-        </div>
+        <BubbleLinkEditor editor={editor} onClose={exitLinkMode} />
       ) : (
         <>
           <button
