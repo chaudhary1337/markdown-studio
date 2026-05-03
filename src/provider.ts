@@ -1,33 +1,62 @@
 import * as vscode from "vscode";
 import * as path from "path";
+import { SETTING_KEYS } from "../webview/settings";
 
-const SETTINGS_KEY = "betterMarkdown.settings";
+const CONFIG_NAMESPACE = "markdownStudio";
 const CURSORS_KEY = "betterMarkdown.cursors";
 const CONSENT_SHOWN_KEY = "betterMarkdown.consentShown";
 
+/**
+ * Read every known setting from VS Code config into a plain object the
+ * webview can fold into `mergeSettings()`. Reading per-key (instead of
+ * `config.get` on the whole namespace) keeps the payload limited to keys
+ * we actually own — drive-by entries from other extensions or stale
+ * configs don't leak through.
+ */
+function readSettings(): Record<string, unknown> {
+  const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+  const out: Record<string, unknown> = {};
+  for (const key of SETTING_KEYS) {
+    const value = config.get(key);
+    if (value !== undefined) out[key] = value;
+  }
+  return out;
+}
+
+/**
+ * Persist a settings payload from the webview's in-app panel by writing
+ * each changed key to User scope. We diff against the current effective
+ * value to avoid kicking off 16 `onDidChangeConfiguration` events when
+ * only one toggle moved.
+ */
+async function writeSettings(next: Record<string, unknown>): Promise<void> {
+  const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+  for (const key of SETTING_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(next, key)) continue;
+    const incoming = next[key];
+    if (config.get(key) === incoming) continue;
+    await config.update(key, incoming, vscode.ConfigurationTarget.Global);
+  }
+}
+
 export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
-  constructor(readonly context: vscode.ExtensionContext) {}
+  constructor(readonly context: vscode.ExtensionContext) {
+    this.context.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration((e) => {
+        if (!e.affectsConfiguration(CONFIG_NAMESPACE)) return;
+        const settings = readSettings();
+        for (const wv of this.openWebviews) {
+          wv.postMessage({ type: "settingsUpdated", settings });
+        }
+      }),
+    );
+  }
 
   private activeWebview: vscode.Webview | null = null;
   private openWebviews = new Set<vscode.Webview>();
 
   openSearch() {
     this.activeWebview?.postMessage({ type: "openSearch" });
-  }
-
-  private loadSettings(): Record<string, unknown> {
-    return (
-      this.context.globalState.get<Record<string, unknown>>(SETTINGS_KEY, {}) ??
-      {}
-    );
-  }
-
-  private async saveSettings(next: Record<string, unknown>) {
-    await this.context.globalState.update(SETTINGS_KEY, next);
-    // Echo updated settings to every open panel so they stay in sync
-    for (const wv of this.openWebviews) {
-      wv.postMessage({ type: "settingsUpdated", settings: next });
-    }
   }
 
   private loadCursor(filePath: string): number | undefined {
@@ -81,7 +110,9 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
    * Wipe all Markdown Studio user settings + the first-run consent flag,
    * so settings revert to defaults and the welcome modal fires again on
    * the next file open. Confirms before nuking so a stray click in the
-   * command palette doesn't cost the user their configuration.
+   * command palette doesn't cost the user their configuration. Clears
+   * every key from User scope; workspace overrides (if any) are left
+   * alone so per-repo settings still apply.
    */
   async factoryReset(): Promise<void> {
     const RESET = "Reset";
@@ -92,14 +123,14 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
     );
     if (choice !== RESET) return;
 
-    await this.context.globalState.update(SETTINGS_KEY, undefined);
+    const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+    for (const key of SETTING_KEYS) {
+      await config.update(key, undefined, vscode.ConfigurationTarget.Global);
+    }
     await this.context.globalState.update(CONSENT_SHOWN_KEY, undefined);
 
-    // Push fresh (empty) settings to every open webview so they
-    // re-merge with defaults instead of holding the old values.
-    for (const wv of this.openWebviews) {
-      wv.postMessage({ type: "settingsUpdated", settings: {} });
-    }
+    // The onDidChangeConfiguration listener above will broadcast the
+    // post-reset values to every open webview.
 
     vscode.window.showInformationMessage(
       "Markdown Studio: factory reset complete. Open any markdown file to see the welcome prompt.",
@@ -186,7 +217,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           docFolderPath,
           filePath: document.uri.fsPath,
           isReadonly,
-          settings: this.loadSettings(),
+          settings: readSettings(),
           cursorPosition: this.loadCursor(document.uri.fsPath),
         });
         // Fire the first-run setup prompt only after the webview has
@@ -203,7 +234,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           await this.saveCursor(document.uri.fsPath, msg.position);
         }
       } else if (msg.type === "saveSettings") {
-        await this.saveSettings(msg.settings as Record<string, unknown>);
+        await writeSettings(msg.settings as Record<string, unknown>);
       } else if (msg.type === "setupPromptChoice") {
         await this.applySetupChoice(msg.choice as string);
       } else if (msg.type === "requestGitDiff") {
@@ -290,7 +321,10 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
         await vscode.workspace.applyEdit(edit);
         if (firstEditPending) {
           firstEditPending = false;
-          if (consentShownAtStart && this.loadSettings().autoSave !== false) {
+          const autoSave = vscode.workspace
+            .getConfiguration(CONFIG_NAMESPACE)
+            .get<boolean>("autoSave", true);
+          if (consentShownAtStart && autoSave) {
             try {
               await document.save();
             } catch {
@@ -350,7 +384,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' ${webview.cspSource} 'wasm-unsafe-eval'; font-src ${webview.cspSource} data:; img-src ${webview.cspSource} data: blob: https:;">
   <link href="${styleUri}" rel="stylesheet">
-  <title>Better Markdown</title>
+  <title>Markdown Studio</title>
 </head>
 <body>
   <div id="root"></div>

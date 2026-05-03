@@ -1,9 +1,11 @@
 /**
- * Better Markdown user settings.
+ * Markdown Studio user settings.
  *
- * Storage: VSCode extension-host globalState. The webview sends
- * saveSettings messages; the host writes to globalState and echoes updated
- * settings back to every open panel.
+ * Storage: VS Code's native configuration system, namespace
+ * `betterMarkdown.*`. The schema is declared in package.json's
+ * `contributes.configuration` and the defaults below MUST stay in sync.
+ * Users can edit via the Settings UI, `.vscode/settings.json`, or the
+ * in-app SettingsPanel — all three write to the same store.
  *
  * Applied at two points in the pipeline:
  *   1. remark-stringify config (bullet, emphasis, strong, rule, indent)
@@ -92,6 +94,29 @@ export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
   autoSave: true,
   bubbleMenuShortcut: "Mod+/",
 };
+
+/**
+ * Authoritative list of every settings key. Host-side code iterates this
+ * to read/write VS Code config without duplicating the list.
+ */
+export const SETTING_KEYS: (keyof BetterMarkdownSettings)[] = [
+  "bullet",
+  "emphasis",
+  "strong",
+  "rule",
+  "listItemIndent",
+  "compactLists",
+  "unescapeSpecialChars",
+  "renumberOrderedLists",
+  "shellscriptToBash",
+  "fixTableHeaders",
+  "dedupImageAltText",
+  "defaultCodeBlockLang",
+  "diffLayout",
+  "diffMode",
+  "autoSave",
+  "bubbleMenuShortcut",
+];
 
 /**
  * Merge partial (possibly older/stale) settings onto defaults so missing

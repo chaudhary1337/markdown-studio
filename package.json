@@ -2,7 +2,7 @@
   "name": "its-markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Notion-like WYSIWYG markdown editor with rich diffs, tables, images, math, and more.",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "publisher": "tanishq-chaudhary",
   "license": "MIT",
   "repository": {
@@ -138,6 +138,121 @@
           "when": "scmProvider == git && resourceExtname == .md"
         }
       ]
+    },
+    "configuration": {
+      "title": "Markdown Studio",
+      "properties": {
+        "markdownStudio.autoSave": {
+          "type": "boolean",
+          "default": true,
+          "order": 1,
+          "markdownDescription": "Save the file silently on first open to persist the normalization round-trip (md → html → md). Subsequent edits follow VS Code's own `#files.autoSave#` / manual-save behavior."
+        },
+        "markdownStudio.bullet": {
+          "type": "string",
+          "enum": ["-", "*", "+"],
+          "enumDescriptions": ["dash", "star", "plus"],
+          "default": "-",
+          "order": 10,
+          "markdownDescription": "Bullet character for unordered lists when serializing back to markdown."
+        },
+        "markdownStudio.emphasis": {
+          "type": "string",
+          "enum": ["_", "*"],
+          "enumDescriptions": ["_italic_", "*italic*"],
+          "default": "_",
+          "order": 11,
+          "markdownDescription": "Emphasis (italic) marker."
+        },
+        "markdownStudio.strong": {
+          "type": "string",
+          "enum": ["**", "__"],
+          "enumDescriptions": ["**bold**", "__bold__"],
+          "default": "**",
+          "order": 12,
+          "markdownDescription": "Strong (bold) marker."
+        },
+        "markdownStudio.rule": {
+          "type": "string",
+          "enum": ["-", "*", "_"],
+          "enumDescriptions": ["---", "***", "___"],
+          "default": "-",
+          "order": 13,
+          "markdownDescription": "Horizontal-rule character. Rendered as three of whichever you pick."
+        },
+        "markdownStudio.listItemIndent": {
+          "type": "string",
+          "enum": ["one", "tab", "mixed"],
+          "enumDescriptions": ["1 space", "tab", "mixed"],
+          "default": "one",
+          "order": 14,
+          "markdownDescription": "Continuation indent for list items."
+        },
+        "markdownStudio.bubbleMenuShortcut": {
+          "type": "string",
+          "default": "Mod+/",
+          "order": 20,
+          "markdownDescription": "Keybinding that opens the selection bubble menu. If the cursor is inside a word with no active selection, the shortcut expands the selection to the surrounding word first. Format: modifier+key chain separated by `+` (e.g. `Mod+/`, `Ctrl+Shift+B`). `Mod` resolves to `Meta` on macOS, `Ctrl` elsewhere. Empty string disables the shortcut."
+        },
+        "markdownStudio.defaultCodeBlockLang": {
+          "type": "string",
+          "default": "",
+          "order": 30,
+          "markdownDescription": "Language label applied to unlabelled code blocks. Empty leaves them bare (\\`\\`\\`); `text` / `plaintext` adds a default label."
+        },
+        "markdownStudio.diffMode": {
+          "type": "string",
+          "enum": ["source", "rendered"],
+          "enumDescriptions": ["Source (line diff)", "Rendered (HTML diff)"],
+          "default": "rendered",
+          "order": 40,
+          "markdownDescription": "Default view for the rich diff panel."
+        },
+        "markdownStudio.diffLayout": {
+          "type": "string",
+          "enum": ["unified", "side-by-side"],
+          "enumDescriptions": ["Unified", "Side-by-side"],
+          "default": "side-by-side",
+          "order": 41,
+          "markdownDescription": "Layout for the source (line-level) diff toggle."
+        },
+        "markdownStudio.compactLists": {
+          "type": "boolean",
+          "default": true,
+          "order": 50,
+          "markdownDescription": "Remove blank lines between consecutive list items (tight lists)."
+        },
+        "markdownStudio.unescapeSpecialChars": {
+          "type": "boolean",
+          "default": true,
+          "order": 51,
+          "markdownDescription": "Strip redundant `\\~`, `\\*`, `\\_`, `\\[` escapes that remark-stringify adds defensively."
+        },
+        "markdownStudio.renumberOrderedLists": {
+          "type": "boolean",
+          "default": true,
+          "order": 52,
+          "markdownDescription": "Renumber ordered list items to `1.`, `2.`, `3.`, …"
+        },
+        "markdownStudio.shellscriptToBash": {
+          "type": "boolean",
+          "default": true,
+          "order": 53,
+          "markdownDescription": "Rewrite code fences labelled `shellscript` → `bash`."
+        },
+        "markdownStudio.fixTableHeaders": {
+          "type": "boolean",
+          "default": true,
+          "order": 54,
+          "markdownDescription": "Rebuild table headers when rehype-remark emits an empty header row."
+        },
+        "markdownStudio.dedupImageAltText": {
+          "type": "boolean",
+          "default": true,
+          "order": 55,
+          "markdownDescription": "Collapse `![alt](x)\\nalt` → `![alt](x)` (image followed by its alt)."
+        }
+      }
     }
   },
   "scripts": {

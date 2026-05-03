@@ -1,4 +1,4 @@
-# Better Markdown — Spec
+# Markdown Studio — Spec
 
 ## Overview
 
@@ -81,7 +81,7 @@ A VSCode extension that replaces the default markdown editor with a Notion-like 
 
 - **Inline toggle**: "Diff" button (top-right of editor) compares live buffer against HEAD. Uses `vscode.git` extension to fetch HEAD content.
 - **Standalone panel**: `betterMarkdown.openDiff` command opens a dedicated rich diff webview between any two URIs. Accessible from:
-  - Command palette (Better Markdown: Open Rich Diff)
+  - Command palette (Markdown Studio: Open Rich Diff)
   - SCM resource context menu (right-click changed .md file)
   - Diff editor toolbar (when a .md diff is active)
 - **Two view modes**, switchable in the toolbar:

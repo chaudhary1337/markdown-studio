@@ -1,7 +1,28 @@
 import * as vscode from "vscode";
 import * as path from "path";
+import { SETTING_KEYS } from "../webview/settings";
 
-const SETTINGS_KEY = "betterMarkdown.settings";
+const CONFIG_NAMESPACE = "markdownStudio";
+
+function readSettings(): Record<string, unknown> {
+  const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+  const out: Record<string, unknown> = {};
+  for (const key of SETTING_KEYS) {
+    const value = config.get(key);
+    if (value !== undefined) out[key] = value;
+  }
+  return out;
+}
+
+async function writeSettings(next: Record<string, unknown>): Promise<void> {
+  const config = vscode.workspace.getConfiguration(CONFIG_NAMESPACE);
+  for (const key of SETTING_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(next, key)) continue;
+    const incoming = next[key];
+    if (config.get(key) === incoming) continue;
+    await config.update(key, incoming, vscode.ConfigurationTarget.Global);
+  }
+}
 
 /**
  * Standalone webview panel showing a rich markdown diff between any two
@@ -81,8 +102,21 @@ export class BetterMarkdownDiffPanel {
         } else if (msg.type === "closeDiff") {
           this.panel.dispose();
         } else if (msg.type === "saveSettings") {
-          await context.globalState.update(SETTINGS_KEY, msg.settings);
+          await writeSettings(msg.settings as Record<string, unknown>);
         }
+      }),
+    );
+
+    // Push settings updates from VS Code config (Settings UI, .vscode/
+    // settings.json, the editor's in-app panel) into the diff webview so
+    // its in-app settings panel and diff-mode/layout stay in sync.
+    this.disposables.push(
+      vscode.workspace.onDidChangeConfiguration((e) => {
+        if (!e.affectsConfiguration(CONFIG_NAMESPACE)) return;
+        this.panel.webview.postMessage({
+          type: "settingsUpdated",
+          settings: readSettings(),
+        });
       }),
     );
 
@@ -121,11 +155,7 @@ export class BetterMarkdownDiffPanel {
   }
 
   private async postInit() {
-    const settings =
-      this.context.globalState.get<Record<string, unknown>>(
-        SETTINGS_KEY,
-        {},
-      ) ?? {};
+    const settings = readSettings();
     let oldContent = "";
     let newContent = "";
     try {
@@ -169,7 +199,7 @@ export class BetterMarkdownDiffPanel {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="${csp}">
   <link href="${styleUri}" rel="stylesheet">
-  <title>Better Markdown — Diff</title>
+  <title>Markdown Studio — Diff</title>
 </head>
 <body>
   <div id="root"></div>

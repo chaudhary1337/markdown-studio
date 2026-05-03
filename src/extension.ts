@@ -3,10 +3,53 @@ import * as path from "path";
 import { spawn, ChildProcess } from "child_process";
 import { BetterMarkdownProvider } from "./provider";
 import { BetterMarkdownDiffPanel } from "./diffPanel";
+import { SETTING_KEYS } from "../webview/settings";
 
 const CUSTOM_EDITOR_VIEW_TYPE = "betterMarkdown.editor";
+const LEGACY_SETTINGS_KEY = "betterMarkdown.settings";
+const MIGRATION_DONE_KEY = "betterMarkdown.configMigrated";
+
+/**
+ * One-shot migration: pre-2.3.5 builds stored settings in globalState
+ * under `betterMarkdown.settings`. We now own a `contributes.configuration`
+ * block, so settings live in `vscode.workspace.getConfiguration()`. Copy
+ * any stored values into User scope (only when the user hasn't already
+ * set a value via Settings UI), then clear the legacy key. Idempotent —
+ * gated on a separate flag so re-runs are no-ops even if a user
+ * deliberately wipes a key back to its default.
+ */
+async function migrateLegacySettings(
+  context: vscode.ExtensionContext,
+): Promise<void> {
+  if (context.globalState.get<boolean>(MIGRATION_DONE_KEY) === true) return;
+  const legacy = context.globalState.get<Record<string, unknown>>(
+    LEGACY_SETTINGS_KEY,
+  );
+  if (legacy && typeof legacy === "object") {
+    const config = vscode.workspace.getConfiguration("markdownStudio");
+    for (const key of SETTING_KEYS) {
+      if (!Object.prototype.hasOwnProperty.call(legacy, key)) continue;
+      const inspect = config.inspect(key);
+      if (inspect?.globalValue !== undefined) continue;
+      try {
+        await config.update(
+          key,
+          legacy[key],
+          vscode.ConfigurationTarget.Global,
+        );
+      } catch {
+        // Skip individual keys that fail validation (e.g. enum mismatch
+        // from an older build); the rest still migrate.
+      }
+    }
+  }
+  await context.globalState.update(LEGACY_SETTINGS_KEY, undefined);
+  await context.globalState.update(MIGRATION_DONE_KEY, true);
+}
 
 export function activate(context: vscode.ExtensionContext) {
+  void migrateLegacySettings(context);
+
   const provider = new BetterMarkdownProvider(context);
 
   context.subscriptions.push(
@@ -69,7 +112,7 @@ export function activate(context: vscode.ExtensionContext) {
         const { leftUri, rightUri, title } = await resolveDiffArgs(arg, second);
         if (!leftUri || !rightUri) {
           vscode.window.showInformationMessage(
-            "Better Markdown: no markdown file to diff."
+            "Markdown Studio: no markdown file to diff."
           );
           return;
         }

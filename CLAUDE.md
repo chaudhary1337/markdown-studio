@@ -1,4 +1,4 @@
-# Better Markdown — Claude workflow notes
+# Markdown Studio — Claude workflow notes
 
 ## Before finishing ANY change
 
@@ -11,7 +11,7 @@ Run all four steps, in this order, every time. No exceptions.
    - Esbuild must succeed for both `src/extension.ts` (node) and `webview/index.tsx` (browser). Type errors in either halt the build.
 1. **Package**: `npm run package`
    - Produces a `.vsix` file via `vsce package` for local install / distribution.
-1. **Force install**: install the latest version of markdown studio. For example:`code --install-extension its-markdown-studio-2.3.4.vsix --force`. Refer Versioning section for more information on when the version changes.
+1. **Force install**: install the latest version of markdown studio. For example:`code --install-extension its-markdown-studio-2.3.5.vsix --force`. Refer Versioning section for more information on when the version changes.
    - Installs/updates the extension in VS Code. Reload the window afterwards.
 
 If you skip any step, the user won't see the change. Always do all four.
@@ -74,6 +74,20 @@ If you're touching either step, run category E tests and keep both invariants al
 On the way back (HTML → markdown), `preprocessTiptapHtml` converts math nodes to code placeholders (`<code>BTRMK_MATH:latex</code>` for inline, `<pre><code class="language-btrmk-math-block">` for block). This protects LaTeX content from remark-stringify escaping. `postprocessMarkdown` restores them to `$...$` / `$$...$$`.
 
 Keep the handlers and placeholder logic in sync between `useVSCodeSync.ts` (production, DOMParser) and `test/pipeline.ts` (tests, regex). Run category O tests when touching math.
+
+## Settings storage
+
+Settings live in VS Code's native config (`vscode.workspace.getConfiguration("markdownStudio")`), declared in `package.json`'s `contributes.configuration`. The `markdownStudio.*` namespace was chosen instead of `betterMarkdown.*` because VS Code's Settings UI auto-derives section labels by title-casing the dotted segments — so `betterMarkdown.bullet` would render as "Better Markdown: Bullet" regardless of `configuration.title`. Internal command IDs (`betterMarkdown.toggleEditor` etc.) and the `betterMarkdown.editor` view type are unchanged so existing user keybindings and editor associations still resolve.
+
+Three write paths feed the same store:
+
+- VS Code Settings UI / `.vscode/settings.json` (any scope)
+- the in-app `SettingsPanel` (writes User scope via `config.update(...)`)
+- programmatic edits
+
+`onDidChangeConfiguration` listeners in `src/provider.ts` and `src/diffPanel.ts` push fresh settings to every open webview as `settingsUpdated`. The schema in `package.json` MUST stay in sync with `BetterMarkdownSettings`, `DEFAULT_SETTINGS`, and `SETTING_KEYS` in `webview/settings.ts` — adding a new setting means updating all four places.
+
+A one-time migration in `src/extension.ts` (`migrateLegacySettings`) copies pre-2.3.5 globalState settings into User-scope config on first activation.
 
 ## Embed round-trip pipeline (YouTube, GitHub)
 
