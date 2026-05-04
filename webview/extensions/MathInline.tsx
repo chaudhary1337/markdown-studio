@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Node, mergeAttributes } from "@tiptap/core";
+import { Node, InputRule, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import katex from "katex";
 
@@ -151,5 +151,25 @@ export const MathInline = Node.create({
 
   addNodeView() {
     return ReactNodeViewRenderer(MathInlineView);
+  },
+
+  addInputRules() {
+    // `$content$` → inline math node. Require non-space at both ends so that
+    // currency phrasings like "$5 to $10" don't collapse into math, and use a
+    // negative lookbehind on `$` so `$$x$$` block math isn't half-matched.
+    return [
+      new InputRule({
+        find: /(?<!\$)\$([^\s$][^$\n]*?[^\s$]|[^\s$])\$$/,
+        handler: ({ state, range, match }) => {
+          const latex = match[1];
+          if (!latex) return null;
+          state.tr.replaceWith(
+            range.from,
+            range.to,
+            this.type.create({ latex }),
+          );
+        },
+      }),
+    ];
   },
 });
