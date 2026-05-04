@@ -94,13 +94,51 @@ export function EditorBubbleMenu({ editor }: Props) {
     dropdownIndexRef.current = dropdownIndex;
   }, [dropdownIndex]);
 
+  // Re-render only when something the bubble menu visibly depends on
+  // changes. Unconditionally rerendering on every `transaction` event made
+  // the 488-line tree reconcile on every keystroke even when no button
+  // state changed — a noticeable perf regression on long documents. The
+  // signature below captures the selection range plus every active mark /
+  // block the menu reads via `editor.isActive(...)`. Each `isActive` call
+  // is a cheap localized doc descent; the comparison skips the full React
+  // render when nothing visible changed.
   useEffect(() => {
-    const rerender = () => forceUpdate((n) => n + 1);
-    editor.on("selectionUpdate", rerender);
-    editor.on("transaction", rerender);
+    const computeSig = () => {
+      const { from, to, empty } = editor.state.selection;
+      if (empty) return "empty";
+      const parts = [
+        from,
+        to,
+        editor.isActive("bold"),
+        editor.isActive("italic"),
+        editor.isActive("strike"),
+        editor.isActive("code"),
+        editor.isActive("link"),
+        editor.isActive("paragraph"),
+        editor.isActive("blockquote"),
+        editor.isActive("bulletList"),
+        editor.isActive("orderedList"),
+        editor.isActive("taskList"),
+        editor.isActive("codeBlock"),
+      ];
+      for (let level = 1; level <= 6; level++) {
+        parts.push(editor.isActive("heading", { level }));
+      }
+      return parts.join("|");
+    };
+    let lastSig = computeSig();
+    const handler = () => {
+      const sig = computeSig();
+      if (sig !== lastSig) {
+        lastSig = sig;
+        forceUpdate((n) => n + 1);
+      }
+    };
+    editor.on("selectionUpdate", handler);
+    editor.on("transaction", handler);
     return () => {
-      editor.off("selectionUpdate", rerender);
-      editor.off("transaction", rerender);
+      editor.off("selectionUpdate", handler);
+      editor.off("transaction", handler);
     };
   }, [editor]);
 
