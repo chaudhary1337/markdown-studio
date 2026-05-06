@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Node, InputRule, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
+import { NodeSelection } from "@tiptap/pm/state";
 import katex from "katex";
 
 function MathInlineView({
@@ -14,9 +15,18 @@ function MathInlineView({
   const [latex, setLatex] = useState(node.attrs.latex);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Enter editing mode when the node is selected (click or arrow-key nav)
+  // Enter editing mode only when this node is the *exact* NodeSelection
+  // target (arrow-key nav into the atom). Tiptap also flags `selected=true`
+  // for any range selection that contains the node — including Ctrl+A's
+  // AllSelection — and auto-focusing the input there would steal focus and
+  // break select-all/copy. Clicks go through the explicit onClick below.
   useEffect(() => {
-    if (selected && !editing) setEditing(true);
+    if (!selected || editing) return;
+    const sel = editor?.state?.selection;
+    const pos = typeof getPos === "function" ? getPos() : null;
+    if (sel instanceof NodeSelection && pos !== null && sel.from === pos) {
+      setEditing(true);
+    }
   }, [selected]);
 
   useEffect(() => {
