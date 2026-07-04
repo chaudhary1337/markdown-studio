@@ -12,32 +12,34 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 let mermaidModule: any = null;
 let mermaidLoadPromise: Promise<any> | null = null;
 
+// Pick Mermaid's dark/default preset from VS Code's theme-kind attribute
+// (vscode-light | vscode-dark | vscode-high-contrast | vscode-high-contrast-light).
 function detectTheme(): string {
-  const body = document.body;
-  if (
-    body.classList.contains("vscode-dark") ||
-    body.classList.contains("vscode-high-contrast")
-  ) {
-    return "dark";
-  }
-  return "default";
+  const kind =
+    document.body.getAttribute("data-vscode-theme-kind") ||
+    document.documentElement.getAttribute("data-vscode-theme-kind") ||
+    "";
+  return kind.includes("light") ? "default" : "dark";
 }
 
+// Cache the import, but re-apply the theme whenever it changes — Mermaid
+// caches its theme at first init, so a VS Code theme switch needs a fresh
+// initialize() (it's cheap and idempotent).
+let appliedTheme: string | null = null;
+
 async function getMermaid(): Promise<any> {
-  if (mermaidModule) return mermaidModule;
-  if (!mermaidLoadPromise) {
-    mermaidLoadPromise = import("mermaid").then((m) => {
-      const mermaid = m.default;
-      mermaid.initialize({
-        startOnLoad: false,
-        securityLevel: "strict",
-        theme: detectTheme(),
-      });
-      mermaidModule = mermaid;
-      return mermaid;
-    });
+  if (!mermaidModule) {
+    if (!mermaidLoadPromise) {
+      mermaidLoadPromise = import("mermaid").then((m) => (mermaidModule = m.default));
+    }
+    await mermaidLoadPromise;
   }
-  return mermaidLoadPromise;
+  const theme = detectTheme();
+  if (theme !== appliedTheme) {
+    mermaidModule.initialize({ startOnLoad: false, securityLevel: "strict", theme });
+    appliedTheme = theme;
+  }
+  return mermaidModule;
 }
 
 function MermaidBlockView({ node }: any) {
@@ -54,6 +56,17 @@ function MermaidBlockView({ node }: any) {
   const idRef = useRef<string>(
     `mermaid-${Math.random().toString(36).slice(2, 10)}`
   );
+
+  // Re-render diagrams when the VS Code theme changes.
+  const [themeVersion, setThemeVersion] = useState(0);
+  useEffect(() => {
+    const obs = new MutationObserver(() => setThemeVersion((n) => n + 1));
+    obs.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-vscode-theme-kind", "class"],
+    });
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     const trimmed = source.trim();
@@ -85,7 +98,7 @@ function MermaidBlockView({ node }: any) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [source]);
+  }, [source, themeVersion]);
 
   return (
     <NodeViewWrapper className="mermaid-block-wrapper">
