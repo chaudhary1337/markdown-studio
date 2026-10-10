@@ -26,7 +26,8 @@
 
 import { roundTrip, mdToHtml, htmlToMd } from "./pipeline";
 import { normalizeMarkdown, buildMarkdownConfig } from "../webview/markdown.config";
-import { DEFAULT_SETTINGS, mergeSettings } from "../webview/settings";
+import { DEFAULT_SETTINGS, SETTING_KEYS, THEMES, mergeSettings } from "../webview/settings";
+import packageJson from "../package.json";
 import { extractFrontmatter, prependFrontmatter } from "../webview/frontmatter";
 import {
   isYouTubeUrl,
@@ -801,6 +802,40 @@ async function run() {
     "mergeSettings: null/undefined → defaults",
     JSON.stringify(mergeSettings(null)),
     JSON.stringify(DEFAULT_SETTINGS)
+  );
+
+  // Schema sync: package.json, DEFAULT_SETTINGS, and SETTING_KEYS agree
+  const schema = packageJson.contributes.configuration.properties as Record<
+    string,
+    { default: unknown; enum?: unknown[] }
+  >;
+  eq(
+    "settings: SETTING_KEYS matches DEFAULT_SETTINGS keys",
+    [...SETTING_KEYS].sort().join(","),
+    Object.keys(DEFAULT_SETTINGS).sort().join(",")
+  );
+  eq(
+    "settings: package.json schema keys match SETTING_KEYS",
+    Object.keys(schema).sort().join(","),
+    SETTING_KEYS.map((key) => `markdownStudio.${key}`).sort().join(",")
+  );
+  const mismatchedDefaults = SETTING_KEYS.filter(
+    (key) => schema[`markdownStudio.${key}`]?.default !== DEFAULT_SETTINGS[key]
+  );
+  assert(
+    "settings: package.json defaults match DEFAULT_SETTINGS",
+    mismatchedDefaults.length === 0,
+    mismatchedDefaults.join(",")
+  );
+  eq(
+    "settings: theme enum matches THEMES",
+    JSON.stringify(schema["markdownStudio.theme"]?.enum),
+    JSON.stringify(THEMES)
+  );
+  eq(
+    "settings: unknown theme falls back to default",
+    mergeSettings({ theme: "high-contrast-dark" as any }).theme,
+    "default"
   );
 
   // Partial settings merge onto defaults

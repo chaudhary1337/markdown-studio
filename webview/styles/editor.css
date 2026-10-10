@@ -1049,6 +1049,10 @@ html, body, #root {
   width: 200px;
 }
 
+select.settings-input {
+  width: auto;
+}
+
 .settings-input:focus {
   outline: 1px solid var(--vscode-focusBorder, #007acc);
   border-color: var(--vscode-focusBorder, #007acc);

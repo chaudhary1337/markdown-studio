@@ -11,7 +11,7 @@ Run all four steps, in this order, every time. No exceptions.
    - Esbuild must succeed for both `src/extension.ts` (node) and `webview/index.tsx` (browser). Type errors in either halt the build.
 1. **Package**: `npm run package`
    - Produces a `.vsix` file via `vsce package` for local install / distribution.
-1. **Force install**: install the latest version of markdown studio. For example:`code --install-extension its-markdown-studio-2.3.6.vsix --force`. Refer Versioning section for more information on when the version changes.
+1. **Force install**: install the latest version of markdown studio. For example:`code --install-extension its-markdown-studio-2.3.9.vsix --force`. Refer Versioning section for more information on when the version changes.
    - Installs/updates the extension in VS Code. Reload the window afterwards.
 
 If you skip any step, the user won't see the change. Always do all four.
@@ -88,6 +88,20 @@ Three write paths feed the same store:
 `onDidChangeConfiguration` listeners in `src/provider.ts` and `src/diffPanel.ts` push fresh settings to every open webview as `settingsUpdated`. The schema in `package.json` MUST stay in sync with `BetterMarkdownSettings`, `DEFAULT_SETTINGS`, and `SETTING_KEYS` in `webview/settings.ts` — adding a new setting means updating all four places.
 
 A one-time migration in `src/extension.ts` (`migrateLegacySettings`) copies pre-2.3.5 globalState settings into User-scope config on first activation.
+
+## Themes and custom CSS
+
+`useAppearance` (`webview/hooks/useAppearance.ts`) sets `<body data-theme="<markdownStudio.theme>">` (no attribute for `default`) and injects the user's custom CSS as the last `<style>` in `<head>`.
+
+Every theme defines the same GitHub Primer design tokens (`--fgColor-default`, `--bgColor-muted`, `--prettylights-syntax-*`, ...). `webview/styles/themes/base.css` maps them onto the `--vscode-*` variables `editor.css` already reads (body-level declarations shadow VS Code's values on `<html>`) and patches hardcoded colors. `esbuild.js` builds the theme CSS:
+
+- The theme list is the `markdownStudio.theme` enum in `package.json`.
+- `github-<name>` themes are generated from `node_modules/@primer/primitives/dist/css/functional/themes/<name>.css`. Only tokens referenced as `var(--token)` in `base.css` are extracted, with `var()` chains resolved.
+- Any other theme is a hand-written `webview/styles/themes/<name>.css` (e.g. `claude-light.css`). The build fails if it misses a token `base.css` needs. Optional per-theme extras use `var(--x, fallback)` in `base.css` and are not required.
+
+Adding a theme: add the name to `THEME_LABELS` in `webview/settings.ts` and to the `markdownStudio.theme` enum + `enumDescriptions` in `package.json` (a test enforces the match). For a non-GitHub theme, also add its `.css` file.
+
+Custom CSS is read on the host (`src/customCss.ts`) and posted as `{ type: "customCss", css }` on ready and whenever the file or setting changes.
 
 ## Embed round-trip pipeline (YouTube, GitHub)
 

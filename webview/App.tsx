@@ -28,6 +28,7 @@ import { DiffView } from "./components/DiffView";
 import { TableControls } from "./components/TableControls";
 import { ImageInsertDialog } from "./components/ImageInsertDialog";
 import { useSettingsPanel } from "./hooks/useSettingsPanel";
+import { useAppearance } from "./hooks/useAppearance";
 import { matchesBinding, selectWordAtCursor } from "./utils";
 import { useEditorState } from "./hooks/useEditorState";
 import { useClipboardHandlers } from "./hooks/useClipboardHandlers";
@@ -48,6 +49,7 @@ export function App() {
     updateSettings,
     applySettings,
   } = useSettingsPanel(handleUpdateRef);
+  useAppearance(settings.theme);
 
   const editor = useEditor({
     extensions: [

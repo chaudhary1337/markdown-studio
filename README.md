@@ -103,6 +103,22 @@ Paste a YouTube or GitHub URL and get a rich card; the source stays a bare URL s
 
 ![embedding](assets/embedding.gif)
 
+#### Themes & Custom CSS
+
+Pick a theme from the ⚙ panel (Appearance) or `markdownStudio.theme`:
+
++ **Default** follows your VS Code color theme.
++ **GitHub**: Light, Dark, Dark Dimmed, Light/Dark High Contrast, and the Protanopia & Deuteranopia and Tritanopia variants. Colors come straight from GitHub's own design system ([Primer](https://primer.style/)), so they match github.com, including syntax highlighting and diff colors.
++ **Claude**: Light and Dark, using the Claude desktop app's palette.
+
+Point `markdownStudio.customCss` at your own stylesheet (absolute, `~/...`, or workspace-relative) to restyle anything. It loads after the theme and reloads every time you save the file. Every color in the editor is a CSS variable, so most tweaks are one line:
+
+```css
+body { --vscode-textLink-foreground: hotpink; }
+.tiptap-editor { font-family: Georgia, serif; font-size: 17px; }
+body[data-theme="github-dark"] { --fgColor-accent: #ffd700; }
+```
+
 ## Known Limitations
 
 + Conversion from markdown to rich text and back to markdown is not one-to-one exact map. The markdown after is normalized. You can control this to some extent via the settings icon in the rich editor mode.

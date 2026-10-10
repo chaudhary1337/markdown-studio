@@ -1,0 +1,62 @@
+/* Claude Light: the palette of the Claude desktop app (Cowork) light mode,
+   expressed as the Primer tokens base.css reads. Source tokens noted as
+   claude:<name>; syntax colors are built from the same palette. */
+
+body[data-theme="claude-light"] {
+  color-scheme: light;
+
+  --fgColor-default: #141413; /* claude:text-100 */
+  --fgColor-muted: #73726c; /* claude:text-400 */
+  --fgColor-accent: #1b67b2; /* claude:accent-000 */
+  --fgColor-onEmphasis: #ffffff; /* claude:oncolor-100 */
+  --fgColor-attention: #9e4a2e; /* claude:accent-brand, darkened for text */
+  --fgColor-danger: #b53333; /* claude:danger-100 */
+
+  --bgColor-default: #faf9f5; /* claude:bg-100 */
+  --bgColor-muted: #f0eee6; /* claude:bg-300 */
+  --bgColor-neutral-muted: #3d3d3a14; /* claude:text-200 / 8% */
+  --bgColor-accent-emphasis: #2c84db; /* claude:accent-100 */
+  --bgColor-attention-muted: #d9775740; /* claude:accent-brand / 25% */
+  --bgColor-attention-emphasis: #9e4a2e;
+  --bgColor-danger-muted: #f9ecec; /* claude:danger-900 */
+  --overlay-bgColor: #ffffff; /* claude:bg-000 */
+
+  --borderColor-default: #1f1e1d26; /* claude:border-300 / 15% */
+  --borderColor-muted: #1f1e1d1a;
+  --borderColor-success-emphasis: #2f7613; /* claude:success-100 */
+  --borderColor-danger-emphasis: #b53333; /* claude:danger-100 */
+  --focus-outlineColor: #2c84db; /* claude:accent-100 */
+  --selection-bgColor: #2c84db40;
+
+  --control-bgColor-rest: #f5f4ed; /* claude:bg-200 */
+  --control-bgColor-hover: #e8e6dc; /* claude:bg-400 */
+  --control-borderColor-rest: #1f1e1d4d; /* claude:border-200 / 30% */
+  --control-borderColor-emphasis: #1f1e1d4d;
+  --control-checked-bgColor-rest: #c6613f; /* claude clay */
+  --control-checked-bgColor-hover: #9e4a2e;
+  --control-checked-fgColor-rest: #ffffff;
+
+  --diffBlob-additionLine-bgColor: #e7f1da; /* claude:success-900 */
+  --diffBlob-additionWord-bgColor: #2f761333;
+  --diffBlob-additionWord-fgColor: #141413;
+  --diffBlob-deletionLine-bgColor: #f9ecec; /* claude:danger-900 */
+  --diffBlob-deletionWord-bgColor: #b5333333;
+  --diffBlob-deletionWord-fgColor: #141413;
+  --diffBlob-hunkLine-bgColor: #d3e5f8; /* claude:accent-900 */
+
+  --prettylights-syntax-comment: #73726c;
+  --prettylights-syntax-keyword: #9e4a2e;
+  --prettylights-syntax-entity: #5645a1; /* claude:accent-pro-100 */
+  --prettylights-syntax-constant: #1b67b2;
+  --prettylights-syntax-string: #2f7613;
+  --prettylights-syntax-stringRegexp: #8a2424; /* claude:danger-000 */
+  --prettylights-syntax-variable: #935c10;
+  --prettylights-syntax-entityTag: #005c08; /* claude:success-000 */
+  --prettylights-syntax-storageModifierImport: #141413;
+  --prettylights-syntax-markup-inserted-text: #005c08;
+  --prettylights-syntax-markup-inserted-bg: #e7f1da;
+  --prettylights-syntax-markup-deleted-text: #8a2424;
+  --prettylights-syntax-markup-deleted-bg: #f9ecec;
+
+  --codeInline-fgColor: #8a2424; /* Claude renders inline code in danger-000 */
+}

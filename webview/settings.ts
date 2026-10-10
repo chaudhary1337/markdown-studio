@@ -72,7 +72,39 @@ export interface BetterMarkdownSettings {
    * elsewhere. Empty string disables the shortcut.
    */
   bubbleMenuShortcut: string;
+
+  // --- appearance ---
+  /** Built-in theme. "default" follows the active VS Code color theme. */
+  theme: ThemeName;
+  /**
+   * Path to a user CSS file injected after the theme, so it can override
+   * anything. Absolute, `~/...`, or relative to the first workspace folder.
+   * Empty string disables it. Reloads live when the file is saved.
+   */
+  customCss: string;
 }
+
+/**
+ * Built-in themes, in picker order. `github-*` names map 1:1 onto GitHub's
+ * own theme files in @primer/primitives (see esbuild.js); labels match
+ * GitHub's appearance settings. `claude-*` mirror the Claude desktop app.
+ */
+export const THEME_LABELS = {
+  default: "Default (follow VS Code)",
+  "github-light": "GitHub Light",
+  "github-light-high-contrast": "GitHub Light High Contrast",
+  "github-light-colorblind": "GitHub Light Protanopia & Deuteranopia",
+  "github-light-tritanopia": "GitHub Light Tritanopia",
+  "github-dark": "GitHub Dark",
+  "github-dark-high-contrast": "GitHub Dark High Contrast",
+  "github-dark-colorblind": "GitHub Dark Protanopia & Deuteranopia",
+  "github-dark-tritanopia": "GitHub Dark Tritanopia",
+  "github-dark-dimmed": "GitHub Dark Dimmed",
+  "claude-light": "Claude Light",
+  "claude-dark": "Claude Dark",
+} as const;
+export type ThemeName = keyof typeof THEME_LABELS;
+export const THEMES = Object.keys(THEME_LABELS) as ThemeName[];
 
 export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
   bullet: "-",
@@ -93,6 +125,8 @@ export const DEFAULT_SETTINGS: BetterMarkdownSettings = {
   diffMode: "rendered",
   autoSave: true,
   bubbleMenuShortcut: "Mod+/",
+  theme: "default",
+  customCss: "",
 };
 
 /**
@@ -116,6 +150,8 @@ export const SETTING_KEYS: (keyof BetterMarkdownSettings)[] = [
   "diffMode",
   "autoSave",
   "bubbleMenuShortcut",
+  "theme",
+  "customCss",
 ];
 
 /**
@@ -126,5 +162,9 @@ export function mergeSettings(
   partial: Partial<BetterMarkdownSettings> | null | undefined
 ): BetterMarkdownSettings {
   if (!partial) return { ...DEFAULT_SETTINGS };
-  return { ...DEFAULT_SETTINGS, ...partial };
+  const merged = { ...DEFAULT_SETTINGS, ...partial };
+  // VS Code doesn't enforce enums; an unknown theme would leave every
+  // themed color undefined, so fall back to the default look.
+  if (!THEMES.includes(merged.theme)) merged.theme = DEFAULT_SETTINGS.theme;
+  return merged;
 }

@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import { SETTING_KEYS } from "../webview/settings";
+import { onCustomCssChange, readCustomCss } from "./customCss";
 
 const CONFIG_NAMESPACE = "markdownStudio";
 
@@ -99,6 +100,7 @@ export class BetterMarkdownDiffPanel {
       this.panel.webview.onDidReceiveMessage(async (msg) => {
         if (msg.type === "diffReady") {
           await this.postInit();
+          await this.postCustomCss();
         } else if (msg.type === "closeDiff") {
           this.panel.dispose();
         } else if (msg.type === "saveSettings") {
@@ -119,6 +121,8 @@ export class BetterMarkdownDiffPanel {
         });
       }),
     );
+
+    this.disposables.push(onCustomCssChange(() => this.postCustomCss()));
 
     this.disposables.push(
       this.panel.onDidDispose(() => {
@@ -175,6 +179,13 @@ export class BetterMarkdownDiffPanel {
       fileName: path.basename(this.rightUri.fsPath || this.leftUri.fsPath),
       title: this.title,
       settings,
+    });
+  }
+
+  private async postCustomCss() {
+    this.panel.webview.postMessage({
+      type: "customCss",
+      css: await readCustomCss(),
     });
   }
 

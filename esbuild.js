@@ -53,7 +53,76 @@ const webviewBuild = esbuild.build({
   },
 });
 
-// 3. Copy CSS (editor + bundled diff2html + KaTeX styles) and KaTeX fonts
+// Themes. The list comes from the `markdownStudio.theme` enum in package.json.
+// `github-*` themes are generated from GitHub's design system
+// (@primer/primitives): only the tokens themes/base.css reads are extracted,
+// with var() chains resolved, so each costs ~2 KB instead of ~120 KB. Every
+// other theme is a hand-written webview/styles/themes/<name>.css defining
+// the same tokens; the build fails if one is missing.
+const THEMES_DIR = path.join(__dirname, "webview", "styles", "themes");
+const PRIMER_THEMES_DIR = path.join(
+  __dirname,
+  "node_modules",
+  "@primer",
+  "primitives",
+  "dist",
+  "css",
+  "functional",
+  "themes"
+);
+const THEME_NAMES = require("./package.json").contributes.configuration.properties[
+  "markdownStudio.theme"
+].enum.filter((name) => name !== "default");
+
+function parseTokens(css) {
+  const tokens = {};
+  const stripped = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const [, name, value] of stripped.matchAll(/--([\w-]+):\s*([^;]+);/g)) {
+    if (!(name in tokens)) tokens[name] = value.trim();
+  }
+  return tokens;
+}
+
+function githubThemeCss(theme, required) {
+  const primerName = theme.slice("github-".length);
+  const tokens = parseTokens(
+    fs.readFileSync(path.join(PRIMER_THEMES_DIR, `${primerName}.css`), "utf-8")
+  );
+  const resolve = (name) => {
+    if (!(name in tokens)) {
+      throw new Error(`@primer/primitives ${primerName}: missing --${name}`);
+    }
+    return tokens[name].replace(/var\(--([\w-]+)\)/g, (_, ref) => resolve(ref));
+  };
+  const scheme = primerName.startsWith("dark") ? "dark" : "light";
+  const lines = required.map((name) => `  --${name}: ${resolve(name)};`);
+  return `body[data-theme="${theme}"] {\n  color-scheme: ${scheme};\n${lines.join("\n")}\n}\n`;
+}
+
+function customThemeCss(theme, required) {
+  const css = fs.readFileSync(path.join(THEMES_DIR, `${theme}.css`), "utf-8");
+  const tokens = parseTokens(css);
+  const missing = required.filter((name) => !(name in tokens));
+  if (missing.length) {
+    throw new Error(`${theme}.css: missing ${missing.map((name) => `--${name}`).join(", ")}`);
+  }
+  return css;
+}
+
+function themesCss() {
+  const base = fs.readFileSync(path.join(THEMES_DIR, "base.css"), "utf-8");
+  const required = [
+    ...new Set([...base.matchAll(/var\(--([\w-]+)\)/g)].map((match) => match[1])),
+  ].filter((name) => !name.startsWith("vscode-"));
+  const themes = THEME_NAMES.map((theme) =>
+    theme.startsWith("github-")
+      ? githubThemeCss(theme, required)
+      : customThemeCss(theme, required)
+  );
+  return [...themes, base].join("\n");
+}
+
+// 3. Copy CSS (editor + bundled diff2html + KaTeX styles + themes) and KaTeX fonts
 function copyCSS() {
   const src = path.join(__dirname, "webview", "styles", "editor.css");
   const dest = path.join(__dirname, "dist", "editor.css");
@@ -76,9 +145,10 @@ function copyCSS() {
   const editor = fs.readFileSync(src, "utf-8");
   const d2h = fs.readFileSync(diff2htmlCss, "utf-8");
   const katex = fs.readFileSync(katexCss, "utf-8");
+  // Themes go last so their body[data-theme] overrides win ties.
   fs.writeFileSync(
     dest,
-    editor + "\n\n/* diff2html */\n" + d2h + "\n\n/* katex */\n" + katex
+    editor + "\n\n/* diff2html */\n" + d2h + "\n\n/* katex */\n" + katex + "\n\n/* themes */\n" + themesCss()
   );
 
   // Copy KaTeX fonts so CSS relative paths (fonts/...) resolve correctly

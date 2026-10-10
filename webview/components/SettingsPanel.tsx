@@ -1,5 +1,11 @@
 import React from "react";
-import { DEFAULT_SETTINGS, type BetterMarkdownSettings } from "../settings";
+import {
+  DEFAULT_SETTINGS,
+  THEMES,
+  THEME_LABELS,
+  type BetterMarkdownSettings,
+  type ThemeName,
+} from "../settings";
 
 interface SettingsPanelProps {
   visible: boolean;
@@ -36,6 +42,40 @@ export function SettingsPanel({
         </div>
 
         <div className="settings-body">
+          <section>
+            <h3>Appearance</h3>
+
+            <Row label="Theme">
+              <select
+                className="settings-input"
+                value={settings.theme}
+                onChange={(e) => set("theme", e.target.value as ThemeName)}
+              >
+                {THEMES.map((name) => (
+                  <option key={name} value={name}>
+                    {THEME_LABELS[name]}
+                  </option>
+                ))}
+              </select>
+            </Row>
+
+            <Row label="Custom CSS file">
+              <input
+                type="text"
+                className="settings-input"
+                value={settings.customCss}
+                placeholder="~/markdown-studio.css"
+                onChange={(e) => set("customCss", e.target.value)}
+              />
+            </Row>
+            <div className="settings-hint">
+              Absolute, <code>~/...</code>, or workspace-relative path. Applied
+              on top of the theme and reloaded on save. Target{" "}
+              <code>body[data-theme="github-dark"]</code> to style one theme
+              only, or <code>body:not([data-theme])</code> for Default.
+            </div>
+          </section>
+
           <section>
             <h3>Saving</h3>
 

@@ -1,0 +1,227 @@
+/* Shared theme layer, active whenever <body data-theme> is set (any theme
+   except "default"; see useAppearance).
+
+   Every theme defines the same set of GitHub Primer design tokens
+   (--fgColor-default, --bgColor-muted, --prettylights-syntax-*, ...).
+   GitHub themes get them generated from @primer/primitives at build time
+   (esbuild.js); other themes (claude-*.css) define them by hand. The build
+   reads this file to decide which tokens to extract, and fails if a
+   hand-written theme is missing one.
+
+   This file then maps those tokens onto the --vscode-* variables that
+   editor.css already reads (body-level declarations shadow the values VS
+   Code injects on <html>), and patches the colors editor.css hardcodes.
+   Optional per-theme extras use var(--x, fallback) and are not required. */
+
+body[data-theme] {
+  --vscode-editor-background: var(--bgColor-default);
+  --vscode-editor-foreground: var(--fgColor-default);
+  --vscode-foreground: var(--fgColor-default);
+  --vscode-descriptionForeground: var(--fgColor-muted);
+  --vscode-widget-border: var(--borderColor-default);
+  --vscode-editorWidget-background: var(--overlay-bgColor);
+  --vscode-editorWidget-border: var(--borderColor-default);
+  --vscode-focusBorder: var(--focus-outlineColor);
+  --vscode-textLink-foreground: var(--fgColor-accent);
+  --vscode-button-background: var(--control-checked-bgColor-rest);
+  --vscode-button-foreground: var(--control-checked-fgColor-rest);
+  --vscode-button-hoverBackground: var(--control-checked-bgColor-hover);
+  --vscode-button-secondaryBackground: var(--control-bgColor-rest);
+  --vscode-button-secondaryForeground: var(--fgColor-default);
+  --vscode-button-secondaryHoverBackground: var(--control-bgColor-hover);
+  --vscode-input-background: var(--bgColor-default);
+  --vscode-input-foreground: var(--fgColor-default);
+  --vscode-input-border: var(--control-borderColor-rest);
+  --vscode-inputValidation-errorBackground: var(--bgColor-danger-muted);
+  --vscode-inputValidation-errorBorder: var(--borderColor-danger-emphasis);
+  --vscode-dropdown-background: var(--overlay-bgColor);
+  --vscode-dropdown-border: var(--borderColor-default);
+  --vscode-list-hoverBackground: var(--bgColor-neutral-muted);
+  --vscode-list-activeSelectionBackground: var(--bgColor-accent-emphasis);
+  --vscode-list-activeSelectionForeground: var(--fgColor-onEmphasis);
+  --vscode-toolbar-hoverBackground: var(--bgColor-neutral-muted);
+  --vscode-editor-hoverHighlightBackground: var(--bgColor-neutral-muted);
+  --vscode-editor-selectionBackground: var(--selection-bgColor);
+  --vscode-textCodeBlock-background: var(--bgColor-muted);
+  --vscode-scrollbarSlider-background: var(--borderColor-default);
+  --vscode-scrollbarSlider-hoverBackground: var(--fgColor-muted);
+  --vscode-editorLineNumber-foreground: var(--fgColor-muted);
+  --vscode-editorWarning-foreground: var(--fgColor-attention);
+  --vscode-errorForeground: var(--fgColor-danger);
+
+  background: var(--bgColor-default);
+  color: var(--fgColor-default);
+}
+
+body[data-theme] ::selection {
+  background: var(--selection-bgColor);
+}
+
+body[data-theme] :is(button, input, select, textarea, [role="button"]):focus-visible {
+  outline: 2px solid var(--focus-outlineColor);
+  outline-offset: 1px;
+}
+
+/* High-contrast themes: links are underlined, not distinguished by color alone */
+body[data-theme$="high-contrast"] .tiptap-editor a {
+  text-decoration: underline;
+}
+
+/* GitHub markdown: rule under h1 / h2 */
+body[data-theme^="github-"] .tiptap-editor :is(h1, h2) {
+  border-bottom: 1px solid var(--borderColor-muted);
+  padding-bottom: 0.3em;
+}
+
+/* Code */
+body[data-theme] .tiptap-editor pre,
+body[data-theme] .tiptap-editor .code-block-wrapper {
+  background: var(--bgColor-muted);
+}
+body[data-theme] .tiptap-editor pre code,
+body[data-theme] .tiptap-editor .code-block-wrapper code {
+  background: none;
+  color: var(--fgColor-default);
+}
+body[data-theme] .tiptap-editor code {
+  background: var(--bgColor-neutral-muted);
+  color: var(--codeInline-fgColor, currentColor);
+}
+body[data-theme] .code-block-lang-button:hover,
+body[data-theme] .settings-hint code {
+  background: var(--bgColor-neutral-muted);
+}
+
+/* Syntax: highlight.js's own GitHub theme mapping, on Primer's "prettylights" tokens */
+body[data-theme] .tiptap-editor :is(.hljs-comment, .hljs-code, .hljs-formula) {
+  color: var(--prettylights-syntax-comment);
+}
+body[data-theme] .tiptap-editor :is(.hljs-keyword, .hljs-doctag, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-variable.language_) {
+  color: var(--prettylights-syntax-keyword);
+}
+body[data-theme] .tiptap-editor :is(.hljs-title, .hljs-function, .hljs-class .hljs-title, .hljs-title.class_, .hljs-title.function_) {
+  color: var(--prettylights-syntax-entity);
+}
+body[data-theme] .tiptap-editor :is(.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator, .hljs-variable, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-section) {
+  color: var(--prettylights-syntax-constant);
+}
+body[data-theme] .tiptap-editor :is(.hljs-string, .hljs-meta .hljs-string) {
+  color: var(--prettylights-syntax-string);
+}
+body[data-theme] .tiptap-editor .hljs-regexp {
+  color: var(--prettylights-syntax-stringRegexp);
+}
+body[data-theme] .tiptap-editor :is(.hljs-built_in, .hljs-symbol) {
+  color: var(--prettylights-syntax-variable);
+}
+body[data-theme] .tiptap-editor :is(.hljs-name, .hljs-quote, .hljs-selector-tag, .hljs-selector-pseudo) {
+  color: var(--prettylights-syntax-entityTag);
+}
+body[data-theme] .tiptap-editor :is(.hljs-tag, .hljs-params, .hljs-subst) {
+  color: var(--prettylights-syntax-storageModifierImport);
+}
+body[data-theme] .tiptap-editor .hljs-addition {
+  color: var(--prettylights-syntax-markup-inserted-text);
+  background: var(--prettylights-syntax-markup-inserted-bg);
+}
+body[data-theme] .tiptap-editor .hljs-deletion {
+  color: var(--prettylights-syntax-markup-deleted-text);
+  background: var(--prettylights-syntax-markup-deleted-bg);
+}
+
+/* Blocks */
+body[data-theme] .tiptap-editor blockquote {
+  border-left-color: var(--borderColor-default);
+  color: var(--fgColor-muted);
+}
+body[data-theme] .tiptap-editor hr {
+  border-top-color: var(--borderColor-default);
+  opacity: 1;
+}
+body[data-theme] .tiptap-editor th {
+  background: none;
+}
+body[data-theme] .tiptap-editor tr:nth-child(2n + 3) {
+  background: var(--bgColor-muted);
+}
+
+/* Task checkboxes */
+body[data-theme] .tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"] {
+  border-color: var(--control-borderColor-emphasis);
+  opacity: 1;
+}
+body[data-theme] .tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+  opacity: 1;
+}
+body[data-theme] .tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
+  border-color: var(--control-checked-fgColor-rest);
+}
+body[data-theme$="high-contrast"] .tiptap-editor ul[data-type="taskList"] li[data-checked="true"] > div {
+  opacity: 0.75;
+}
+
+/* Chrome */
+body[data-theme] .toc-handle {
+  background: var(--bgColor-muted);
+  border-left: 1px solid var(--borderColor-default);
+}
+body[data-theme] .image-caption-text:hover,
+body[data-theme] .image-placeholder,
+body[data-theme] .image-dialog-preview {
+  background: var(--bgColor-muted);
+}
+
+/* Find-in-page */
+body[data-theme] ::highlight(search-match),
+body[data-theme] .search-mark {
+  background-color: var(--bgColor-attention-muted);
+}
+body[data-theme] ::highlight(search-match-active),
+body[data-theme] .search-mark-active {
+  background-color: var(--bgColor-attention-emphasis);
+  color: var(--fgColor-onEmphasis);
+}
+
+/* Rendered diff */
+body[data-theme] .diff-rendered ins {
+  background: var(--diffBlob-additionWord-bgColor);
+  color: var(--diffBlob-additionWord-fgColor);
+  box-shadow: inset 0 -1px 0 var(--borderColor-success-emphasis);
+}
+body[data-theme] .diff-rendered del {
+  background: var(--diffBlob-deletionWord-bgColor);
+  color: var(--diffBlob-deletionWord-fgColor);
+  box-shadow: inset 0 -1px 0 var(--borderColor-danger-emphasis);
+}
+body[data-theme] .diff-rendered [data-diff-node="ins"] {
+  background: var(--diffBlob-additionLine-bgColor);
+  outline: 1px solid var(--borderColor-success-emphasis);
+}
+body[data-theme] .diff-rendered [data-diff-node="del"] {
+  background: var(--diffBlob-deletionLine-bgColor);
+  outline: 1px solid var(--borderColor-danger-emphasis);
+}
+
+/* Source diff (diff2html; base rules use !important) */
+body[data-theme] .diff-html .d2h-ins,
+body[data-theme] .diff-html .d2h-ins .d2h-code-side-linenumber {
+  background: var(--diffBlob-additionLine-bgColor) !important;
+}
+body[data-theme] .diff-html .d2h-del,
+body[data-theme] .diff-html .d2h-del .d2h-code-side-linenumber {
+  background: var(--diffBlob-deletionLine-bgColor) !important;
+}
+body[data-theme] .diff-html .d2h-ins.d2h-change,
+body[data-theme] .diff-html .d2h-del.d2h-change {
+  background: var(--diffBlob-hunkLine-bgColor) !important;
+}
+body[data-theme] .diff-html .d2h-ins .d2h-change,
+body[data-theme] .diff-html .d2h-code-line ins {
+  background: var(--diffBlob-additionWord-bgColor) !important;
+  color: var(--diffBlob-additionWord-fgColor) !important;
+}
+body[data-theme] .diff-html .d2h-del .d2h-change,
+body[data-theme] .diff-html .d2h-code-line del {
+  background: var(--diffBlob-deletionWord-bgColor) !important;
+  color: var(--diffBlob-deletionWord-fgColor) !important;
+}

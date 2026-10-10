@@ -6,6 +6,7 @@ import {
   type BetterMarkdownSettings,
 } from "./settings";
 import { vscodeApi } from "./vscode-api";
+import { useAppearance } from "./hooks/useAppearance";
 
 interface DiffInit {
   oldContent: string;
@@ -24,6 +25,7 @@ export function DiffApp() {
   const [settings, setSettings] = useState<BetterMarkdownSettings>(
     DEFAULT_SETTINGS,
   );
+  useAppearance(settings.theme);
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {

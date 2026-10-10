@@ -14,6 +14,8 @@ let mermaidLoadPromise: Promise<any> | null = null;
 
 function detectTheme(): string {
   const body = document.body;
+  const theme = body.dataset.theme;
+  if (theme) return theme.includes("dark") ? "dark" : "default";
   if (
     body.classList.contains("vscode-dark") ||
     body.classList.contains("vscode-high-contrast")

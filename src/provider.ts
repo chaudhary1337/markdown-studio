@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import { SETTING_KEYS } from "../webview/settings";
+import { onCustomCssChange, readCustomCss } from "./customCss";
 
 const CONFIG_NAMESPACE = "markdownStudio";
 const CURSORS_KEY = "betterMarkdown.cursors";
@@ -47,6 +48,12 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
         const settings = readSettings();
         for (const wv of this.openWebviews) {
           wv.postMessage({ type: "settingsUpdated", settings });
+        }
+      }),
+      onCustomCssChange(async () => {
+        const css = await readCustomCss();
+        for (const wv of this.openWebviews) {
+          wv.postMessage({ type: "customCss", css });
         }
       }),
     );
@@ -220,6 +227,7 @@ export class BetterMarkdownProvider implements vscode.CustomTextEditorProvider {
           settings: readSettings(),
           cursorPosition: this.loadCursor(document.uri.fsPath),
         });
+        webview.postMessage({ type: "customCss", css: await readCustomCss() });
         // Fire the first-run setup prompt only after the webview has
         // signalled `ready` — posting earlier would land before the
         // message listener is attached and the message would be lost.

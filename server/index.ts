@@ -44,6 +44,23 @@ function saveSettings(settings: Record<string, unknown>) {
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
 }
 
+/**
+ * Read the stylesheet named by the `customCss` setting. Absolute or `~/`
+ * paths only (no workspace in browser mode). Reload the tab to pick up
+ * edits.
+ */
+function loadCustomCss(): string {
+  const raw = String(loadSettings().customCss ?? "").trim();
+  if (!raw) return "";
+  const home = process.env.HOME || process.env.USERPROFILE || ".";
+  const file = raw.startsWith("~/") ? path.join(home, raw.slice(2)) : path.resolve(raw);
+  try {
+    return fs.readFileSync(file, "utf-8");
+  } catch {
+    return "";
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Per-file state: tracks clients, watcher, and last-written content
 // ---------------------------------------------------------------------------
@@ -341,6 +358,7 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           isReadonly: false,
           settings: loadSettings(),
         }));
+        ws.send(JSON.stringify({ type: "customCss", css: loadCustomCss() }));
         break;
       }
       case "edit": {

@@ -2,7 +2,7 @@
   "name": "its-markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Notion-like WYSIWYG markdown editor with rich diffs, tables, images, math, and more.",
-  "version": "2.3.7",
+  "version": "2.3.9",
   "publisher": "tanishq-chaudhary",
   "license": "MIT",
   "repository": {
@@ -251,6 +251,20 @@
           "default": true,
           "order": 55,
           "markdownDescription": "Collapse `![alt](x)\\nalt` → `![alt](x)` (image followed by its alt)."
+        },
+        "markdownStudio.theme": {
+          "type": "string",
+          "enum": ["default", "github-light", "github-light-high-contrast", "github-light-colorblind", "github-light-tritanopia", "github-dark", "github-dark-high-contrast", "github-dark-colorblind", "github-dark-tritanopia", "github-dark-dimmed", "claude-light", "claude-dark"],
+          "enumDescriptions": ["Default (follow VS Code)", "GitHub Light", "GitHub Light High Contrast", "GitHub Light Protanopia & Deuteranopia", "GitHub Light Tritanopia", "GitHub Dark", "GitHub Dark High Contrast", "GitHub Dark Protanopia & Deuteranopia", "GitHub Dark Tritanopia", "GitHub Dark Dimmed", "Claude Light", "Claude Dark"],
+          "default": "default",
+          "order": 60,
+          "markdownDescription": "Color theme for the rich editor and rich diff. `default` follows your VS Code color theme. `github-*` use GitHub's own colors (from GitHub's Primer design system); `claude-*` match the Claude desktop app."
+        },
+        "markdownStudio.customCss": {
+          "type": "string",
+          "default": "",
+          "order": 61,
+          "markdownDescription": "Path to a CSS file applied on top of the theme (absolute, `~/...`, or relative to the first workspace folder). Reloads live on save. Empty disables it."
         }
       }
     }
@@ -267,6 +281,7 @@
     "vscode:prepublish": "node esbuild.js --production"
   },
   "devDependencies": {
+    "@primer/primitives": "^11.10.0",
     "@types/diff": "^7.0.2",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
